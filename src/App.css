@@ -1,0 +1,83 @@
+:root {
+  --yt-bg: #0f0f0f;
+  --yt-sidebar: #0f0f0f;
+  --yt-hover: #272727;
+  --yt-text: #f1f1f1;
+  --yt-text-muted: #aaaaaa;
+  --yt-accent: #ff0000;
+  --yt-border: #3f3f3f;
+}
+body {
+  margin: 0;
+  background-color: var(--yt-bg);
+  color: var(--yt-text);
+  font-family: Roboto, Arial, sans-serif;
+}
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+.sidebar {
+  width: 240px;
+  background: var(--yt-sidebar);
+  border-right: 1px solid var(--yt-border);
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+}
+.sidebar a {
+  color: var(--yt-text);
+  text-decoration: none;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-radius: 10px;
+  margin: 0 10px;
+}
+.sidebar a:hover {
+  background: var(--yt-hover);
+}
+.main-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+.input-field {
+  background: #121212;
+  border: 1px solid var(--yt-border);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 500px;
+  outline: none;
+}
+.btn {
+  background: var(--yt-hover);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--yt-accent);
+  font-weight: bold;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+.video-card {
+  background: var(--yt-hover);
+  aspect-ratio: 16/9;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 10px;
+  text-align: center;
+}
