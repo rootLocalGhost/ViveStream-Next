@@ -8,6 +8,10 @@ on:
       - 'VERSION' # Only trigger when this specific file is modified
   workflow_dispatch:
 
+# NEW SECTION: Grant write permissions required to create a release
+permissions:
+  contents: write
+
 jobs:
   release:
     strategy:
