@@ -1,4 +1,24 @@
 <svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    @keyframes pulse-glow {
+      0% {
+        stroke-dashoffset: 1000;
+        stroke: #fff;
+        filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #fff);
+      }
+      50% {
+        stroke-dashoffset: 500;
+        stroke: #f1f1f1;
+        filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px #f1f1f1);
+      }
+      100% {
+        stroke-dashoffset: 0;
+        stroke: #fff;
+        filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #fff);
+      }
+    }
+  </style>
+
   <path fill="#ef233c" d="M83.333 0h333.334A83.333 83.333 0 0 1 500 83.333v333.334A83.333 83.333 0 0 1 416.667 500H83.333A83.333 83.333 0 0 1 0 416.667V83.333A83.333 83.333 0 0 1 83.333 0"/>
   
   <path d="m125 125 125 250 125-250"
@@ -12,5 +32,5 @@
         stroke-width="5.208"
         fill="none"
         stroke-linecap="round"
-        style="stroke-dasharray:1000; stroke-dashoffset:0; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #fff);" />
+        style="stroke-dasharray:1000; stroke-dashoffset:1000; animation:pulse-glow 5s ease-in-out 1 forwards;" />
 </svg>
