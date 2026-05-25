@@ -1,12 +1,14 @@
-import { lazy, Component, createSignal } from 'solid-js';
+import { lazy, Component, createSignal, onMount, Show } from 'solid-js';
 import { Router, Route, A } from '@solidjs/router';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Home as HomeIcon, List, Mic, Heart, Download, Settings, Minus, Square, X } from 'lucide-solid';
+import { Home as HomeIcon, List, Mic, Heart, Download, Settings, Minus, Square, X, Loader2 } from 'lucide-solid';
+import { invoke } from '@tauri-apps/api/core';
 import './App.css';
 
 const Home = lazy(() => import('./pages/Home'));
 const Downloads = lazy(() => import('./pages/Downloads'));
 const Player = lazy(() => import('./pages/Player'));
+const Setup = lazy(() => import('./pages/Setup'));
 
 const ComingSoon: Component<{ title: string }> = (props) => (
   <div style={{ padding: "40px" }}>
@@ -37,6 +39,42 @@ const ImmersiveTitleBar = () => {
   );
 };
 
+// Lifecycle Blocker Root Component
+const AppLifecycle: Component<{ children?: any }> = (props) => {
+  const [needsSetup, setNeedsSetup] = createSignal<boolean | null>(null);
+
+  onMount(async () => {
+    try {
+        const status = await invoke<{ ytdlp_exists: boolean, ffmpeg_exists: boolean }>('check_binaries');
+        if (status.ytdlp_exists && status.ffmpeg_exists) {
+            setNeedsSetup(false);
+        } else {
+            setNeedsSetup(true);
+        }
+    } catch (e) {
+        console.error("Critical lifecycle check failed:", e);
+        setNeedsSetup(true); // Default to setup on error
+    }
+  });
+
+  return (
+    <div class="app-wrapper">
+      <ImmersiveTitleBar />
+      <Show when={needsSetup() !== null} fallback={<LoadingBlock />}>
+        <Show when={needsSetup() === false} fallback={<Setup />}>
+            {props.children}
+        </Show>
+      </Show>
+    </div>
+  );
+};
+
+const LoadingBlock = () => (
+    <div style={{display: 'flex', flex: '1', 'align-items': 'center', 'justify-content': 'center', background: 'var(--primary-background)', color: 'var(--primary-accent)'}}>
+        <Loader2 class="spinIcon" size={48} />
+    </div>
+)
+
 const AppLayout: Component<{ children?: any }> = (props) => {
   const [isPinned, setIsPinned] = createSignal(false);
   const [isHovered, setIsHovered] = createSignal(false);
@@ -44,8 +82,6 @@ const AppLayout: Component<{ children?: any }> = (props) => {
   const isExpanded = () => isPinned() || isHovered();
 
   return (
-    <div class="app-wrapper">
-      <ImmersiveTitleBar />
       <div class="app-container">
         <nav 
           class={`sidebar ${isExpanded() ? 'expanded' : 'collapsed'}`}
@@ -74,20 +110,21 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           {props.children}
         </main>
       </div>
-    </div>
   );
 };
 
 const App: Component = () => {
   return (
-    <Router root={AppLayout}>
-      <Route path="/" component={Home} />
-      <Route path="/downloads" component={Downloads} />
-      <Route path="/settings" component={() => <ComingSoon title="Settings" />} />
-      <Route path="/playlists" component={() => <ComingSoon title="Playlists" />} />
-      <Route path="/artists" component={() => <ComingSoon title="Artists" />} />
-      <Route path="/favourites" component={() => <ComingSoon title="Favourites" />} />
-      <Route path="/player/:id" component={Player} />
+    <Router root={AppLifecycle}>
+      <Route path="/" component={AppLayout}>
+          <Route path="/" component={Home} />
+          <Route path="/downloads" component={Downloads} />
+          <Route path="/settings" component={() => <ComingSoon title="Settings" />} />
+          <Route path="/playlists" component={() => <ComingSoon title="Playlists" />} />
+          <Route path="/artists" component={() => <ComingSoon title="Artists" />} />
+          <Route path="/favourites" component={() => <ComingSoon title="Favourites" />} />
+          <Route path="/player/:id" component={Player} />
+      </Route>
     </Router>
   );
 };
