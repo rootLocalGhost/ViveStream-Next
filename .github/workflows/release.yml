@@ -1,0 +1,87 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main # Only trigger on the main branch
+    paths:
+      - 'VERSION' # Only trigger when this specific file is modified
+  workflow_dispatch:
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Versions Match
+        id: version_check
+        shell: bash
+        run: |
+          # Read and strip whitespace/newlines from the VERSION file
+          VERSION=$(cat VERSION | tr -d '\n\r ')
+          
+          # Use jq to extract versions from the JSON files
+          PKG_VERSION=$(jq -r .version package.json)
+          TAURI_VERSION=$(jq -r .version src-tauri/tauri.conf.json)
+          
+          echo "VERSION file: $VERSION"
+          echo "package.json: $PKG_VERSION"
+          echo "tauri.conf.json: $TAURI_VERSION"
+          
+          if [ "$VERSION" != "$PKG_VERSION" ] || [ "$VERSION" != "$TAURI_VERSION" ]; then
+            echo "::error::Version mismatch detected! Build aborted."
+            exit 1
+          fi
+          
+          # Pass the verified version to the next steps
+          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf squashfs-tools fuse2
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Build and Release Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v${{ steps.version_check.outputs.app_version }}
+          releaseName: 'ViveStream v${{ steps.version_check.outputs.app_version }}'
+          releaseBody: 'Automated release triggered by VERSION file.'
+          releaseDraft: false
+          prerelease: false
