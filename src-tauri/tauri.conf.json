@@ -13,17 +13,17 @@
     "windows": [
       {
         "title": "vivestream-next",
-        "width": 800,
-        "height": 600
+        "width": 1280,
+        "height": 720,
+        "decorations": false,
+        "transparent": true
       }
     ],
     "security": {
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": [
-          "/home/localghost/Videos/ViveStream/**"
-        ]
+        "scope": ["/home/localghost/Videos/ViveStream/**"]
       }
     }
   },
