@@ -22,7 +22,7 @@ export default function Setup() {
         if (status.ytdlp_exists && status.ffmpeg_exists) {
             // Already ready, this page shouldn't be loaded normally
         } else {
-            addLog(`viveStream v0.1.0 // post-install environment check // complete`);
+            addLog(`viveStream v0.2.0 // post-install environment check // complete`);
             if (!status.ytdlp_exists) addLog(`> yt-dlp binary [miss]`);
             if (!status.ffmpeg_exists) addLog(`> ffmpeg binary [miss]`);
             addLog(`data_root: ${status.bin_folder}`);
