@@ -26,14 +26,15 @@ const AppLogo = () => (
 );
 
 const ImmersiveTitleBar = () => {
-  const appWindow = getCurrentWindow();
+
   return (
     <div class="immersive-titlebar-wrapper">
       <div data-tauri-drag-region class="drag-region"></div>
       <div class="titlebar-controls">
-        <div class="titlebar-btn" onClick={() => appWindow.minimize()}><Minus size={16} /></div>
-        <div class="titlebar-btn" onClick={() => appWindow.toggleMaximize()}><Square size={14} /></div>
-        <div class="titlebar-btn close-btn" onClick={() => appWindow.close()}><X size={18} /></div>
+        {/* Fetch the active window exactly when clicked */}
+        <div class="titlebar-btn" onClick={() => getCurrentWindow().minimize()}><Minus size={16} /></div>
+        <div class="titlebar-btn" onClick={() => getCurrentWindow().toggleMaximize()}><Square size={14} /></div>
+        <div class="titlebar-btn close-btn" onClick={() => getCurrentWindow().close()}><X size={18} /></div>
       </div>
     </div>
   );
