@@ -5,6 +5,7 @@ import { useNavigate } from '@solidjs/router';
 interface VideoEntry {
   id: string;
   title: string;
+  channel: string;
   video_path: string;
   thumbnail_path: string;
 }
@@ -23,33 +24,27 @@ export default function Home() {
   });
 
   return (
-    <div>
-      <h2>Downloaded Videos</h2>
+    <div style={{ padding: "20px" }}>
       <div class="grid">
         <For each={videos()}>
           {(video) => (
-            <div 
-              class="video-card" 
-              style={{ "flex-direction": "column", padding: "0", "align-items": "flex-start", background: "transparent" }} 
-              onClick={() => navigate(`/player/${video.id}`)}
-            >
+            <div class="video-card" onClick={() => navigate(`/player/${video.id}`)}>
               <img 
                 src={`http://127.0.0.1:1422/Thumbnails/${video.id}.jpg`} 
                 alt="thumbnail" 
-                style={{ width: "100%", "aspect-ratio": "16/9", "object-fit": "cover", "border-radius": "10px" }} 
+                class="video-thumbnail"
                 onError={(e) => {
-                  e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="100%" height="100%" fill="%23272727"/><text x="50%" y="50%" fill="%23aaaaaa" dominant-baseline="middle" text-anchor="middle">No Thumbnail</text></svg>';
+                  e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="100%" height="100%" fill="%232c2c2c"/><text x="50%" y="50%" fill="%23a0a0a0" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif">No Thumbnail</text></svg>';
                 }}
               />
-              <div style={{ padding: "10px 5px", width: "100%", "box-sizing": "border-box", "text-align": "left" }}>
-                <h4 style={{ margin: "0", "font-size": "14px", "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis" }}>
-                  {video.title}
-                </h4>
+              <div class="video-info">
+                <h4 class="video-title" title={video.title}>{video.title}</h4>
+                <p class="video-channel">{video.channel}</p>
               </div>
             </div>
           )}
         </For>
-        {videos().length === 0 && <p style={{color: "var(--yt-text-muted)"}}>No videos found. Go download some!</p>}
+        {videos().length === 0 && <p style={{color: "var(--secondary-text)"}}>No videos found. Go download some!</p>}
       </div>
     </div>
   );
