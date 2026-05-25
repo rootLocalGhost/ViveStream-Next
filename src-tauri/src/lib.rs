@@ -86,16 +86,23 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     // --- Step 2: FFmpeg ---
     emit_progress("Fetching compatible FFmpeg build... (This takes a moment)");
-    #[cfg(target_os = "windows")]
+   #[cfg(target_os = "windows")]
     {
-        let ffmpeg_url = "https://github.com/localghost/ffmpeg-builds/releases/download/latest/ffmpeg-windows-qsv.zip";
+        // Switched to BtbN Windows builds to fix the 404 EOCD error
+        let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
         let response = client.get(ffmpeg_url).send().await.map_err(|e| e.to_string())?;
+        
+        if !response.status().is_success() {
+            return Err(format!("Failed to download FFmpeg. HTTP Status: {}", response.status()));
+        }
+
         let bytes = response.bytes().await.map_err(|e| e.to_string())?;
         
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
-            if file.name().ends_with("ffmpeg.exe") {
+            // Ensure we match the exact file and not a directory
+            if file.name().ends_with("ffmpeg.exe") && file.is_file() {
                 let mut outpath = bin_dir.join("ffmpeg.exe");
                 let mut outfile = File::create(&outpath).map_err(|e| e.to_string())?;
                 std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
@@ -103,7 +110,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
             }
         }
     }
-
     #[cfg(not(target_os = "windows"))]
     {
         let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz";
