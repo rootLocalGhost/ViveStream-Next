@@ -10,6 +10,7 @@ use warp::Filter;
 struct VideoEntry {
     id: String,
     title: String,
+    channel: String,
     video_path: String,
     thumbnail_path: String,
 }
@@ -17,19 +18,21 @@ struct VideoEntry {
 #[tauri::command]
 async fn get_video_metadata(url: String) -> Result<VideoEntry, String> {
     let output = Command::new("yt-dlp")
-        .args(["--no-playlist", "--print", "%(id)s|%(title)s", &url])
+        .args(["--no-playlist", "--print", "%(id)s|%(uploader)s|%(title)s", &url])
         .output()
         .map_err(|e| e.to_string())?;
 
     let out_str = String::from_utf8_lossy(&output.stdout);
-    let parts: Vec<&str> = out_str.trim().split('|').collect();
+    let parts: Vec<&str> = out_str.trim().splitn(3, '|').collect();
 
-    if parts.len() >= 2 {
+    if parts.len() >= 3 {
         let id = parts[0].to_string();
-        let title = parts[1..].join("|"); 
+        let channel = parts[1].to_string();
+        let title = parts[2].to_string(); 
         Ok(VideoEntry {
             id: id.clone(),
             title,
+            channel,
             video_path: format!("/home/localghost/Videos/ViveStream/Videos/{}.mp4", id),
             thumbnail_path: format!("/home/localghost/Videos/ViveStream/Thumbnails/{}.jpg", id),
         })
@@ -50,12 +53,15 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
     let temp_path = format!("{}/raw_{}.mp4", vid_dir, metadata.id);
     let final_path = format!("{}/{}.mp4", vid_dir, metadata.id);
 
-    // Step 1: Download highest quality raw stream
-    app.emit("download-progress", "Step 1: Downloading raw stream...").unwrap();
+    app.emit("download-progress", "Step 1: Downloading stream...").unwrap();
     
+    // Automatically falls back to the next best resolution if the target doesn't exist
     let res_filter = match quality.as_str() {
+        "720p" => "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "1080p" => "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-        "4K" => "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "1440p" => "bestvideo[height<=1440][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "4K" => "bestvideo[height<=2160][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "Best" => "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         _ => "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
     };
 
@@ -64,10 +70,10 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
             "--newline",
             "-f", res_filter,
             "--merge-output-format", "mp4",
-            "--remux-video", "mp4", // CRITICAL: Forces yt-dlp to convert to mp4 even if it downloaded a single webm file
+            "--remux-video", "mp4", 
             "--paths", &vid_dir,
             "--paths", &format!("thumbnail:{}", thumb_dir),
-            "-o", "raw_%(id)s.%(ext)s", // Simple naming. We will rename the thumbnail via Rust.
+            "-o", "raw_%(id)s.%(ext)s", 
             "--write-thumbnail",
             "--convert-thumbnails", "jpg",
             &url
@@ -89,12 +95,10 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
         return Err("yt-dlp download failed".into());
     }
 
-    // Step 1.5: Fix the Thumbnail name natively using Rust instead of relying on yt-dlp syntax
     let raw_thumb = format!("{}/raw_{}.jpg", thumb_dir, metadata.id);
     let final_thumb = format!("{}/{}.jpg", thumb_dir, metadata.id);
     let _ = fs::rename(&raw_thumb, &final_thumb);
 
-    // Step 2: FFmpeg Hardware Transcoding Fallback Matrix
     app.emit("download-progress", "Step 2: Starting FFmpeg transcoder...").unwrap();
 
     let encoders = vec![
@@ -125,14 +129,12 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
         }
     }
 
-    // Cleanup the raw yt-dlp file
     let _ = fs::remove_file(&temp_path);
 
     if !transcode_success {
         return Err("All hardware and software FFmpeg encoders failed.".into());
     }
 
-    // Step 3: Database Registration
     let db_path = format!("{}/db.json", base_dir);
     let mut entries: Vec<VideoEntry> = if Path::new(&db_path).exists() {
         let data = fs::read_to_string(&db_path).unwrap_or_default();
