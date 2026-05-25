@@ -103,7 +103,7 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
             // Ensure we match the exact file and not a directory
             if file.name().ends_with("ffmpeg.exe") && file.is_file() {
-                let mut outpath = bin_dir.join("ffmpeg.exe");
+                let outpath = bin_dir.join("ffmpeg.exe");
                 let mut outfile = File::create(&outpath).map_err(|e| e.to_string())?;
                 std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
                 break;
