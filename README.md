@@ -9,23 +9,23 @@ ViveStream is a lightning-fast, natively integrated YouTube downloader and local
 
 ## ✨ Key Features
 
-* 🚀 **Smart Hardware Transcoding:** Automatically detects and utilizes your GPU for transcoding video. Features a robust fallback matrix:
-  1. Intel Quick Sync Video (QSV) - *Optimized for Arc GPUs*
+- 🚀 **Smart Hardware Transcoding:** Automatically detects and utilizes your GPU for transcoding video. Features a robust fallback matrix:
+  1. Intel Quick Sync Video (QSV) - _Optimized for Arc GPUs_
   2. NVIDIA NVENC
   3. AMD / Generic Linux (VAAPI)
   4. CPU Fallback (libx264)
-* 🎯 **Intelligent Quality Selection:** Request resolutions from 720p up to 4K. If a requested resolution isn't available, ViveStream automatically steps down to the next best quality.
-* 🎨 **Immersive UI:** A completely custom, distraction-free window frame with an auto-hiding title bar, expandable sidebar, and lightweight CSS-animated icons.
-* ⚡ **Bypass WebKit Limitations:** Uses a dedicated internal Rust `warp` HTTP server to serve video chunks, completely bypassing the notorious Linux WebKitGTK `asset://` protocol bugs for flawless local playback.
-* 🗄️ **Offline Library:** Stores all metadata locally in a resilient JSON database. No cloud sync, no tracking, pure privacy.
+- 🎯 **Intelligent Quality Selection:** Request resolutions from 720p up to 4K. If a requested resolution isn't available, ViveStream automatically steps down to the next best quality.
+- 🎨 **Immersive UI:** A completely custom, distraction-free window frame with an auto-hiding title bar, expandable sidebar, and lightweight CSS-animated icons.
+- ⚡ **Bypass WebKit Limitations:** Uses a dedicated internal Rust `warp` HTTP server to serve video chunks, completely bypassing the notorious Linux WebKitGTK `asset://` protocol bugs for flawless local playback.
+- 🗄️ **Offline Library:** Stores all metadata locally in a resilient JSON database. No cloud sync, no tracking, pure privacy.
 
 ---
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** SolidJS, TypeScript, Vite, CSS Modules
-* **Backend:** Rust, Tauri v2 API
-* **Engines:** `yt-dlp` (downloading & metadata), `ffmpeg` (transcoding & remuxing)
+- **Frontend:** SolidJS, TypeScript, Vite, CSS Modules
+- **Backend:** Rust, Tauri v2 API
+- **Engines:** `yt-dlp` (downloading & metadata), `ffmpeg` (transcoding & remuxing)
 
 ---
 
@@ -39,7 +39,9 @@ Because ViveStream interacts deeply with your native operating system to handle 
 4. **[FFmpeg](https://ffmpeg.org/)** (For media muxing and transcoding)
 
 ### 🐧 Linux Specifics (Arch/Manjaro)
+
 Ensure you have the proper media codecs and drivers installed for hardware acceleration. For Intel GPUs (like the Arc A770), ensure you have:
+
 ```bash
 sudo pacman -S yt-dlp ffmpeg intel-media-driver libva-utils gst-plugins-good gst-plugins-bad gst-plugins-ugly
 
@@ -98,7 +100,7 @@ See the [LICENSE](https://www.google.com/search?q=./LICENSE) file for the full t
 
 ---
 
-*Disclaimer: This tool is intended for personal archival of media you have the right to download. The developers are not responsible for how users utilize this software.*
+_Disclaimer: This tool is intended for personal archival of media you have the right to download. The developers are not responsible for how users utilize this software._
 
 ```
 

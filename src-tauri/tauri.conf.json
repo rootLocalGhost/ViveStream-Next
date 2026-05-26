@@ -16,7 +16,7 @@
         "width": 1280,
         "height": 720,
         "decorations": false,
-        "transparent": true
+        "transparent": false
       }
     ],
     "security": {
@@ -30,9 +30,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": [
-      "icons/icon.png",
-      "icons/icon.ico"
-    ]
+    "icon": ["icons/icon.png", "icons/icon.ico"]
   }
 }

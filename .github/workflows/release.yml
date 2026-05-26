@@ -5,7 +5,7 @@ on:
     branches:
       - main # Only trigger on the main branch
     paths:
-      - 'VERSION' # Only trigger when this specific file is modified
+      - "VERSION" # Only trigger when this specific file is modified
   workflow_dispatch:
 
 # NEW SECTION: Grant write permissions required to create a release
@@ -35,20 +35,20 @@ jobs:
         run: |
           # Read and strip whitespace/newlines from the VERSION file
           VERSION=$(cat VERSION | tr -d '\n\r ')
-          
+
           # Use jq to extract versions from the JSON files
           PKG_VERSION=$(jq -r .version package.json)
           TAURI_VERSION=$(jq -r .version src-tauri/tauri.conf.json)
-          
+
           echo "VERSION file: $VERSION"
           echo "package.json: $PKG_VERSION"
           echo "tauri.conf.json: $TAURI_VERSION"
-          
+
           if [ "$VERSION" != "$PKG_VERSION" ] || [ "$VERSION" != "$TAURI_VERSION" ]; then
             echo "::error::Version mismatch detected! Build aborted."
             exit 1
           fi
-          
+
           # Pass the verified version to the next steps
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -68,7 +68,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-22.04'
@@ -85,7 +85,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v${{ steps.version_check.outputs.app_version }}
-          releaseName: 'ViveStream v${{ steps.version_check.outputs.app_version }}'
-          releaseBody: 'Automated release triggered by VERSION file.'
+          releaseName: "ViveStream v${{ steps.version_check.outputs.app_version }}"
+          releaseBody: "Automated release triggered by VERSION file."
           releaseDraft: false
           prerelease: false
