@@ -57,7 +57,7 @@ export default function Settings() {
   };
 
   return (
-    <div style={{ padding: "40px", "max-width": "800px" }}>
+    <div class="page-wrapper">
       <h2
         style={{
           "font-family": "var(--font-display)",
@@ -77,12 +77,12 @@ export default function Settings() {
 
       <div
         style={{
-          background: "var(--secondary-background)",
+          background: "rgba(18, 18, 18, 0.6)",
           padding: "30px",
           "border-radius": "16px",
           border: "1px solid var(--border-color)",
-          "box-shadow": "var(--shadow-color-heavy)",
-          "margin-bottom": "30px",
+          "box-shadow": "0 10px 30px rgba(0,0,0,0.5)",
+          "margin-bottom": "40px",
         }}
       >
         <div
@@ -144,7 +144,6 @@ export default function Settings() {
           border: "1px solid rgba(239, 35, 60, 0.3)",
         }}
       >
-        {/* Wipe Dependencies */}
         <div
           style={{
             display: "flex",
@@ -180,22 +179,11 @@ export default function Settings() {
           <button
             onClick={handleWipeDependencies}
             disabled={loadingDep() || loadingNuclear()}
+            class="command-btn"
             style={{
               background: "transparent",
-              color: "var(--primary-text)",
               border: "1px solid var(--border-color)",
-              padding: "10px 20px",
-              "border-radius": "8px",
-              cursor: "pointer",
-              "font-weight": "bold",
-              transition: "0.2s",
-              opacity: loadingDep() || loadingNuclear() ? "0.5" : "1",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "var(--tertiary-background)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "transparent";
+              color: "var(--primary-text)",
             }}
           >
             {loadingDep() ? "Wiping..." : "Wipe Engines"}
@@ -211,7 +199,6 @@ export default function Settings() {
           }}
         ></div>
 
-        {/* Nuclear Wipe */}
         <div
           style={{
             display: "flex",
@@ -246,26 +233,8 @@ export default function Settings() {
           <button
             onClick={handleNuclearWipe}
             disabled={loadingNuclear() || loadingDep()}
-            style={{
-              background: "#e81123",
-              color: "white",
-              border: "none",
-              padding: "10px 20px",
-              "border-radius": "8px",
-              cursor: "pointer",
-              "font-weight": "bold",
-              transition: "0.2s",
-              display: "flex",
-              "align-items": "center",
-              gap: "8px",
-              opacity: loadingNuclear() || loadingDep() ? "0.5" : "1",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "#c50f1d";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "#e81123";
-            }}
+            class="command-btn"
+            style={{ background: "#e81123" }}
           >
             <i
               class={`ph-fill ${loadingNuclear() ? "ph-spinner spinIcon" : "ph-trash"}`}
