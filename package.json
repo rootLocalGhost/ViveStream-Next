@@ -1,14 +1,16 @@
 {
   "name": "vivestream-next",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "",
   "type": "module",
   "scripts": {
-    "start": "vite",
+    "start": "bun run tauri dev",
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "clean": "cd src-tauri && cargo clean && rm -rf target && cd .. && rm -rf node_modules dist",
+    "init": "cd src-tauri && cargo build && cd .. && bun install && vite build"
   },
   "license": "Polyform Noncommercial License 1.0.0",
   "dependencies": {
