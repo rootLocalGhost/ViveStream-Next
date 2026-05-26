@@ -3,3 +3,6 @@ dist
 src-tauri/target
 src-tauri/.cargo
 src-tauri/gen
+pkg/
+PKGBUILD.1
+*.deb
