@@ -1,4 +1,7 @@
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, Manager,
+};
 use std::process::{Command, Stdio};
 use std::io::{BufReader, BufRead, Write, Cursor};
 use std::fs::{self, File};
@@ -6,6 +9,7 @@ use std::path::{Path, PathBuf};
 use serde::{Serialize, Deserialize};
 use warp::Filter;
 use tauri_plugin_dialog::DialogExt;
+use sha2::{Sha256, Digest};
 
 #[derive(Serialize, Deserialize, Clone)]
 struct VideoEntry {
@@ -40,6 +44,7 @@ fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
 async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String> {
     let bin_dir = get_bin_dir(&app)?;
     let (ytdlp, ffmpeg) = get_binary_paths(&bin_dir);
+    
     Ok(BinaryCheckStatus {
         ytdlp_exists: ytdlp.exists(),
         ffmpeg_exists: ffmpeg.exists(),
@@ -51,7 +56,7 @@ async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String> {
 async fn download_binaries(app: AppHandle) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     fs::create_dir_all(&bin_dir).map_err(|e| e.to_string())?;
-    
+
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         .redirect(reqwest::redirect::Policy::limited(10))
@@ -62,17 +67,38 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         let _ = app.emit("setup-progress", msg);
     };
 
-    // --- Step 1: yt-dlp (Nightly) ---
     #[cfg(target_os = "windows")]
     let ytdlp_url = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe";
     #[cfg(not(target_os = "windows"))]
     let ytdlp_url = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp";
 
-    emit_progress(&format!("Fetching latest yt-dlp Nightly from GitHub..."));
+    emit_progress("Fetching latest yt-dlp Nightly from GitHub...");
     let ytdlp_response = client.get(ytdlp_url).send().await.map_err(|e| e.to_string())?;
-    let ytdlp_path = bin_dir.join(if cfg!(target_os = "windows") { "yt-dlp.exe" } else { "yt-dlp" });
-    let mut ytdlp_file = File::create(&ytdlp_path).map_err(|e| e.to_string())?;
     let bytes = ytdlp_response.bytes().await.map_err(|e| e.to_string())?;
+
+    // SHA256 Checksum Validation
+    emit_progress("Validating yt-dlp SHA256 checksum...");
+    let sums_url = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
+    let sums_text = client.get(sums_url).send().await.map_err(|e| e.to_string())?.text().await.map_err(|e| e.to_string())?;
+    
+    let target_bin_name = if cfg!(target_os = "windows") { "yt-dlp.exe" } else { "yt-dlp" };
+    
+    let expected_hash = sums_text.lines()
+        .find(|line| line.ends_with(target_bin_name))
+        .and_then(|line| line.split_whitespace().next())
+        .ok_or("Failed to find yt-dlp hash in upstream SHA2-256SUMS file")?;
+
+    let mut hasher = Sha256::new();
+    hasher.update(&bytes);
+    let actual_hash = format!("{:x}", hasher.finalize());
+
+    if expected_hash != actual_hash {
+        return Err(format!("SECURITY FAULT: yt-dlp checksum mismatch! Expected {}, got {}", expected_hash, actual_hash));
+    }
+    emit_progress("yt-dlp checksum verified. Proceeding with write.");
+
+    let ytdlp_path = bin_dir.join(target_bin_name);
+    let mut ytdlp_file = File::create(&ytdlp_path).map_err(|e| e.to_string())?;
     ytdlp_file.write_all(&bytes).map_err(|e| e.to_string())?;
 
     #[cfg(not(target_os = "windows"))]
@@ -82,26 +108,22 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         perms.set_mode(0o755); 
         fs::set_permissions(&ytdlp_path, perms).map_err(|e| e.to_string())?;
     }
-    emit_progress("yt-dlp Nightly ready.");
 
-    // --- Step 2: FFmpeg ---
+    emit_progress("yt-dlp Nightly ready.");
     emit_progress("Fetching compatible FFmpeg build... (This takes a moment)");
+
    #[cfg(target_os = "windows")]
     {
-        // Switched to BtbN Windows builds to fix the 404 EOCD error
         let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
         let response = client.get(ffmpeg_url).send().await.map_err(|e| e.to_string())?;
-        
         if !response.status().is_success() {
             return Err(format!("Failed to download FFmpeg. HTTP Status: {}", response.status()));
         }
-
         let bytes = response.bytes().await.map_err(|e| e.to_string())?;
         
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
-            // Ensure we match the exact file and not a directory
             if file.name().ends_with("ffmpeg.exe") && file.is_file() {
                 let outpath = bin_dir.join("ffmpeg.exe");
                 let mut outfile = File::create(&outpath).map_err(|e| e.to_string())?;
@@ -110,15 +132,14 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
             }
         }
     }
+
     #[cfg(not(target_os = "windows"))]
     {
         let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz";
         let response = client.get(ffmpeg_url).send().await.map_err(|e| e.to_string())?;
-        
         if !response.status().is_success() {
             return Err(format!("Failed to download FFmpeg. HTTP Status: {}", response.status()));
         }
-        
         let bytes = response.bytes().await.map_err(|e| e.to_string())?;
         
         use xz2::read::XzDecoder; 
@@ -142,8 +163,9 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
             }
         }
     }
+
     emit_progress("FFmpeg ready.");
-    
+
     app.dialog().message("Setup complete. ViveStream will now restart.").kind(tauri_plugin_dialog::MessageDialogKind::Info).show(move |_| {
         app.restart();
     });
@@ -165,7 +187,6 @@ async fn get_video_metadata(app: AppHandle, url: String) -> Result<VideoEntry, S
     let output = Command::new(&ytdlp_path)
         .args([
             "--no-playlist", 
-            // Purged android, ios, and web. Restricted entirely to safeworkarounds.
             "--extractor-args", "youtube:player_client=web_safari,web_embedded", 
             "--print", "%(id)s|%(uploader)s|%(title)s", 
             &url
@@ -185,6 +206,7 @@ async fn get_video_metadata(app: AppHandle, url: String) -> Result<VideoEntry, S
         let id = parts[0].to_string();
         let channel = parts[1].to_string();
         let title = parts[2].to_string(); 
+        
         Ok(VideoEntry {
             id: id.clone(),
             title,
@@ -217,7 +239,7 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
     let final_path = metadata.video_path.clone();
 
     app.emit("download-progress", "Step 1: Downloading stream...").unwrap();
-    
+
     let res_filter = match quality.as_str() {
         "720p" => "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "1080p" => "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
@@ -231,7 +253,6 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
         .args([
             "--newline",
             "-f", res_filter,
-            // Purged android, ios, and web. Restricted entirely to safe workarounds.
             "--extractor-args", "youtube:player_client=web_safari,web_embedded", 
             "--merge-output-format", "mp4",
             "--remux-video", "mp4", 
@@ -248,6 +269,7 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
 
     let stdout = child.stdout.take().unwrap();
     let reader = BufReader::new(stdout);
+
     for line in reader.lines() {
         if let Ok(line) = line {
             app.emit("download-progress", line).unwrap();
@@ -265,18 +287,26 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
 
     app.emit("download-progress", "Step 2: Starting FFmpeg transcoder...").unwrap();
 
-    let encoders = vec![
-        ("Intel QSV", vec!["-c:v", "h264_qsv", "-preset", "fast", "-b:v", "5M"]),
-        ("NVIDIA NVENC", vec!["-c:v", "h264_nvenc", "-preset", "p4", "-b:v", "5M"]),
-        ("VAAPI (AMD/Generic Linux)", vec!["-vaapi_device", "/dev/dri/renderD128", "-vf", "format=nv12,hwupload", "-c:v", "h264_vaapi", "-b:v", "5M"]),
-        ("CPU (libx264)", vec!["-c:v", "libx264", "-preset", "veryfast", "-crf", "23"]),
-    ];
+    // OS-Specific Hardware Fallback Matrix
+    let encoders = if cfg!(target_os = "windows") {
+        vec![
+            ("Intel QSV (Windows native)", vec!["-c:v", "h264_qsv", "-preset", "fast", "-b:v", "5M"]),
+            ("NVIDIA NVENC", vec!["-c:v", "h264_nvenc", "-preset", "p4", "-b:v", "5M"]),
+            ("CPU (libx264)", vec!["-c:v", "libx264", "-preset", "veryfast", "-crf", "23"]),
+        ]
+    } else {
+        vec![
+            ("VAAPI (Linux/Intel/AMD)", vec!["-vaapi_device", "/dev/dri/renderD128", "-vf", "format=nv12,hwupload", "-c:v", "h264_vaapi", "-b:v", "5M"]),
+            ("Intel QSV (Linux fallback)", vec!["-c:v", "h264_qsv", "-preset", "fast", "-b:v", "5M"]),
+            ("NVIDIA NVENC", vec!["-c:v", "h264_nvenc", "-preset", "p4", "-b:v", "5M"]),
+            ("CPU (libx264)", vec!["-c:v", "libx264", "-preset", "veryfast", "-crf", "23"]),
+        ]
+    };
 
     let mut transcode_success = false;
-
     for (name, args) in encoders {
         app.emit("download-progress", format!("Attempting encoder: {}", name)).unwrap();
-
+        
         let mut cmd = Command::new(&ffmpeg_path); 
         cmd.args(["-y", "-hwaccel", "auto", "-i", temp_path.to_str().unwrap()]);
         cmd.args(&args);
@@ -320,6 +350,7 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
 fn get_downloaded_videos() -> Result<Vec<VideoEntry>, String> {
     let base_dir = Path::new("/home/localghost/Videos/ViveStream");
     let db_path = base_dir.join("db.json");
+
     if Path::new(&db_path).exists() {
         let data = fs::read_to_string(db_path).unwrap_or_default();
         let entries: Vec<VideoEntry> = serde_json::from_str(&data).unwrap_or_else(|_| vec![]);
@@ -340,7 +371,7 @@ pub fn run() {
             let cors = warp::cors()
                 .allow_any_origin()
                 .allow_methods(vec!["GET", "HEAD"]);
-                
+
             let routes = warp::fs::dir("/home/localghost/Videos/ViveStream").with(cors);
             warp::serve(routes).run(([127, 0, 0, 1], 1422)).await;
         });
@@ -349,6 +380,29 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        .setup(|app| {
+            let handle = app.handle();
+            if let Some(icon) = app.default_window_icon() {
+                let _ = TrayIconBuilder::new()
+                    .icon(icon.clone())
+                    .tooltip("ViveStream")
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event {
+                            let app = tray.app_handle();
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    })
+                    .build(handle);
+            }
+            Ok(())
+        })
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init()) 
