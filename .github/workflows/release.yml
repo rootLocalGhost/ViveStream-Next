@@ -9,12 +9,15 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g., 0.4.0). Must match file versions."
+        description: "Tag to release (e.g., 0.3.0). Must match file versions."
         required: false
         type: string
 
 permissions:
   contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   release:
