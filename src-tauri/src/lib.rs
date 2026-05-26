@@ -67,6 +67,7 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         let _ = app.emit("setup-progress", msg);
     };
 
+    // 1. Fetch yt-dlp
     #[cfg(target_os = "windows")]
     let ytdlp_url = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe";
     #[cfg(not(target_os = "windows"))]
@@ -76,13 +77,12 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
     let ytdlp_response = client.get(ytdlp_url).send().await.map_err(|e| e.to_string())?;
     let bytes = ytdlp_response.bytes().await.map_err(|e| e.to_string())?;
 
-    // SHA256 Checksum Validation
+    // Validate SHA256 Checksum
     emit_progress("Validating yt-dlp SHA256 checksum...");
     let sums_url = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
     let sums_text = client.get(sums_url).send().await.map_err(|e| e.to_string())?.text().await.map_err(|e| e.to_string())?;
     
     let target_bin_name = if cfg!(target_os = "windows") { "yt-dlp.exe" } else { "yt-dlp" };
-    
     let expected_hash = sums_text.lines()
         .find(|line| line.ends_with(target_bin_name))
         .and_then(|line| line.split_whitespace().next())
@@ -112,7 +112,8 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
     emit_progress("yt-dlp Nightly ready.");
     emit_progress("Fetching compatible FFmpeg build... (This takes a moment)");
 
-   #[cfg(target_os = "windows")]
+    // 2. Fetch FFmpeg
+    #[cfg(target_os = "windows")]
     {
         let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
         let response = client.get(ffmpeg_url).send().await.map_err(|e| e.to_string())?;
@@ -166,9 +167,12 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     emit_progress("FFmpeg ready.");
 
-    app.dialog().message("Setup complete. ViveStream will now restart.").kind(tauri_plugin_dialog::MessageDialogKind::Info).show(move |_| {
-        app.restart();
-    });
+    app.dialog()
+        .message("Deployment complete. ViveStream will now restart to initialize engines.")
+        .kind(tauri_plugin_dialog::MessageDialogKind::Info)
+        .show(move |_| {
+            app.restart();
+        });
 
     Ok(())
 }
@@ -187,7 +191,8 @@ async fn get_video_metadata(app: AppHandle, url: String) -> Result<VideoEntry, S
     let output = Command::new(&ytdlp_path)
         .args([
             "--no-playlist", 
-            "--extractor-args", "youtube:player_client=web_safari,web_embedded", 
+            // FIX: Spoofs mobile clients to bypass YouTube 'n' challenge and embed blocks
+            "--extractor-args", "youtube:player_client=android,ios,web", 
             "--print", "%(id)s|%(uploader)s|%(title)s", 
             &url
         ])
@@ -253,7 +258,8 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
         .args([
             "--newline",
             "-f", res_filter,
-            "--extractor-args", "youtube:player_client=web_safari,web_embedded", 
+            // FIX: Spoofs mobile clients to bypass YouTube 'n' challenge and embed blocks
+            "--extractor-args", "youtube:player_client=android,ios,web", 
             "--merge-output-format", "mp4",
             "--remux-video", "mp4", 
             "--paths", vid_dir.to_str().unwrap(),
@@ -287,6 +293,7 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
 
     app.emit("download-progress", "Step 2: Starting FFmpeg transcoder...").unwrap();
 
+    // Hardware Acceleration Matrix
     let encoders = if cfg!(target_os = "windows") {
         vec![
             ("Intel QSV (Windows native)", vec!["-c:v", "h264_qsv", "-preset", "fast", "-b:v", "5M"]),
@@ -328,6 +335,7 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
         return Err("All hardware and software FFmpeg encoders failed.".into());
     }
 
+    // Save to Database
     let db_path = base_dir.join("db.json");
     let mut entries: Vec<VideoEntry> = if Path::new(&db_path).exists() {
         let data = fs::read_to_string(&db_path).unwrap_or_default();
@@ -386,6 +394,7 @@ async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Start local warp server to bypass WebKitGTK asset protocol bugs
     let port_free = {
         std::net::TcpListener::bind("127.0.0.1:1422").is_ok()
     };
