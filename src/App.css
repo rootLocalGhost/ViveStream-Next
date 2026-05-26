@@ -1,17 +1,17 @@
 @font-face {
-  font-family: 'Poppins';
-  src: url('./assets/fonts/Poppins.ttf') format('truetype');
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
 }
 @font-face {
-  font-family: 'MajorMonoDisplay';
-  src: url('./assets/fonts/MajorMonoDisplay.ttf') format('truetype');
+  font-family: "MajorMonoDisplay";
+  src: url("./assets/fonts/MajorMonoDisplay.ttf") format("truetype");
   font-weight: 400;
 }
 :root {
-  --font-display: 'MajorMonoDisplay';
-  --font-body: 'Poppins';
+  --font-display: "MajorMonoDisplay";
+  --font-body: "Poppins";
   --primary-accent: #ef233c;
   --primary-accent-dark: #d90429;
   --primary-background: #000000;
@@ -34,11 +34,16 @@ body {
   margin: 0;
   background-color: var(--primary-background);
   color: var(--primary-text);
-  font-family: var(--font-body);
-  overflow: hidden; 
+  overflow: hidden;
 }
-.spinIcon { animation: spinIcon 1.5s linear infinite; }
-@keyframes spinIcon { 100% { transform: rotate(360deg); } }
+.spinIcon {
+  animation: spinIcon 1.5s linear infinite;
+}
+@keyframes spinIcon {
+  100% {
+    transform: rotate(360deg);
+  }
+}
 
 .immersive-titlebar-wrapper {
   position: absolute;
@@ -50,12 +55,12 @@ body {
   z-index: 9999;
   display: flex;
   justify-content: space-between;
-  pointer-events: none; 
+  pointer-events: none;
 }
 .drag-region {
   flex: 1;
   height: 100%;
-  pointer-events: auto; 
+  pointer-events: auto;
   -webkit-app-region: drag;
 }
 
@@ -81,8 +86,15 @@ body {
   color: var(--primary-text);
   transition: background 0.2s;
 }
-.titlebar-btn:hover { background: var(--border-color); }
-.titlebar-btn.close-btn:hover { background: #e81123; color: white; border-bottom-left-radius: 8px;}
+.titlebar-btn:hover {
+  background: var(--border-color);
+}
+.titlebar-btn.close-btn:hover {
+  background: #e81123;
+  color: white;
+  border-bottom-left-radius: 8px;
+}
+
 .app-wrapper {
   display: flex;
   flex-direction: column;
@@ -94,6 +106,7 @@ body {
   overflow: hidden;
   position: relative;
 }
+
 .sidebar {
   width: var(--sidebar-collapsed-width);
   background: var(--primary-background);
@@ -109,12 +122,14 @@ body {
 .sidebar.expanded {
   width: var(--sidebar-expanded-width);
 }
+
 .main-content {
   flex: 1;
   margin-left: var(--sidebar-collapsed-width);
   overflow-y: auto;
   background: var(--primary-background);
 }
+
 .sidebar-header {
   height: 72px;
   display: flex;
@@ -128,7 +143,9 @@ body {
   flex-shrink: 0;
   transition: transform 0.3s var(--transition-smooth);
 }
-.sidebar-header:hover .app-logo { transform: scale(1.1); }
+.sidebar-header:hover .app-logo {
+  transform: scale(1.1);
+}
 .brand-name {
   font-family: var(--font-display);
   font-size: 18px;
@@ -140,6 +157,7 @@ body {
   opacity: 1;
   transition-delay: 0.1s;
 }
+
 .nav-links {
   display: flex;
   flex-direction: column;
@@ -170,34 +188,108 @@ body {
   margin-left: 20px;
   opacity: 0;
   transition: opacity 0.2s ease;
+  font-size: 15px;
 }
-.sidebar.expanded .nav-text { opacity: 1; transition-delay: 0.1s; }
-.nav-icon {
+.sidebar.expanded .nav-text {
+  opacity: 1;
+  transition-delay: 0.1s;
+}
+
+/* ----------------------------------
+   CUSTOM ICON STACK & ANIMATIONS
+----------------------------------- */
+.icon-stack {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   flex-shrink: 0;
-  min-width: 24px;
 }
-.sidebar a:hover .lucide-home { animation: bounceIcon 0.5s ease; }
-.sidebar a:hover .lucide-heart { animation: pulseIcon 0.8s ease infinite; fill: var(--primary-accent); }
-.sidebar a:hover .lucide-settings { animation: spinIcon 2s linear infinite; }
-.sidebar a:hover .lucide-download { animation: slideDownIcon 0.6s ease infinite alternate; }
-.sidebar a:hover .lucide-mic { animation: shakeIcon 0.5s ease-in-out infinite alternate; }
+.icon-stack i {
+  position: absolute;
+  font-size: 24px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base States */
+.icon-outline {
+  opacity: 1;
+  transform: scale(1);
+}
+.icon-fill {
+  opacity: 0;
+  transform: scale(0.5);
+  color: var(--primary-accent);
+}
+
+/* Hover States (Crossfade + Scale) */
+.sidebar a:hover .icon-outline {
+  opacity: 0;
+  transform: scale(1.2);
+}
+.sidebar a:hover .icon-fill {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Custom Keyframe Bindings (applied to the fill icon on hover) */
+.sidebar a:hover .anim-bounce .icon-fill {
+  animation: bounceIcon 0.5s ease;
+}
+.sidebar a:hover .anim-pulse .icon-fill {
+  animation: pulseIcon 0.8s ease infinite;
+}
+.sidebar a:hover .anim-shake .icon-fill {
+  animation: shakeIcon 0.5s ease-in-out infinite alternate;
+}
+.sidebar a:hover .anim-slide .icon-fill {
+  animation: slideDownIcon 0.6s ease infinite alternate;
+}
+.sidebar a:hover .anim-spin .icon-fill {
+  animation: spinIcon 2s linear infinite;
+}
+
 @keyframes bounceIcon {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.1);
+  }
 }
 @keyframes pulseIcon {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 5px var(--primary-accent));
+  }
 }
 @keyframes slideDownIcon {
-  0% { transform: translateY(-2px); }
-  100% { transform: translateY(3px); }
+  0% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(3px);
+  }
 }
 @keyframes shakeIcon {
-  0% { transform: rotate(-10deg); }
-  100% { transform: rotate(10deg); }
+  0% {
+    transform: rotate(-10deg);
+  }
+  100% {
+    transform: rotate(10deg);
+  }
 }
+
+/* ----------------------------------
+   GRID & SETUP STYLES
+----------------------------------- */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -211,7 +303,9 @@ body {
   background: transparent;
   transition: transform 0.2s;
 }
-.video-card:hover { transform: scale(1.02); }
+.video-card:hover {
+  transform: scale(1.02);
+}
 .video-thumbnail {
   width: 100%;
   aspect-ratio: 16/9;
@@ -238,6 +332,7 @@ body {
   font-size: 14px;
   color: var(--secondary-text);
 }
+
 .immersive-setup-container {
   display: flex;
   flex: 1;
@@ -248,11 +343,18 @@ body {
   color-scheme: dark;
 }
 .setup-logo {
-    animation: pulseLogo 2s ease-in-out infinite;
+  animation: pulseLogo 2s ease-in-out infinite;
 }
 @keyframes pulseLogo {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px var(--shadow-color-heavy)); }
-    50% { transform: scale(1.05); filter: drop-shadow(0 0 15px var(--primary-accent)); }
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px var(--shadow-color-heavy));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 15px var(--primary-accent));
+  }
 }
 .setup-content-card {
   background: var(--secondary-background);
@@ -284,11 +386,11 @@ body {
   color: var(--secondary-text);
 }
 .setup-description code {
-    background: var(--tertiary-background);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: var(--font-body);
-    color: var(--primary-text);
+  background: var(--tertiary-background);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  color: var(--primary-text);
 }
 .setup-terminal {
   background: #080808;
@@ -310,8 +412,13 @@ body {
   white-space: pre-wrap;
   word-break: break-all;
 }
-.setup-log-line.muted { color: var(--border-color); font-style: italic;}
-.setup-log-line.processing { color: var(--primary-accent); }
+.setup-log-line.muted {
+  color: var(--border-color);
+  font-style: italic;
+}
+.setup-log-line.processing {
+  color: var(--primary-accent);
+}
 .setup-btn {
   background: var(--primary-accent);
   color: white;
@@ -339,10 +446,10 @@ body {
   transform: none;
 }
 .setup-btn.loading {
-    background: var(--secondary-background);
-    border: 1px solid var(--border-color);
-    color: var(--secondary-text);
+  background: var(--secondary-background);
+  border: 1px solid var(--border-color);
+  color: var(--secondary-text);
 }
-.setup-btn.loading svg {
-    animation: spinIcon 1s linear infinite;
+.setup-btn.loading i {
+  animation: spinIcon 1s linear infinite;
 }
