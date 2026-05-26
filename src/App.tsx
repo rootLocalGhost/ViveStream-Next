@@ -1,7 +1,7 @@
 import { lazy, Component, createSignal, onMount, Show } from 'solid-js';
 import { Router, Route, A } from '@solidjs/router';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Home as HomeIcon, List, Mic, Heart, Download, Settings, Minus, Square, X, Loader2 } from 'lucide-solid';
+import { Home as HomeIcon, List, Mic, Heart, Download, Settings, Minus, Square, X, ChevronDown, Loader2 } from 'lucide-solid';
 import { invoke } from '@tauri-apps/api/core';
 import './App.css';
 
@@ -26,21 +26,19 @@ const AppLogo = () => (
 );
 
 const ImmersiveTitleBar = () => {
-
   return (
     <div class="immersive-titlebar-wrapper">
       <div data-tauri-drag-region class="drag-region"></div>
       <div class="titlebar-controls">
-        {/* Fetch the active window exactly when clicked */}
-        <div class="titlebar-btn" onClick={() => getCurrentWindow().minimize()}><Minus size={16} /></div>
-        <div class="titlebar-btn" onClick={() => getCurrentWindow().toggleMaximize()}><Square size={14} /></div>
-        <div class="titlebar-btn close-btn" onClick={() => getCurrentWindow().close()}><X size={18} /></div>
+        <div class="titlebar-btn" onClick={() => getCurrentWindow().hide()} title="Hide to Tray"><ChevronDown size={16} /></div>
+        <div class="titlebar-btn" onClick={() => getCurrentWindow().minimize()} title="Minimize"><Minus size={16} /></div>
+        <div class="titlebar-btn" onClick={() => getCurrentWindow().toggleMaximize()} title="Maximize"><Square size={14} /></div>
+        <div class="titlebar-btn close-btn" onClick={() => getCurrentWindow().close()} title="Close"><X size={18} /></div>
       </div>
     </div>
   );
 };
 
-// Lifecycle Blocker Root Component
 const AppLifecycle: Component<{ children?: any }> = (props) => {
   const [needsSetup, setNeedsSetup] = createSignal<boolean | null>(null);
 
@@ -54,7 +52,7 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
         }
     } catch (e) {
         console.error("Critical lifecycle check failed:", e);
-        setNeedsSetup(true); // Default to setup on error
+        setNeedsSetup(true); 
     }
   });
 
@@ -93,7 +91,7 @@ const AppLayout: Component<{ children?: any }> = (props) => {
             <AppLogo />
             <span class="brand-name">ViveStream</span>
           </div>
-          
+
           <div class="nav-links top-links">
             <A href="/"><HomeIcon size={24} class="nav-icon lucide-home" /> <span class="nav-text">Home</span></A>
             <A href="/favourites"><Heart size={24} class="nav-icon lucide-heart" /> <span class="nav-text">Favourites</span></A>
@@ -106,7 +104,7 @@ const AppLayout: Component<{ children?: any }> = (props) => {
             <A href="/settings"><Settings size={24} class="nav-icon lucide-settings" /> <span class="nav-text">Settings</span></A>
           </div>
         </nav>
-        
+
         <main class="main-content">
           {props.children}
         </main>
