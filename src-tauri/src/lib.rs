@@ -287,7 +287,6 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
 
     app.emit("download-progress", "Step 2: Starting FFmpeg transcoder...").unwrap();
 
-    // OS-Specific Hardware Fallback Matrix
     let encoders = if cfg!(target_os = "windows") {
         vec![
             ("Intel QSV (Windows native)", vec!["-c:v", "h264_qsv", "-preset", "fast", "-b:v", "5M"]),
@@ -360,6 +359,31 @@ fn get_downloaded_videos() -> Result<Vec<VideoEntry>, String> {
     }
 }
 
+#[tauri::command]
+async fn wipe_dependencies(app: AppHandle) -> Result<(), String> {
+    let bin_dir = get_bin_dir(&app)?;
+    if bin_dir.exists() {
+        fs::remove_dir_all(&bin_dir).map_err(|e| format!("Failed to delete binaries: {}", e))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
+    // 1. Wipe Binaries
+    let bin_dir = get_bin_dir(&app)?;
+    if bin_dir.exists() {
+        let _ = fs::remove_dir_all(&bin_dir); // Ignore errors, proceed to next step
+    }
+
+    // 2. Wipe Local Media Library
+    let base_dir = Path::new("/home/localghost/Videos/ViveStream");
+    if base_dir.exists() {
+        fs::remove_dir_all(base_dir).map_err(|e| format!("Failed to delete media library: {}", e))?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let port_free = {
@@ -411,7 +435,9 @@ pub fn run() {
             download_binaries, 
             get_video_metadata, 
             download_video, 
-            get_downloaded_videos
+            get_downloaded_videos,
+            wipe_dependencies,
+            nuclear_wipe
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
