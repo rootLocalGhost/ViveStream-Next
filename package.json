@@ -14,10 +14,10 @@
   },
   "license": "Polyform Noncommercial License 1.0.0",
   "dependencies": {
-    "@lordicon/element": "^2.2.0",
     "@phosphor-icons/web": "^2.1.2",
     "@solidjs/router": "^0.16.1",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-shell": "~2",

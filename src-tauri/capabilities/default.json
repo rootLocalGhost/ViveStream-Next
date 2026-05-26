@@ -8,6 +8,7 @@
     "opener:default",
     "shell:default",
     "fs:default",
+    "dialog:default",
     {
       "identifier": "fs:allow-read-dir",
       "allow": [{ "path": "/home/localghost/Videos/ViveStream/**" }]
