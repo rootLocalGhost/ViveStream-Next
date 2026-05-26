@@ -6,3 +6,5 @@ src-tauri/gen
 pkg/
 PKGBUILD.1
 *.deb
+*.gz
+src/debian-binary
