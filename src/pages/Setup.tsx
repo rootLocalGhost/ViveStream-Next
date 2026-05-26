@@ -1,7 +1,6 @@
 import { createSignal, onMount, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Download, Loader2 } from "lucide-solid";
 
 const AppLogo = () => (
   <svg
@@ -42,14 +41,17 @@ export default function Setup() {
   const [logs, setLogs] = createSignal<string[]>([]);
 
   onMount(async () => {
-    // Check if we even need setup
     try {
-      const status = await invoke("check_binaries");
+      const status = await invoke<{
+        ytdlp_exists: boolean;
+        ffmpeg_exists: boolean;
+        bin_folder: string;
+      }>("check_binaries");
       if (status.ytdlp_exists && status.ffmpeg_exists) {
-        // Already ready, this page shouldn't be loaded normally
+        // Should be caught by App.tsx lifecycle
       } else {
         addLog(
-          `viveStream v0.3.0 // post-install environment check // complete`,
+          `viveStream v0.2.0 // post-install environment check // complete`,
         );
         if (!status.ytdlp_exists) addLog(`> yt-dlp binary [miss]`);
         if (!status.ffmpeg_exists) addLog(`> ffmpeg binary [miss]`);
@@ -69,7 +71,7 @@ export default function Setup() {
   const startSetup = async () => {
     setLoading(true);
     addLog(`>> initialization procedure started`);
-    setLogs([]); // Clear logs
+    setLogs([]);
 
     const unlisten = await listen<string>("setup-progress", (event) => {
       addLog(`:: ${event.payload}`);
@@ -124,12 +126,19 @@ export default function Setup() {
         >
           {loading() ? (
             <>
-              <Loader2 size={24} class="spinIcon muted" /> Processing setup
-              Matrix
+              <i
+                class="ph ph-spinner spinIcon muted"
+                style={{ "font-size": "24px" }}
+              ></i>{" "}
+              Processing setup Matrix
             </>
           ) : (
             <>
-              <Download size={24} /> start optimization procedure
+              <i
+                class="ph-fill ph-download-simple"
+                style={{ "font-size": "24px" }}
+              ></i>{" "}
+              start optimization procedure
             </>
           )}
         </button>
