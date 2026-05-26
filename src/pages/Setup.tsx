@@ -49,7 +49,7 @@ export default function Setup() {
         // Already ready, this page shouldn't be loaded normally
       } else {
         addLog(
-          `viveStream v0.2.0 // post-install environment check // complete`,
+          `viveStream v0.3.0 // post-install environment check // complete`,
         );
         if (!status.ytdlp_exists) addLog(`> yt-dlp binary [miss]`);
         if (!status.ffmpeg_exists) addLog(`> ffmpeg binary [miss]`);
