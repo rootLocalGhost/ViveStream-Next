@@ -3,24 +3,17 @@ import { Router, Route, A } from "@solidjs/router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 
-// Phosphor Web Fonts (We need both base and fill weights)
 import "@phosphor-icons/web/regular";
 import "@phosphor-icons/web/fill";
-
 import "./App.css";
+
+import PremiumPlaceholder from "./components/PremiumPlaceholder";
 
 const Home = lazy(() => import("./pages/Home"));
 const Downloads = lazy(() => import("./pages/Downloads"));
 const Player = lazy(() => import("./pages/Player"));
 const Setup = lazy(() => import("./pages/Setup"));
 const Settings = lazy(() => import("./pages/Settings"));
-
-const ComingSoon: Component<{ title: string }> = (props) => (
-  <div style={{ padding: "40px" }}>
-    <h2>{props.title}</h2>
-    <p style={{ color: "var(--secondary-text)" }}>Coming soon...</p>
-  </div>
-);
 
 const AppLogo = () => (
   <svg
@@ -57,37 +50,38 @@ const AppLogo = () => (
 );
 
 const ImmersiveTitleBar = () => {
+  const win = getCurrentWindow();
   return (
     <div class="immersive-titlebar-wrapper">
       <div data-tauri-drag-region class="drag-region"></div>
       <div class="titlebar-controls">
         <div
           class="titlebar-btn"
-          onClick={() => getCurrentWindow().hide()}
+          onClick={() => win.hide()}
           title="Hide to Tray"
         >
           <i class="ph ph-caret-down" style={{ "font-size": "16px" }}></i>
         </div>
         <div
           class="titlebar-btn"
-          onClick={() => getCurrentWindow().minimize()}
+          onClick={() => win.minimize()}
           title="Minimize"
         >
           <i class="ph ph-minus" style={{ "font-size": "16px" }}></i>
         </div>
         <div
           class="titlebar-btn"
-          onClick={() => getCurrentWindow().toggleMaximize()}
+          onClick={() => win.toggleMaximize()}
           title="Maximize"
         >
           <i class="ph ph-square" style={{ "font-size": "14px" }}></i>
         </div>
         <div
           class="titlebar-btn close-btn"
-          onClick={() => getCurrentWindow().close()}
+          onClick={() => win.close()}
           title="Close"
         >
-          <i class="ph ph-x" style={{ "font-size": "18px" }}></i>
+          <i class="ph ph-x" style={{ "font-size": "16px" }}></i>
         </div>
       </div>
     </div>
@@ -109,7 +103,7 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
         setNeedsSetup(true);
       }
     } catch (e) {
-      console.error("Critical lifecycle check failed:", e);
+      console.error("Core engine validation failure:", e);
       setNeedsSetup(true);
     }
   });
@@ -117,7 +111,25 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
   return (
     <div class="app-wrapper">
       <ImmersiveTitleBar />
-      <Show when={needsSetup() !== null} fallback={<LoadingBlock />}>
+      <Show
+        when={needsSetup() !== null}
+        fallback={
+          <div
+            style={{
+              display: "flex",
+              flex: "1",
+              "align-items": "center",
+              "justify-content": "center",
+              background: "var(--primary-background)",
+            }}
+          >
+            <i
+              class="ph ph-spinner spinIcon"
+              style={{ "font-size": "48px", color: "var(--primary-accent)" }}
+            ></i>
+          </div>
+        }
+      >
         <Show when={needsSetup() === false} fallback={<Setup />}>
           {props.children}
         </Show>
@@ -126,22 +138,6 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
   );
 };
 
-const LoadingBlock = () => (
-  <div
-    style={{
-      display: "flex",
-      flex: "1",
-      "align-items": "center",
-      "justify-content": "center",
-      background: "var(--primary-background)",
-      color: "var(--primary-accent)",
-    }}
-  >
-    <i class="ph ph-spinner spinIcon" style={{ "font-size": "48px" }}></i>
-  </div>
-);
-
-// Reusable component that handles the crossfade stack automatically
 const NavItem = (props: {
   href: string;
   text: string;
@@ -149,7 +145,7 @@ const NavItem = (props: {
   animClass?: string;
 }) => {
   return (
-    <A href={props.href}>
+    <A href={props.href} end={props.href === "/"}>
       <div class={`icon-stack ${props.animClass || ""}`}>
         <i class={`ph ph-${props.iconName} icon-outline`}></i>
         <i class={`ph-fill ph-${props.iconName} icon-fill`}></i>
@@ -162,7 +158,6 @@ const NavItem = (props: {
 const AppLayout: Component<{ children?: any }> = (props) => {
   const [isPinned, setIsPinned] = createSignal(false);
   const [isHovered, setIsHovered] = createSignal(false);
-
   const isExpanded = () => isPinned() || isHovered();
 
   return (
@@ -176,7 +171,6 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           <AppLogo />
           <span class="brand-name">ViveStream</span>
         </div>
-
         <div class="nav-links top-links">
           <NavItem
             href="/"
@@ -198,7 +192,6 @@ const AppLayout: Component<{ children?: any }> = (props) => {
             animClass="anim-shake"
           />
         </div>
-
         <div class="nav-links bottom-links">
           <NavItem
             href="/downloads"
@@ -214,7 +207,6 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           />
         </div>
       </nav>
-
       <main class="main-content">{props.children}</main>
     </div>
   );
@@ -229,15 +221,33 @@ const App: Component = () => {
         <Route path="/settings" component={Settings} />
         <Route
           path="/playlists"
-          component={() => <ComingSoon title="Playlists" />}
+          component={() => (
+            <PremiumPlaceholder
+              title="Playlists"
+              subtitle="Curate your ultimate local media collections. Drag, drop, and organize your files seamlessly."
+              iconName="list-dashes"
+            />
+          )}
         />
         <Route
           path="/artists"
-          component={() => <ComingSoon title="Artists" />}
+          component={() => (
+            <PremiumPlaceholder
+              title="Artists"
+              subtitle="Automatically sorted by creator. Upload custom profile pictures and manage discographies."
+              iconName="microphone-stage"
+            />
+          )}
         />
         <Route
           path="/favourites"
-          component={() => <ComingSoon title="Favourites" />}
+          component={() => (
+            <PremiumPlaceholder
+              title="Favourites"
+              subtitle="Your most-loved content, instantly accessible and heavily optimized for offline playback."
+              iconName="heart"
+            />
+          )}
         />
         <Route path="/player/:id" component={Player} />
       </Route>
