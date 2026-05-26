@@ -1,6 +1,7 @@
-import { createSignal, onMount, For } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
-import PremiumPlaceholder from "../components/PremiumPlaceholder";
+import { createSignal, onMount, For } from 'solid-js';
+import { invoke } from '@tauri-apps/api/core';
+import { useNavigate } from '@solidjs/router';
+import PremiumPlaceholder from '../components/PremiumPlaceholder';
 
 type VideoEntry = {
   id: string;
@@ -12,10 +13,11 @@ type VideoEntry = {
 
 export default function Home() {
   const [videos, setVideos] = createSignal<VideoEntry[]>([]);
+  const navigate = useNavigate();
 
   onMount(async () => {
     try {
-      const data = await invoke<VideoEntry[]>("get_downloaded_videos");
+      const data = await invoke<VideoEntry[]>('get_downloaded_videos');
       setVideos(data);
     } catch (e) {
       console.error("Failed to load library:", e);
@@ -34,8 +36,7 @@ export default function Home() {
         <div class="grid">
           <For each={videos()}>
             {(video) => (
-              <div class="video-card">
-                {/* Tauri requires the asset:// protocol to load local files safely, handled via a custom scheme if configured, or warp port */}
+              <div class="video-card" onClick={() => navigate(`/player/${video.id}`)}>
                 <img
                   src={`http://127.0.0.1:1422/Thumbnails/${video.id}.jpg`}
                   alt={video.title}
