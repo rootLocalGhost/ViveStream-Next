@@ -3,12 +3,16 @@ name: Build and Release
 on:
   push:
     branches:
-      - main # Only trigger on the main branch
+      - main
     paths:
-      - "VERSION" # Only trigger when this specific file is modified
+      - "VERSION"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g., 0.3.0). Must match file versions."
+        required: false
+        type: string
 
-# NEW SECTION: Grant write permissions required to create a release
 permissions:
   contents: write
 
@@ -28,15 +32,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Verify Versions Match
         id: version_check
         shell: bash
         run: |
-          # Read and strip whitespace/newlines from the VERSION file
           VERSION=$(cat VERSION | tr -d '\n\r ')
-
-          # Use jq to extract versions from the JSON files
           PKG_VERSION=$(jq -r .version package.json)
           TAURI_VERSION=$(jq -r .version src-tauri/tauri.conf.json)
 
@@ -44,13 +47,47 @@ jobs:
           echo "package.json: $PKG_VERSION"
           echo "tauri.conf.json: $TAURI_VERSION"
 
+          # 1. Verify internal files match each other
           if [ "$VERSION" != "$PKG_VERSION" ] || [ "$VERSION" != "$TAURI_VERSION" ]; then
-            echo "::error::Version mismatch detected! Build aborted."
+            echo "::error::Internal version mismatch detected! Check VERSION, package.json, and tauri.conf.json."
             exit 1
           fi
 
-          # Pass the verified version to the next steps
+          # 2. If triggered manually, verify the input tag matches the files
+          INPUT_TAG="${{ github.event.inputs.tag }}"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "$INPUT_TAG" ]; then
+            CLEAN_INPUT_TAG=${INPUT_TAG#v}
+            if [ "$CLEAN_INPUT_TAG" != "$VERSION" ]; then
+              echo "::error::Manual trigger tag (v$CLEAN_INPUT_TAG) does not match internal file versions (v$VERSION). Build aborted."
+              exit 1
+            fi
+            echo "Manual tag verified against file versions."
+          fi
+
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Auto-Release Notes
+        id: generate_notes
+        shell: bash
+        run: |
+          echo "release_body<<EOF" >> $GITHUB_OUTPUT
+          echo "🎉🚀✨ **Welcome to ViveStream v${{ steps.version_check.outputs.app_version }}!** ✨🚀🎉" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "Your lightning-fast, hardware-accelerated media client just got better! 🎬⚡" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### ⚠️ Important: Installation Warnings 🛡️" >> $GITHUB_OUTPUT
+          echo "ViveStream is a completely free, PolyForm Noncommercial open-source project. Because we don't monetize you, we do not pay the extortionate yearly fees required for corporate Microsoft/Apple code-signing certificates. 💸🚫" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "As a result, your operating system will flag the installer as coming from an **Unknown Publisher**. This is a standard security prompt for unsigned binaries." >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "👉 **How to bypass the warnings:**" >> $GITHUB_OUTPUT
+          echo "- 🪟 **Windows Defender SmartScreen:** Click **More Info** ➡️ then click **Run Anyway**." >> $GITHUB_OUTPUT
+          echo "- 🐧 **Linux:** If your desktop environment blocks the AppImage/binary, right-click it, go to Properties, and check **Allow executing file as program** (or run \`chmod +x\` in terminal)." >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### 📦 Automated Changelog 📝" >> $GITHUB_OUTPUT
+          git log -15 --pretty=format:"* %s (%h) 🛠️" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -59,6 +96,14 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -86,6 +131,6 @@ jobs:
         with:
           tagName: v${{ steps.version_check.outputs.app_version }}
           releaseName: "ViveStream v${{ steps.version_check.outputs.app_version }}"
-          releaseBody: "Automated release triggered by VERSION file."
-          releaseDraft: false
+          releaseBody: ${{ steps.generate_notes.outputs.release_body }}
+          releaseDraft: true
           prerelease: false
