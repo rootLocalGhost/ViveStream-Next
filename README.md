@@ -7,13 +7,18 @@
 
 Lightning-fast, native YouTube downloader and local media library. Built on Tauri v2 & SolidJS for maximum performance, hardware acceleration, and zero bloat.
 
-## ✨ Features
+---
 
-- 🚀 **Smart GPU Transcoding:** Intelligent fallback matrix (Intel QSV ➔ NVIDIA NVENC ➔ VAAPI ➔ CPU). Highly optimized for Intel Arc architecture.
-- 🎯 **Dynamic Quality:** Requests up to 4K, automatically steps down if unavailable.
-- 🎨 **Immersive UI:** Frameless design, auto-hiding titlebar, and pure CSS-animated icons (Zero JS overhead).
-- ⚡ **WebKit Bug Bypass:** Local Rust `warp` server ensures flawless Linux playback, avoiding `asset://` protocol crashes.
-- 🗄️ **Absolute Privacy:** 100% offline JSON database. No cloud, no telemetry, no tracking.
+## 🚀 Core Features
+
+- ⚙️ **Smart Hardware Transcoding:**
+- Automatically detects and utilizes your GPU for rendering.
+- Highly optimized fallback matrix: **Intel QSV ➔ NVIDIA NVENC ➔ VAAPI ➔ CPU (libx264)**.
+
+- 🎯 **Intelligent Quality Selection:**
+- 🎨 **Immersive & Lightweight UI:**
+- ⚡ **Flawless Local Playback:**
+- 🗄️ **Absolute Privacy:**
 
 ---
 
@@ -21,46 +26,76 @@ Lightning-fast, native YouTube downloader and local media library. Built on Taur
 
 ### 🐧 Arch Linux / Manjaro (Recommended)
 
-Native `PKGBUILD`. Automatically resolves hardware-acceleration drivers, compiles, and safely installs via `pacman`.
+We officially support Arch Linux via a native `PKGBUILD`. This handles everything: verifying system requirements, installing hardware acceleration drivers (VAAPI/Intel Media Driver), and safely registering the app via `pacman`.
 
 ```bash
 wget https://raw.githubusercontent.com/rootlocalghost/ViveStream-Next/main/PKGBUILD
 makepkg -si
+
 ```
 
 ### 🪟 Windows & Debian/Ubuntu
 
-Download the latest `.exe` or `.deb` from the [Releases](https://www.google.com/search?q=https://github.com/rootlocalghost/ViveStream-Next/releases) page.
+Download the latest `.exe` or `.deb` installer directly from the **[Releases](https://www.google.com/search?q=https://github.com/rootlocalghost/ViveStream-Next/releases)** page.
 
-> ⚠️ **Security Prompt:** ViveStream is free and non-commercial, so it lacks paid corporate code-signing certificates.
+> ⚠️ **Important Security Prompt:** > ViveStream is a free, non-commercial open-source project. Because we do not monetize users, we do not pay the extortionate fees for corporate Microsoft/Apple code-signing certificates.
 >
-> - **Windows:** Click **More Info ➔ Run Anyway** on SmartScreen.
-> - **Linux:** Right-click ➔ Properties ➔ **Allow executing file as program**.
+> - **Windows Defender SmartScreen:** Click **More Info** ➔ **Run Anyway**.
+> - **Linux:** Right-click the binary ➔ **Properties** ➔ Check **Allow executing file as program**.
+
+#### 🗑️ Uninstallation & App Data Wipe
+
+Because core engines (`yt-dlp`/`ffmpeg`) and video files are downloaded at runtime, OS uninstallers will leave them behind.
+
+- **Fix:** Before uninstalling the app from your OS, open ViveStream, go to **Settings ➔ Danger Zone**, and execute a **Nuclear Wipe** to safely destroy all gigabytes of media and app data.
 
 ---
 
-## 🛠️ Developer Setup
+## 💻 Developer Setup
 
-**Prerequisites:** [Bun](https://bun.sh/), [Rust](https://rustup.rs/), and OS build tools.
-_(Arch users: `sudo pacman -S base-devel webkit2gtk-4.1 curl wget unzip`)_
+To compile the application from source, you need **[Bun](https://bun.sh/)**, **[Rust & Cargo](https://rustup.rs/)**, and your OS build tools.
+_(Arch Linux users: `sudo pacman -S base-devel webkit2gtk-4.1 curl wget unzip`)_
+
+1. **Clone the repository:**
 
 ```bash
-# 1. Clone & Install Dependencies
 git clone https://github.com/rootlocalghost/ViveStream-Next.git
 cd ViveStream-Next
+
+```
+
+2. **Install dependencies:**
+
+```bash
 bun install
 
-# 2. Start Development Server
-bun run tauri dev
-# Note: If screen is blank on Wayland/Hyprland, force X11:
-# WEBKIT_DISABLE_DMABUF_RENDERER=1 GDK_BACKEND=x11 bun run tauri dev
+```
 
-# 3. Compile Release Binary
+3. **Run in Development Mode:**
+
+```bash
+bun run tauri dev
+
+```
+
+_Note: If you experience a blank/white screen on Linux Wayland (Hyprland), force XWayland rendering by running: `WEBKIT_DISABLE_DMABUF_RENDERER=1 GDK_BACKEND=x11 bun run tauri dev_` 4. **Build for Production:**
+
+```bash
 bun run tauri build
 
 ```
 
 ---
+
+## 🤝 Contributing
+
+Contributions are always welcome. Keep the architecture light and the dependencies strictly minimized.
+
+1. Fork the repo.
+2. Create your feature branch (`git checkout -b feature/Optimization`).
+3. Commit your changes (`git commit -m 'feat: Added Optimization'`).
+4. Push to the branch (`git push origin feature/Optimization`).
+5. Open a Pull Request.
 
 ## ⚖️ License
 
