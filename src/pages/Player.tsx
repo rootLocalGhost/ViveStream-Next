@@ -62,14 +62,15 @@ export default function Player() {
 
   // --- Core Player Handlers (Hoisted above lifecycle hooks to prevent TDZ ReferenceError) ---
 
-  const loadVideoData = async (targetId: string) => {
+  const loadVideoData = async (targetId?: string) => {
+    if (!targetId) return;
     try {
       const db = await invoke<VideoEntry[]>("get_downloaded_videos");
       const currentIndex = db.findIndex((v) => v.id === targetId);
 
       if (currentIndex !== -1) {
         setVideo(db[currentIndex]);
-        const nextVideos = [];
+        const nextVideos: VideoEntry[] = [];
         for (let i = 1; i <= 15; i++) {
           if (db[(currentIndex + i) % db.length]) {
             nextVideos.push(db[(currentIndex + i) % db.length]);

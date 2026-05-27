@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 // Mock Tauri invoke and listen
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn((cmd, args) => {
+  invoke: vi.fn((cmd, _args) => {
     if (cmd === "check_binaries") {
       return Promise.resolve({
         ytdlp_exists: false,

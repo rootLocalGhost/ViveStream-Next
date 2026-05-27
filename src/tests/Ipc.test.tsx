@@ -6,7 +6,7 @@ import Downloads from "../pages/Downloads";
 // Create a test file for Tauri IPC mocking to explicitly verify
 // that calling `download_video` correctly passes the `VideoEntry` struct.
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn((cmd, args) => {
+  invoke: vi.fn((cmd, _args) => {
     if (cmd === "get_video_metadata") {
       return Promise.resolve({
         id: "mock_id_123",

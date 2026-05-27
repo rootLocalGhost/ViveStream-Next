@@ -1,6 +1,5 @@
-import { render, screen, fireEvent, waitFor } from "@solidjs/testing-library";
+import { render, screen, fireEvent } from "@solidjs/testing-library";
 import Downloads from "../pages/Downloads";
-import { vi } from "vitest";
 
 describe("Downloads Component", () => {
   it("should toggle dropdown and change quality", async () => {
