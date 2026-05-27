@@ -1,12 +1,10 @@
-/* ----------------------------------
-   FONTS & VARIABLES
------------------------------------ */
 @font-face {
   font-family: "Poppins";
   src: url("./assets/fonts/Poppins.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
 }
+
 @font-face {
   font-family: "MajorMonoDisplay";
   src: url("./assets/fonts/MajorMonoDisplay.ttf") format("truetype");
@@ -16,18 +14,14 @@
 :root {
   --font-display: "MajorMonoDisplay", monospace;
   --font-body: "Poppins", sans-serif;
-
   --primary-accent: #ef233c;
   --primary-accent-dark: #d90429;
-
   --primary-background: #000000;
   --secondary-background: #121212;
   --tertiary-background: #1e1e1e;
-
   --primary-text: #f1f1f1;
   --secondary-text: #a0a0a0;
   --border-color: #2c2c2c;
-
   --sidebar-collapsed-width: 72px;
   --sidebar-expanded-width: 240px;
   --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
@@ -47,19 +41,17 @@ body {
   user-select: none;
 }
 
-/* Global Utilities */
 .spinIcon {
   animation: spinIcon 1.5s linear infinite;
 }
+
 @keyframes spinIcon {
   100% {
     transform: rotate(360deg);
   }
 }
 
-/* ----------------------------------
-   IMMERSIVE TITLEBAR
------------------------------------ */
+/* --- Window Controls & Drag Region --- */
 .immersive-titlebar-wrapper {
   position: absolute;
   top: 0;
@@ -69,15 +61,36 @@ body {
   height: 40px;
   z-index: 9999;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   pointer-events: none;
 }
+
 .drag-region {
-  flex: 1;
-  height: 100%;
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
   pointer-events: auto;
   -webkit-app-region: drag;
+  opacity: 0;
+  transition:
+    opacity 0.3s var(--transition-smooth),
+    background 0.2s;
 }
+
+.drag-region:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.immersive-titlebar-wrapper:hover .drag-region,
+.immersive-titlebar-wrapper:hover .titlebar-controls {
+  opacity: 1;
+}
+
 .titlebar-controls {
   display: flex;
   height: 32px;
@@ -89,9 +102,7 @@ body {
   transition: opacity 0.3s var(--transition-smooth);
   pointer-events: auto;
 }
-.immersive-titlebar-wrapper:hover .titlebar-controls {
-  opacity: 1;
-}
+
 .titlebar-btn {
   display: flex;
   justify-content: center;
@@ -104,42 +115,46 @@ body {
     background 0.2s,
     color 0.2s;
 }
+
 .titlebar-btn:hover {
   background: var(--tertiary-background);
 }
+
 .titlebar-btn.close-btn:hover {
   background: var(--primary-accent);
   color: white;
 }
 
-/* ----------------------------------
-   LAYOUT SCAFFOLDING
------------------------------------ */
+/* --- Layout Architecture --- */
 .app-wrapper {
   display: flex;
   flex-direction: column;
   height: 100vh;
 }
+
 .app-container {
   display: flex;
   flex: 1;
   overflow: hidden;
   position: relative;
 }
+
 .main-content {
   flex: 1;
   margin-left: var(--sidebar-collapsed-width);
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--primary-background);
-  padding-top: 40px; /* Offset for custom titlebar */
+  padding-top: 20px;
 }
+
 .page-wrapper {
-  padding: 30px;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 0px 10px;
   width: 100%;
+  height: 100%;
   animation: fadeIn 0.4s ease-out;
 }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -151,9 +166,7 @@ body {
   }
 }
 
-/* ----------------------------------
-   SIDEBAR & NAV
------------------------------------ */
+/* --- Expandable Sidebar --- */
 .sidebar {
   width: var(--sidebar-collapsed-width);
   background: var(--primary-background);
@@ -166,10 +179,12 @@ body {
   position: absolute;
   height: 100%;
 }
+
 .sidebar.expanded {
   width: var(--sidebar-expanded-width);
   box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
 }
+
 .sidebar-header {
   height: 72px;
   display: flex;
@@ -178,14 +193,17 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
+
 .app-logo {
   min-width: 32px;
   flex-shrink: 0;
   transition: transform 0.3s var(--transition-smooth);
 }
+
 .sidebar-header:hover .app-logo {
   transform: scale(1.08);
 }
+
 .brand-name {
   font-family: var(--font-display);
   font-size: 18px;
@@ -194,6 +212,7 @@ body {
   transition: opacity 0.2s;
   color: var(--primary-text);
 }
+
 .sidebar.expanded .brand-name {
   opacity: 1;
   transition-delay: 0.1s;
@@ -205,10 +224,12 @@ body {
   gap: 8px;
   padding: 0 10px;
 }
+
 .bottom-links {
   margin-top: auto;
   padding-bottom: 24px;
 }
+
 .sidebar a {
   display: flex;
   align-items: center;
@@ -223,11 +244,13 @@ body {
   overflow: hidden;
   white-space: nowrap;
 }
+
 .sidebar a:hover,
 .sidebar a.active {
   background: var(--secondary-background);
   color: var(--primary-text);
 }
+
 .nav-text {
   margin-left: 20px;
   opacity: 0;
@@ -235,14 +258,13 @@ body {
   font-size: 15px;
   font-weight: 500;
 }
+
 .sidebar.expanded .nav-text {
   opacity: 1;
   transition-delay: 0.1s;
 }
 
-/* ----------------------------------
-   PURE CSS ICON ANIMATIONS
------------------------------------ */
+/* --- Icon Animations --- */
 .icon-stack {
   position: relative;
   width: 24px;
@@ -252,46 +274,52 @@ body {
   align-items: center;
   flex-shrink: 0;
 }
+
 .icon-stack i {
   position: absolute;
   font-size: 24px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .icon-outline {
   opacity: 1;
   transform: scale(1);
 }
+
 .icon-fill {
   opacity: 0;
   transform: scale(0.6);
   color: var(--primary-accent);
 }
 
-/* Hover Triggers */
 .sidebar a:hover .icon-outline,
 .sidebar a.active .icon-outline {
   opacity: 0;
   transform: scale(1.2);
 }
+
 .sidebar a:hover .icon-fill,
 .sidebar a.active .icon-fill {
   opacity: 1;
   transform: scale(1);
 }
 
-/* Animation Bindings */
 .sidebar a:hover .anim-bounce .icon-fill {
   animation: bounceIcon 0.5s ease;
 }
+
 .sidebar a:hover .anim-pulse .icon-fill {
   animation: pulseIcon 0.8s ease infinite;
 }
+
 .sidebar a:hover .anim-shake .icon-fill {
   animation: shakeIcon 0.5s ease-in-out infinite alternate;
 }
+
 .sidebar a:hover .anim-slide .icon-fill {
   animation: slideDownIcon 0.6s ease infinite alternate;
 }
+
 .sidebar a:hover .anim-spin .icon-fill {
   animation: spinIcon 2s linear infinite;
 }
@@ -305,6 +333,7 @@ body {
     transform: translateY(-4px) scale(1.1);
   }
 }
+
 @keyframes pulseIcon {
   0%,
   100% {
@@ -315,6 +344,7 @@ body {
     filter: drop-shadow(0 0 8px var(--primary-accent));
   }
 }
+
 @keyframes slideDownIcon {
   0% {
     transform: translateY(-2px);
@@ -323,6 +353,7 @@ body {
     transform: translateY(3px);
   }
 }
+
 @keyframes shakeIcon {
   0% {
     transform: rotate(-10deg);
@@ -332,9 +363,262 @@ body {
   }
 }
 
-/* ----------------------------------
-   COMMAND BAR & DROPDOWN
------------------------------------ */
+/* --- Media Grid UI --- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  padding-top: 10px;
+}
+
+.video-card {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  border-radius: 16px;
+  transition: transform 0.2s var(--transition-smooth);
+}
+
+.video-card:hover {
+  transform: scale(1.02);
+}
+
+.video-thumbnail {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.video-info {
+  margin-top: 12px;
+  padding-right: 12px;
+}
+
+.video-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--primary-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.video-channel {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--secondary-text);
+}
+
+/* CUSTOM PLAYER CLASSES */
+
+.player-page-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 0px 10px;
+  width: 100%;
+  max-width: 100%; /* Allows edge-to-edge bleed */
+  margin: 0 auto;
+  min-height: 100vh;
+  align-content: flex-start;
+  transition:
+    padding 0.35s var(--transition-smooth),
+    max-width 0.35s var(--transition-smooth);
+}
+
+.player-page-container.is-theater {
+  padding: 0;
+  gap: 0;
+}
+
+/* Left Column (Video + Metadata) */
+.player-main-col {
+  flex: 1 1 600px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  transition: flex-basis 0.35s var(--transition-smooth);
+}
+
+.player-page-container.is-theater .player-main-col {
+  flex: 1 1 100%;
+}
+
+/* Right Column (Up Next Queue) */
+.player-sidebar {
+  flex: 0 0 400px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition:
+    flex-basis 0.35s var(--transition-smooth),
+    max-width 0.35s var(--transition-smooth),
+    padding 0.35s ease;
+}
+
+.player-page-container.is-theater .player-sidebar {
+  flex: 0 0 100%;
+  max-width: 100%; /* Match the bleed */
+  margin: 0 auto 40px auto;
+  padding: 24px;
+}
+
+/* Video Frame Engine */
+.player-video-wrapper {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition:
+    border-radius 0.35s ease,
+    aspect-ratio 0.35s ease,
+    height 0.35s ease;
+}
+
+.player-page-container.is-theater .player-video-wrapper {
+  border-radius: 0;
+  aspect-ratio: auto;
+  height: 75vh;
+}
+
+.player-page-container.is-fullscreen .player-video-wrapper {
+  border-radius: 0;
+  aspect-ratio: auto;
+  height: 100vh;
+}
+
+.player-video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Custom Controls HUD */
+.player-controls-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.4) 60%,
+    transparent 100%
+  );
+  padding: 20px 16px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: opacity 0.25s ease-in-out;
+}
+
+.control-btn {
+  background: transparent;
+  color: white;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.1s,
+    color 0.1s;
+  font-size: 24px;
+  outline: none;
+}
+
+.control-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Custom Range Sliders (Seek & Volume) */
+.custom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  outline: none;
+  margin: 0;
+}
+
+.custom-slider::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.2);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -4px; /* Pulls thumb up over the 4px track */
+  background-color: var(--primary-accent);
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  transition: transform 0.1s ease;
+}
+
+.custom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+}
+
+/* Metadata Layout */
+.player-meta-block {
+  padding: 16px 0;
+  width: 100%;
+  transition: padding 0.35s ease;
+}
+
+.player-page-container.is-theater .player-meta-block {
+  padding: 24px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.player-desc-box {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 14px;
+  color: var(--primary-text);
+  line-height: 1.6;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.player-desc-box:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.queue-item {
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+  padding: 6px;
+}
+
+.queue-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* --- Downloads & Command Bar UI --- */
 .command-bar {
   display: flex;
   background: rgba(18, 18, 18, 0.7);
@@ -359,7 +643,6 @@ body {
 .command-input::placeholder {
   color: var(--secondary-text);
 }
-
 .custom-select-wrapper {
   position: relative;
   width: 160px;
@@ -386,7 +669,6 @@ body {
 .custom-select-wrapper.open .custom-select-trigger i {
   transform: rotate(180deg);
 }
-
 .custom-select-menu {
   position: absolute;
   top: calc(100% + 10px);
@@ -424,7 +706,6 @@ body {
   color: var(--primary-text);
   font-weight: bold;
 }
-
 .command-btn {
   background: var(--primary-accent);
   color: white;
@@ -451,10 +732,6 @@ body {
   border: 1px solid var(--border-color);
   cursor: not-allowed;
 }
-
-/* ----------------------------------
-   TERMINAL BLOCKS
------------------------------------ */
 .terminal-block {
   margin-top: 24px;
   background: #060606;
@@ -470,15 +747,13 @@ body {
   font-size: 13px;
 }
 
-/* ----------------------------------
-   PREMIUM PLACEHOLDERS
------------------------------------ */
+/* --- Placeholder Components --- */
 .placeholder-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: calc(100vh - 100px);
+  height: 100%;
   width: 100%;
   color: var(--primary-text);
   animation: fadeIn 0.5s ease-out;
@@ -522,9 +797,7 @@ body {
   margin: 0;
 }
 
-/* ----------------------------------
-   SETUP INTERFACE (True Borderless)
------------------------------------ */
+/* --- Setup Deployment Screen --- */
 .immersive-setup-container {
   display: flex;
   flex: 1;
@@ -540,7 +813,6 @@ body {
   border-radius: 24px;
   max-width: 800px;
   width: 100%;
-  /* Borderless: Relies on deep shadow and a subtle top-light reflection */
   box-shadow:
     0 35px 70px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
@@ -569,8 +841,6 @@ body {
   color: var(--secondary-text);
   max-width: 600px;
 }
-
-/* Non-destructive Logo Animation */
 .setup-logo-wrapper {
   position: relative;
   display: flex;
@@ -608,7 +878,6 @@ body {
     transform: scale(1.4);
   }
 }
-
 .setup-terminal-wrapper {
   background: rgba(0, 0, 0, 0.4);
   border-radius: 12px;
@@ -674,7 +943,6 @@ body {
   color: var(--primary-accent);
   font-weight: bold;
 }
-
 .setup-btn {
   background: var(--primary-accent);
   color: white;
@@ -697,7 +965,6 @@ body {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(239, 35, 60, 0.4);
 }
-/* Borderless disabled button state */
 .setup-btn:disabled {
   background: rgba(255, 255, 255, 0.03);
   cursor: not-allowed;
@@ -705,51 +972,4 @@ body {
 }
 .setup-btn.loading {
   color: var(--primary-accent);
-}
-
-/* ----------------------------------
-   MEDIA GRID
------------------------------------ */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
-  padding-top: 10px;
-}
-.video-card {
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  border-radius: 16px;
-  transition: transform 0.2s var(--transition-smooth);
-}
-.video-card:hover {
-  transform: scale(1.02);
-}
-.video-thumbnail {
-  width: 100%;
-  aspect-ratio: 16/9;
-  object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-}
-.video-info {
-  margin-top: 12px;
-  padding-right: 12px;
-}
-.video-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--primary-text);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.video-channel {
-  margin: 4px 0 0 0;
-  font-size: 13px;
-  color: var(--secondary-text);
 }
