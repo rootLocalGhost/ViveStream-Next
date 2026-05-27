@@ -10,6 +10,8 @@ use serde::{Serialize, Deserialize};
 use warp::Filter;
 use tauri_plugin_dialog::DialogExt;
 use sha2::{Sha256, Digest};
+use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
+use std::sync::Mutex;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct VideoEntry {
@@ -27,6 +29,11 @@ struct BinaryCheckStatus {
     bin_folder: PathBuf,
 }
 
+fn get_base_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let video_dir = app.path().video_dir().map_err(|e| e.to_string())?;
+    Ok(video_dir.join("ViveStream"))
+}
+
 fn get_bin_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
     Ok(app_data.join("bin"))
@@ -35,7 +42,6 @@ fn get_bin_dir(app: &AppHandle) -> Result<PathBuf, String> {
 fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
     return (bin_dir.join("yt-dlp.exe"), bin_dir.join("ffmpeg.exe"));
-    
     #[cfg(not(target_os = "windows"))]
     return (bin_dir.join("yt-dlp"), bin_dir.join("ffmpeg"));
 }
@@ -44,7 +50,6 @@ fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
 async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String> {
     let bin_dir = get_bin_dir(&app)?;
     let (ytdlp, ffmpeg) = get_binary_paths(&bin_dir);
-    
     Ok(BinaryCheckStatus {
         ytdlp_exists: ytdlp.exists(),
         ffmpeg_exists: ffmpeg.exists(),
@@ -67,7 +72,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         let _ = app.emit("setup-progress", msg);
     };
 
-    // 1. Fetch yt-dlp
     #[cfg(target_os = "windows")]
     let ytdlp_url = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe";
     #[cfg(not(target_os = "windows"))]
@@ -77,12 +81,11 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
     let ytdlp_response = client.get(ytdlp_url).send().await.map_err(|e| e.to_string())?;
     let bytes = ytdlp_response.bytes().await.map_err(|e| e.to_string())?;
 
-    // Validate SHA256 Checksum
     emit_progress("Validating yt-dlp SHA256 checksum...");
     let sums_url = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
     let sums_text = client.get(sums_url).send().await.map_err(|e| e.to_string())?.text().await.map_err(|e| e.to_string())?;
-    
     let target_bin_name = if cfg!(target_os = "windows") { "yt-dlp.exe" } else { "yt-dlp" };
+
     let expected_hash = sums_text.lines()
         .find(|line| line.ends_with(target_bin_name))
         .and_then(|line| line.split_whitespace().next())
@@ -95,8 +98,8 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
     if expected_hash != actual_hash {
         return Err(format!("SECURITY FAULT: yt-dlp checksum mismatch! Expected {}, got {}", expected_hash, actual_hash));
     }
-    emit_progress("yt-dlp checksum verified. Proceeding with write.");
 
+    emit_progress("yt-dlp checksum verified. Proceeding with write.");
     let ytdlp_path = bin_dir.join(target_bin_name);
     let mut ytdlp_file = File::create(&ytdlp_path).map_err(|e| e.to_string())?;
     ytdlp_file.write_all(&bytes).map_err(|e| e.to_string())?;
@@ -112,7 +115,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
     emit_progress("yt-dlp Nightly ready.");
     emit_progress("Fetching compatible FFmpeg build... (This takes a moment)");
 
-    // 2. Fetch FFmpeg
     #[cfg(target_os = "windows")]
     {
         let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
@@ -121,8 +123,8 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
             return Err(format!("Failed to download FFmpeg. HTTP Status: {}", response.status()));
         }
         let bytes = response.bytes().await.map_err(|e| e.to_string())?;
-        
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
+        
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
             if file.name().ends_with("ffmpeg.exe") && file.is_file() {
@@ -151,11 +153,9 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         for entry in archive.entries().map_err(|e| e.to_string())? {
             let mut entry = entry.map_err(|e| e.to_string())?;
             let path = entry.path().map_err(|e| e.to_string())?;
-            
             if path.file_name().map_or(false, |name| name == "ffmpeg") && entry.header().entry_type().is_file() {
                 let outpath = bin_dir.join("ffmpeg");
                 entry.unpack(&outpath).map_err(|e| e.to_string())?;
-                
                 use std::os::unix::fs::PermissionsExt;
                 let mut perms = fs::metadata(&outpath).map_err(|e| e.to_string())?.permissions();
                 perms.set_mode(0o755);
@@ -166,7 +166,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     emit_progress("FFmpeg ready.");
-
     app.dialog()
         .message("Deployment complete. ViveStream will now restart to initialize engines.")
         .kind(tauri_plugin_dialog::MessageDialogKind::Info)
@@ -180,19 +179,18 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 async fn get_video_metadata(app: AppHandle, url: String) -> Result<VideoEntry, String> {
     let bin_dir = get_bin_dir(&app)?;
+    let base_dir = get_base_dir(&app)?;
     let (ytdlp_path, _) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() { return Err("yt-dlp binary missing. Run setup.".into()); }
 
-    let base_dir = Path::new("/home/localghost/Videos/ViveStream");
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
 
     let output = Command::new(&ytdlp_path)
         .args([
             "--no-playlist", 
-            // FIX: Spoofs mobile clients to bypass YouTube 'n' challenge and embed blocks
-            "--extractor-args", "youtube:player_client=android,ios,web", 
+            "--extractor-args", "youtube:player_client=web_safari,web_embedded", 
             "--print", "%(id)s|%(uploader)s|%(title)s", 
             &url
         ])
@@ -211,7 +209,7 @@ async fn get_video_metadata(app: AppHandle, url: String) -> Result<VideoEntry, S
         let id = parts[0].to_string();
         let channel = parts[1].to_string();
         let title = parts[2].to_string(); 
-        
+
         Ok(VideoEntry {
             id: id.clone(),
             title,
@@ -227,13 +225,13 @@ async fn get_video_metadata(app: AppHandle, url: String) -> Result<VideoEntry, S
 #[tauri::command]
 async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quality: String) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
+    let base_dir = get_base_dir(&app)?;
     let (ytdlp_path, ffmpeg_path) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() || !ffmpeg_path.exists() {
         return Err("Binaries missing. Run setup.".into());
     }
 
-    let base_dir = Path::new("/home/localghost/Videos/ViveStream");
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
 
@@ -258,8 +256,7 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
         .args([
             "--newline",
             "-f", res_filter,
-            // FIX: Spoofs mobile clients to bypass YouTube 'n' challenge and embed blocks
-            "--extractor-args", "youtube:player_client=android,ios,web", 
+            "--extractor-args", "youtube:player_client=web_safari,web_embedded", 
             "--merge-output-format", "mp4",
             "--remux-video", "mp4", 
             "--paths", vid_dir.to_str().unwrap(),
@@ -293,7 +290,6 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
 
     app.emit("download-progress", "Step 2: Starting FFmpeg transcoder...").unwrap();
 
-    // Hardware Acceleration Matrix
     let encoders = if cfg!(target_os = "windows") {
         vec![
             ("Intel QSV (Windows native)", vec!["-c:v", "h264_qsv", "-preset", "fast", "-b:v", "5M"]),
@@ -310,9 +306,9 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
     };
 
     let mut transcode_success = false;
+
     for (name, args) in encoders {
         app.emit("download-progress", format!("Attempting encoder: {}", name)).unwrap();
-        
         let mut cmd = Command::new(&ffmpeg_path); 
         cmd.args(["-y", "-hwaccel", "auto", "-i", temp_path.to_str().unwrap()]);
         cmd.args(&args);
@@ -335,7 +331,6 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
         return Err("All hardware and software FFmpeg encoders failed.".into());
     }
 
-    // Save to Database
     let db_path = base_dir.join("db.json");
     let mut entries: Vec<VideoEntry> = if Path::new(&db_path).exists() {
         let data = fs::read_to_string(&db_path).unwrap_or_default();
@@ -354,8 +349,8 @@ async fn download_video(app: AppHandle, url: String, metadata: VideoEntry, quali
 }
 
 #[tauri::command]
-fn get_downloaded_videos() -> Result<Vec<VideoEntry>, String> {
-    let base_dir = Path::new("/home/localghost/Videos/ViveStream");
+fn get_downloaded_videos(app: AppHandle) -> Result<Vec<VideoEntry>, String> {
+    let base_dir = get_base_dir(&app)?;
     let db_path = base_dir.join("db.json");
 
     if Path::new(&db_path).exists() {
@@ -378,62 +373,130 @@ async fn wipe_dependencies(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
-    // 1. Wipe Binaries
     let bin_dir = get_bin_dir(&app)?;
     if bin_dir.exists() {
-        let _ = fs::remove_dir_all(&bin_dir); // Ignore errors, proceed to next step
+        let _ = fs::remove_dir_all(&bin_dir); 
     }
 
-    // 2. Wipe Local Media Library
-    let base_dir = Path::new("/home/localghost/Videos/ViveStream");
+    let base_dir = get_base_dir(&app)?;
     if base_dir.exists() {
         fs::remove_dir_all(base_dir).map_err(|e| format!("Failed to delete media library: {}", e))?;
     }
     Ok(())
 }
 
+#[tauri::command]
+fn update_media_metadata(
+    state: tauri::State<'_, Mutex<MediaControls>>,
+    title: String,
+    artist: String
+) -> Result<(), String> {
+    if let Ok(mut controls) = state.lock() {
+        let _ = controls.set_metadata(MediaMetadata {
+            title: Some(&title),
+            artist: Some(&artist),
+            ..Default::default()
+        });
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn update_playback_status(
+    state: tauri::State<'_, Mutex<MediaControls>>,
+    playing: bool
+) -> Result<(), String> {
+    if let Ok(mut controls) = state.lock() {
+        let _ = controls.set_playback(if playing {
+            MediaPlayback::Playing { progress: None }
+        } else {
+            MediaPlayback::Paused { progress: None }
+        });
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Start local warp server to bypass WebKitGTK asset protocol bugs
-    let port_free = {
-        std::net::TcpListener::bind("127.0.0.1:1422").is_ok()
-    };
-
-    if port_free {
-        tauri::async_runtime::spawn(async {
-            let cors = warp::cors()
-                .allow_any_origin()
-                .allow_methods(vec!["GET", "HEAD"]);
-
-            let routes = warp::fs::dir("/home/localghost/Videos/ViveStream").with(cors);
-            warp::serve(routes).run(([127, 0, 0, 1], 1422)).await;
-        });
-    } else {
-        println!("Port 1422 is already actively bound. Skipping duplicate warp server start.");
-    }
-
     tauri::Builder::default()
         .setup(|app| {
-            let handle = app.handle();
+            let app_handle = app.handle().clone();
+            let base_dir = get_base_dir(&app_handle).unwrap_or_default();
+
+            // Spawn dynamic warp server
+            let port_free = std::net::TcpListener::bind("127.0.0.1:1422").is_ok();
+            if port_free {
+                tauri::async_runtime::spawn(async move {
+                    let cors = warp::cors()
+                        .allow_any_origin()
+                        .allow_methods(vec!["GET", "HEAD"]);
+                    let routes = warp::fs::dir(base_dir).with(cors);
+                    warp::serve(routes).run(([127, 0, 0, 1], 1422)).await;
+                });
+            } else {
+                println!("Port 1422 is already actively bound. Skipping duplicate warp server start.");
+            }
+
+            // Setup System Tray
             if let Some(icon) = app.default_window_icon() {
+                let handle = app.handle().clone();
                 let _ = TrayIconBuilder::new()
                     .icon(icon.clone())
                     .tooltip("ViveStream")
-                    .on_tray_icon_event(|tray, event| {
+                    .on_tray_icon_event(move |tray, event| {
                         if let TrayIconEvent::Click {
                             button: MouseButton::Left,
                             button_state: MouseButtonState::Up,
                             ..
                         } = event {
-                            let app = tray.app_handle();
-                            if let Some(window) = app.get_webview_window("main") {
+                            if let Some(window) = tray.app_handle().get_webview_window("main") {
                                 let _ = window.show();
                                 let _ = window.set_focus();
                             }
                         }
                     })
-                    .build(handle);
+                    .build(&handle);
             }
+
+            // Initialize souvlaki media controls
+            #[cfg(target_os = "windows")]
+            let hwnd = Some(
+                app.get_webview_window("main")
+                    .unwrap()
+                    .hwnd()
+                    .unwrap() as *mut std::ffi::c_void
+            );
+            
+            #[cfg(not(target_os = "windows"))]
+            let hwnd = None;
+
+            let config = PlatformConfig {
+                dbus_name: "vivestream_next",
+                display_name: "ViveStream",
+                hwnd,
+            };
+
+            if let Ok(mut controls) = MediaControls::new(config) {
+                let emit_handle = app.handle().clone();
+                
+                controls.attach(move |event| {
+                    match event {
+                        MediaControlEvent::Play => { let _ = emit_handle.emit("media-play", ()); },
+                        MediaControlEvent::Pause => { let _ = emit_handle.emit("media-pause", ()); },
+                        MediaControlEvent::Next => { let _ = emit_handle.emit("media-next", ()); },
+                        MediaControlEvent::Previous => { let _ = emit_handle.emit("media-prev", ()); },
+                        _ => {}
+                    }
+                }).unwrap();
+
+                let _ = controls.set_metadata(MediaMetadata {
+                    title: Some("ViveStream Idle"),
+                    ..Default::default()
+                });
+
+                app.manage(Mutex::new(controls));
+            }
+
             Ok(())
         })
         .plugin(tauri_plugin_fs::init())
@@ -446,7 +509,9 @@ pub fn run() {
             download_video, 
             get_downloaded_videos,
             wipe_dependencies,
-            nuclear_wipe
+            nuclear_wipe,
+            update_media_metadata,
+            update_playback_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
