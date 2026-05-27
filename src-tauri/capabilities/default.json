@@ -13,6 +13,7 @@
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
     "core:window:allow-hide",
+    "core:window:allow-start-dragging",
     {
       "identifier": "fs:allow-read-dir",
       "allow": [{ "path": "$VIDEO/ViveStream/**" }]
