@@ -19,7 +19,7 @@
         "transparent": false
       }
     ],
-        "security": {
+    "security": {
       "csp": null,
       "assetProtocol": {
         "enable": true,
