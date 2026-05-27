@@ -9,14 +9,17 @@
     "shell:default",
     "fs:default",
     "dialog:default",
-    "core:window:default",
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-hide",
     {
       "identifier": "fs:allow-read-dir",
-      "allow": [{ "path": "/home/localghost/Videos/ViveStream/**" }]
+      "allow": [{ "path": "$VIDEO/ViveStream/**" }]
     },
     {
       "identifier": "fs:allow-read-file",
-      "allow": [{ "path": "/home/localghost/Videos/ViveStream/**" }]
+      "allow": [{ "path": "$VIDEO/ViveStream/**" }]
     }
   ]
 }
