@@ -1,23 +1,53 @@
-# Maintainer: Your Name <your.email@example.com>
+# Maintainer: rootLocalGhost <rootlocalghost@gmail.com>
 pkgname=vivestream-next-bin
-pkgver=0.3.0
+pkgver=latest
 pkgrel=1
 pkgdesc="A lightning-fast, natively integrated YouTube downloader and local media library."
 arch=('x86_64')
 url="https://github.com/rootlocalghost/ViveStream-Next"
 license=('custom:PolyForm Noncommercial 1.0.0')
-# We enforce hardware-acceleration dependencies here for the Arc GPU / Linux fallback matrix
+
+# Enforcing Intel QSV / VAAPI fallback matrix hardware dependencies
 depends=('webkit2gtk-4.1' 'yt-dlp' 'ffmpeg' 'intel-media-driver' 'libva-utils')
+makedepends=('curl' 'jq' 'binutils')
 provides=('vivestream-next')
 conflicts=('vivestream-next')
 
-# Automatically pull the .deb file from your automated GitHub Release
-source=("${url}/releases/download/v${pkgver}/vivestream-next_${pkgver}_amd64.deb")
-sha256sums=('SKIP') # Use SKIP for automated rapid releases, or add the actual hash later
+# Source and checksums must be empty to allow dynamic fetching in prepare()
+source=()
+sha256sums=()
+
+prepare() {
+    msg "Querying GitHub API for the latest release..."
+    
+    # Fetch the latest tag dynamically
+    LATEST_TAG=$(curl -s "https://api.github.com/repos/rootlocalghost/ViveStream-Next/releases/latest" | jq -r .tag_name)
+    
+    if [ "$LATEST_TAG" = "null" ] || [ -z "$LATEST_TAG" ]; then
+        error "Failed to fetch the latest version from GitHub. Check your network or rate limits."
+        exit 1
+    fi
+    
+    # Strip the 'v' prefix for the .deb filename mapping
+    LATEST_VER="${LATEST_TAG#v}"
+    msg2 "Latest release found: ${LATEST_TAG}"
+    
+    DEB_URL="${url}/releases/download/${LATEST_TAG}/vivestream-next_${LATEST_VER}_amd64.deb"
+    
+    msg2 "Downloading payload: ${DEB_URL}"
+    curl -L -o "${srcdir}/vivestream-next.deb" "${DEB_URL}"
+    
+    msg2 "Extracting Debian package..."
+    # 'ar' from binutils cleanly unpacks the .deb shell
+    ar x "${srcdir}/vivestream-next.deb"
+    
+    msg2 "Unpacking data archive..."
+    # Extracts whichever data.tar format Tauri generated (.gz, .xz, or .zst)
+    tar -xf data.tar.* -C "${srcdir}"
+}
 
 package() {
-    # makepkg automatically extracts the outer .deb shell.
-    # We just need to unpack the inner data folder directly into the pacman package directory.
-    msg2 "Extracting Debian package into Arch package directory..."
-    tar -xf "${srcdir}/data.tar."* -C "${pkgdir}"
+    msg2 "Installing into pacman fakeroot directory..."
+    # The extracted .deb creates a 'usr' folder. We mirror that structure into the pkgdir.
+    cp -a "${srcdir}/usr" "${pkgdir}/"
 }
