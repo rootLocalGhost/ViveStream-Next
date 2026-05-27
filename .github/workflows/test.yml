@@ -2,9 +2,17 @@ name: Test Suite
 
 on:
   push:
-    branches: [ "main" ]
+    branches: 
+      - main 
+    paths:
+      - 'VERSION' # Triggers automatically when you run 'bun run bump'
+  workflow_dispatch: # Manual trigger
   pull_request:
-    branches: [ "main" ]
+    branches: 
+      - main # Runs on PRs to catch broken code before merging
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   test:
@@ -23,7 +31,7 @@ jobs:
         node-version: 20
 
     - name: Setup Bun
-      uses: oven-sh/setup-bun@v1
+      uses: oven-sh/setup-bun@v2 # Bumped to v2
       with:
         bun-version: latest
 
