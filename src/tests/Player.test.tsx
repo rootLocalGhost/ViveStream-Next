@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@solidjs/testing-library";
-import { Router, Route } from "@solidjs/router";
 import Player from "../pages/Player";
 import { vi } from "vitest";
 
+// Mock Tauri Core IPC
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd) => {
     if (cmd === "get_downloaded_videos") {
@@ -20,8 +20,20 @@ vi.mock("@tauri-apps/api/core", () => ({
   }),
 }));
 
+// Mock Tauri Event Listeners (OS Media Keys)
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(() => Promise.resolve(() => {})),
+}));
+
+// Mock SolidJS Router (Prevents <A> and 'use' invariant errors)
+vi.mock("@solidjs/router", () => ({
+  useParams: () => ({ id: "video123" }),
+  useNavigate: () => vi.fn(),
+}));
+
 beforeAll(() => {
   HTMLVideoElement.prototype.play = vi.fn().mockReturnValue(Promise.resolve());
+  HTMLVideoElement.prototype.pause = vi.fn();
 });
 
 describe("Player Component", () => {
@@ -30,16 +42,6 @@ describe("Player Component", () => {
   });
 
   it("should load and display video info", async () => {
-    // To properly test Solid Router components that use useParams, we can mock the router
-    // or just pass a simple wrapper. Let's mock the module.
-    vi.mock("@solidjs/router", async () => {
-      const actual = await vi.importActual("@solidjs/router");
-      return {
-        ...actual,
-        useParams: () => ({ id: "video123" }),
-      };
-    });
-
     render(() => <Player />);
 
     await waitFor(() => {
@@ -49,9 +51,7 @@ describe("Player Component", () => {
 
     const videoElement = document.querySelector("video");
     expect(videoElement).toBeInTheDocument();
-
-    const sourceElement = document.querySelector("source");
-    expect(sourceElement).toHaveAttribute(
+    expect(videoElement).toHaveAttribute(
       "src",
       "http://127.0.0.1:1422/Videos/video123.mp4",
     );
