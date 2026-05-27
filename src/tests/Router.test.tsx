@@ -27,9 +27,7 @@ vi.mock("@tauri-apps/api/window", () => ({
 
 describe("Router", () => {
   it("navigates between routes", async () => {
-    render(() => (
-      <App />
-    ));
+    render(() => <App />);
 
     // Wait for App to mount and check_binaries to complete
     await waitFor(() => {

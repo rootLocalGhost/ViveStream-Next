@@ -51,6 +51,9 @@ describe("Player Component", () => {
     expect(videoElement).toBeInTheDocument();
 
     const sourceElement = document.querySelector("source");
-    expect(sourceElement).toHaveAttribute("src", "http://127.0.0.1:1422/Videos/video123.mp4");
+    expect(sourceElement).toHaveAttribute(
+      "src",
+      "http://127.0.0.1:1422/Videos/video123.mp4",
+    );
   });
 });

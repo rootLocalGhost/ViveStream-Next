@@ -31,7 +31,7 @@ describe("Settings Component", () => {
       expect(invoke).toHaveBeenCalledWith("wipe_dependencies");
       expect(message).toHaveBeenCalledWith(
         expect.stringContaining("Dependencies wiped successfully"),
-        expect.anything()
+        expect.anything(),
       );
     });
   });
@@ -49,7 +49,7 @@ describe("Settings Component", () => {
       expect(invoke).toHaveBeenCalledWith("nuclear_wipe");
       expect(message).toHaveBeenCalledWith(
         expect.stringContaining("Nuclear wipe complete"),
-        expect.anything()
+        expect.anything(),
       );
     });
   });

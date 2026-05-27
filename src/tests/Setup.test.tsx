@@ -34,7 +34,9 @@ describe("Setup Component", () => {
 
     // Wait for the initial check to finish and logs to be populated
     await waitFor(() => {
-      expect(screen.getByText(/Target Data Path: \/mock\/bin\/folder/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Target Data Path: \/mock\/bin\/folder/i),
+      ).toBeInTheDocument();
     });
 
     const deployBtn = screen.getByText(/INITIALIZE DEPLOYMENT/i);

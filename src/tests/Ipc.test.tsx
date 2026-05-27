@@ -13,7 +13,7 @@ vi.mock("@tauri-apps/api/core", () => ({
         title: "Mock Video Title",
         channel: "Mock Channel",
         video_path: "/mock/videos/mock_id_123.mp4",
-        thumbnail_path: "/mock/thumbs/mock_id_123.jpg"
+        thumbnail_path: "/mock/thumbs/mock_id_123.jpg",
       });
     }
     if (cmd === "download_video") {
@@ -37,7 +37,9 @@ describe("Tauri IPC Mocking (Integration)", () => {
 
     // Enter URL
     const input = screen.getByPlaceholderText("Paste YouTube URL here...");
-    fireEvent.input(input, { target: { value: "https://youtube.com/watch?v=mock_id_123" } });
+    fireEvent.input(input, {
+      target: { value: "https://youtube.com/watch?v=mock_id_123" },
+    });
 
     // Click download
     const downloadBtn = screen.getByText("Download");
@@ -45,7 +47,9 @@ describe("Tauri IPC Mocking (Integration)", () => {
 
     await waitFor(() => {
       // First it fetches metadata
-      expect(invoke).toHaveBeenCalledWith("get_video_metadata", { url: "https://youtube.com/watch?v=mock_id_123" });
+      expect(invoke).toHaveBeenCalledWith("get_video_metadata", {
+        url: "https://youtube.com/watch?v=mock_id_123",
+      });
 
       // Then it triggers download_video with the parsed VideoEntry struct metadata
       expect(invoke).toHaveBeenCalledWith("download_video", {
@@ -55,7 +59,7 @@ describe("Tauri IPC Mocking (Integration)", () => {
           title: "Mock Video Title",
           channel: "Mock Channel",
           video_path: "/mock/videos/mock_id_123.mp4",
-          thumbnail_path: "/mock/thumbs/mock_id_123.jpg"
+          thumbnail_path: "/mock/thumbs/mock_id_123.jpg",
         },
         quality: "1080p", // default quality
       });
