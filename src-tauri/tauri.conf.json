@@ -19,11 +19,11 @@
         "transparent": false
       }
     ],
-    "security": {
+        "security": {
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["/home/localghost/Videos/ViveStream/**"]
+        "scope": ["$VIDEO/ViveStream/**"]
       }
     }
   },
