@@ -570,9 +570,9 @@ pub fn run() {
 
             // Initialize souvlaki media controls
             #[cfg(target_os = "windows")]
-            let hwnd =
-                Some(app.get_webview_window("main").unwrap().hwnd().unwrap()
-                    as *mut std::ffi::c_void);
+            let hwnd = Some(
+                app.get_webview_window("main").unwrap().hwnd().unwrap().0 as *mut std::ffi::c_void,
+            );
 
             #[cfg(not(target_os = "windows"))]
             let hwnd = None;

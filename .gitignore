@@ -8,3 +8,5 @@ PKGBUILD.1
 *.deb
 *.gz
 src/debian-binary
+/src/usr
+*.zst
