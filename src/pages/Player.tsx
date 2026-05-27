@@ -60,42 +60,7 @@ export default function Player() {
   let unlistenNext: UnlistenFn;
   let unlistenPrev: UnlistenFn;
 
-  onMount(async () => {
-    await loadVideoData(params.id);
-
-    unlistenPlay = await listen("media-play", () => handlePlay());
-    unlistenPause = await listen("media-pause", () => handlePause());
-    unlistenNext = await listen("media-next", () => handleVideoEnd());
-    unlistenPrev = await listen("media-prev", () => {
-      if (videoRef) videoRef.currentTime = 0;
-    });
-
-    document.addEventListener("fullscreenchange", () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    });
-  });
-
-  onCleanup(() => {
-    if (unlistenPlay) unlistenPlay();
-    if (unlistenPause) unlistenPause();
-    if (unlistenNext) unlistenNext();
-    if (unlistenPrev) unlistenPrev();
-  });
-
-  createEffect(() => {
-    loadVideoData(params.id);
-  });
-
-  createEffect(() => {
-    if (video() && videoRef) {
-      invoke("update_media_metadata", {
-        title: video()!.title,
-        artist: video()!.channel,
-      });
-      videoRef.currentTime = 0;
-      handlePlay();
-    }
-  });
+  // --- Core Player Handlers (Hoisted above lifecycle hooks to prevent TDZ ReferenceError) ---
 
   const loadVideoData = async (targetId: string) => {
     try {
@@ -196,6 +161,45 @@ export default function Player() {
       controlsTimeout = window.setTimeout(() => setShowControls(false), 2500);
     }
   };
+
+  // --- Lifecycle Hooks ---
+
+  onMount(async () => {
+    await loadVideoData(params.id);
+
+    unlistenPlay = await listen("media-play", () => handlePlay());
+    unlistenPause = await listen("media-pause", () => handlePause());
+    unlistenNext = await listen("media-next", () => handleVideoEnd());
+    unlistenPrev = await listen("media-prev", () => {
+      if (videoRef) videoRef.currentTime = 0;
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    });
+  });
+
+  onCleanup(() => {
+    if (unlistenPlay) unlistenPlay();
+    if (unlistenPause) unlistenPause();
+    if (unlistenNext) unlistenNext();
+    if (unlistenPrev) unlistenPrev();
+  });
+
+  createEffect(() => {
+    loadVideoData(params.id);
+  });
+
+  createEffect(() => {
+    if (video() && videoRef) {
+      invoke("update_media_metadata", {
+        title: video()!.title,
+        artist: video()!.channel,
+      });
+      videoRef.currentTime = 0;
+      handlePlay();
+    }
+  });
 
   return (
     <div
