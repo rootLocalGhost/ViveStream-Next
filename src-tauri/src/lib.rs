@@ -1,3 +1,4 @@
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
@@ -11,7 +12,11 @@ use tauri::{
     AppHandle, Emitter, Manager,
 };
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_sql::{Builder as SqlBuilder, Migration, MigrationKind};
 use warp::Filter;
+
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct VideoEntry {
@@ -29,6 +34,15 @@ struct BinaryCheckStatus {
     bin_folder: PathBuf,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct OldVideoEntry {
+    id: String,
+    title: String,
+    channel: String,
+    video_path: String,
+    thumbnail_path: String,
+}
+
 fn get_base_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let video_dir = app.path().video_dir().map_err(|e| e.to_string())?;
     Ok(video_dir.join("ViveStream"))
@@ -39,11 +53,113 @@ fn get_bin_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app_data.join("bin"))
 }
 
+fn get_db_connection(app: &AppHandle) -> Result<Connection, String> {
+    let config_dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+    let db_path = config_dir.join("ViveStream-Next.db");
+    Connection::open(db_path).map_err(|e| e.to_string())
+}
+
+fn init_db(app: &AppHandle) -> Result<(), String> {
+    let conn = get_db_connection(app)?;
+
+    conn.execute_batch("PRAGMA foreign_keys = ON;")
+        .map_err(|e| e.to_string())?;
+
+    conn.execute_batch(
+        "
+        CREATE TABLE IF NOT EXISTS Artists (
+            name TEXT PRIMARY KEY,
+            avatar_path TEXT
+        );
+        CREATE TABLE IF NOT EXISTS Videos (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            channel_name TEXT,
+            video_path TEXT NOT NULL,
+            thumbnail_path TEXT,
+            is_favorite BOOLEAN DEFAULT 0,
+            added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(channel_name) REFERENCES Artists(name)
+        );
+        CREATE TABLE IF NOT EXISTS Playlists (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS Playlist_Videos (
+            playlist_id TEXT,
+            video_id TEXT,
+            sort_order INTEGER,
+            PRIMARY KEY (playlist_id, video_id),
+            FOREIGN KEY(playlist_id) REFERENCES Playlists(id) ON DELETE CASCADE,
+            FOREIGN KEY(video_id) REFERENCES Videos(id) ON DELETE CASCADE
+        );
+        ",
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
     return (bin_dir.join("yt-dlp.exe"), bin_dir.join("ffmpeg.exe"));
     #[cfg(not(target_os = "windows"))]
     return (bin_dir.join("yt-dlp"), bin_dir.join("ffmpeg"));
+}
+
+fn migrate_json_to_sqlite(app: &AppHandle) -> Result<(), String> {
+    let base_dir = get_base_dir(app)?;
+    let json_path = base_dir.join("db.json");
+    let bak_path = base_dir.join("db.json.bak");
+
+    if !json_path.exists() {
+        return Ok(());
+    }
+
+    let json_data = fs::read_to_string(&json_path).map_err(|e| e.to_string())?;
+    let videos: Vec<OldVideoEntry> = serde_json::from_str(&json_data).unwrap_or_else(|_| vec![]);
+
+    if videos.is_empty() {
+        let _ = fs::rename(&json_path, &bak_path);
+        return Ok(());
+    }
+
+    let mut conn = get_db_connection(app)?;
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
+
+    {
+        let mut stmt = tx
+            .prepare("INSERT OR IGNORE INTO Artists (name) VALUES (?1)")
+            .map_err(|e| e.to_string())?;
+        for video in &videos {
+            let _ = stmt.execute([&video.channel]);
+        }
+    }
+
+    {
+        let mut stmt = tx.prepare(
+            "INSERT OR IGNORE INTO Videos (id, title, channel_name, video_path, thumbnail_path, is_favorite, added_at) 
+             VALUES (?1, ?2, ?3, ?4, ?5, 0, CURRENT_TIMESTAMP)"
+        ).map_err(|e| e.to_string())?;
+
+        for video in &videos {
+            stmt.execute((
+                &video.id,
+                &video.title,
+                &video.channel,
+                &video.video_path,
+                &video.thumbnail_path,
+            ))
+            .map_err(|e| e.to_string())?;
+        }
+    }
+
+    tx.commit().map_err(|e| e.to_string())?;
+    let _ = fs::rename(&json_path, &bak_path);
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -61,24 +177,20 @@ async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String> {
 async fn download_binaries(app: AppHandle) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     fs::create_dir_all(&bin_dir).map_err(|e| e.to_string())?;
-
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         .redirect(reqwest::redirect::Policy::limited(10))
         .build()
         .map_err(|e| e.to_string())?;
-
     let emit_progress = |msg: &str| {
         let _ = app.emit("setup-progress", msg);
     };
-
     #[cfg(target_os = "windows")]
     let ytdlp_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe";
     #[cfg(not(target_os = "windows"))]
     let ytdlp_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp";
-
     emit_progress("Fetching latest yt-dlp Nightly from GitHub...");
     let ytdlp_response = client
         .get(ytdlp_url)
@@ -86,7 +198,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
     let bytes = ytdlp_response.bytes().await.map_err(|e| e.to_string())?;
-
     emit_progress("Validating yt-dlp SHA256 checksum...");
     let sums_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
@@ -103,29 +214,24 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
     } else {
         "yt-dlp"
     };
-
     let expected_hash = sums_text
         .lines()
         .find(|line| line.ends_with(target_bin_name))
         .and_then(|line| line.split_whitespace().next())
         .ok_or("Failed to find yt-dlp hash in upstream SHA2-256SUMS file")?;
-
     let mut hasher = Sha256::new();
     hasher.update(&bytes);
     let actual_hash = format!("{:x}", hasher.finalize());
-
     if expected_hash != actual_hash {
         return Err(format!(
             "SECURITY FAULT: yt-dlp checksum mismatch! Expected {}, got {}",
             expected_hash, actual_hash
         ));
     }
-
     emit_progress("yt-dlp checksum verified. Proceeding with write.");
     let ytdlp_path = bin_dir.join(target_bin_name);
     let mut ytdlp_file = File::create(&ytdlp_path).map_err(|e| e.to_string())?;
     ytdlp_file.write_all(&bytes).map_err(|e| e.to_string())?;
-
     #[cfg(not(target_os = "windows"))]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -135,10 +241,8 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         perms.set_mode(0o755);
         fs::set_permissions(&ytdlp_path, perms).map_err(|e| e.to_string())?;
     }
-
     emit_progress("yt-dlp Nightly ready.");
     emit_progress("Fetching compatible FFmpeg build... (This takes a moment)");
-
     #[cfg(target_os = "windows")]
     {
         let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
@@ -155,7 +259,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         }
         let bytes = response.bytes().await.map_err(|e| e.to_string())?;
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
-
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
             if file.name().ends_with("ffmpeg.exe") && file.is_file() {
@@ -166,7 +269,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
             }
         }
     }
-
     #[cfg(not(target_os = "windows"))]
     {
         let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz";
@@ -182,12 +284,10 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
             ));
         }
         let bytes = response.bytes().await.map_err(|e| e.to_string())?;
-
         use tar::Archive;
         use xz2::read::XzDecoder;
         let tar = XzDecoder::new(Cursor::new(bytes));
         let mut archive = Archive::new(tar);
-
         for entry in archive.entries().map_err(|e| e.to_string())? {
             let mut entry = entry.map_err(|e| e.to_string())?;
             let path = entry.path().map_err(|e| e.to_string())?;
@@ -206,7 +306,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
             }
         }
     }
-
     emit_progress("FFmpeg ready.");
     app.dialog()
         .message("Deployment complete. ViveStream will now restart to initialize engines.")
@@ -214,7 +313,6 @@ async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .show(move |_| {
             app.restart();
         });
-
     Ok(())
 }
 
@@ -223,15 +321,17 @@ async fn get_video_metadata(app: AppHandle, url: String) -> Result<VideoEntry, S
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
     let (ytdlp_path, _) = get_binary_paths(&bin_dir);
-
     if !ytdlp_path.exists() {
         return Err("yt-dlp binary missing. Run setup.".into());
     }
-
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
 
-    let output = Command::new(&ytdlp_path)
+    let mut cmd = Command::new(&ytdlp_path);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(0x08000000);
+
+    let output = cmd
         .args([
             "--no-playlist",
             "--extractor-args",
@@ -247,15 +347,12 @@ async fn get_video_metadata(app: AppHandle, url: String) -> Result<VideoEntry, S
         let err_msg = String::from_utf8_lossy(&output.stderr);
         return Err(format!("yt-dlp Error: {}", err_msg.trim()));
     }
-
     let out_str = String::from_utf8_lossy(&output.stdout);
     let parts: Vec<&str> = out_str.trim().splitn(3, '|').collect();
-
     if parts.len() >= 3 {
         let id = parts[0].to_string();
         let channel = parts[1].to_string();
         let title = parts[2].to_string();
-
         Ok(VideoEntry {
             id: id.clone(),
             title,
@@ -278,20 +375,15 @@ async fn download_video(
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
     let (ytdlp_path, ffmpeg_path) = get_binary_paths(&bin_dir);
-
     if !ytdlp_path.exists() || !ffmpeg_path.exists() {
         return Err("Binaries missing. Run setup.".into());
     }
-
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
-
     fs::create_dir_all(&vid_dir).unwrap();
     fs::create_dir_all(&thumb_dir).unwrap();
-
     let temp_path = vid_dir.join(format!("raw_{}.mp4", metadata.id));
     let final_path = metadata.video_path.clone();
-
     app.emit("download-progress", "Step 1: Downloading stream...")
         .unwrap();
 
@@ -304,7 +396,11 @@ async fn download_video(
         _ => "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
     };
 
-    let mut child = Command::new(&ytdlp_path)
+    let mut yt_cmd = Command::new(&ytdlp_path);
+    #[cfg(target_os = "windows")]
+    yt_cmd.creation_flags(0x08000000);
+
+    let mut child = yt_cmd
         .args([
             "--newline",
             "-f",
@@ -332,7 +428,6 @@ async fn download_video(
 
     let stdout = child.stdout.take().unwrap();
     let reader = BufReader::new(stdout);
-
     for line in reader.lines() {
         if let Ok(line) = line {
             app.emit("download-progress", line).unwrap();
@@ -347,7 +442,6 @@ async fn download_video(
     let raw_thumb = thumb_dir.join(format!("raw_{}.jpg", metadata.id));
     let final_thumb = metadata.thumbnail_path.clone();
     let _ = fs::rename(&raw_thumb, &final_thumb);
-
     app.emit("download-progress", "Step 2: Starting FFmpeg transcoder...")
         .unwrap();
 
@@ -397,11 +491,14 @@ async fn download_video(
     };
 
     let mut transcode_success = false;
-
     for (name, args) in encoders {
         app.emit("download-progress", format!("Attempting encoder: {}", name))
             .unwrap();
+
         let mut cmd = Command::new(&ffmpeg_path);
+        #[cfg(target_os = "windows")]
+        cmd.creation_flags(0x08000000);
+
         cmd.args(["-y", "-hwaccel", "auto", "-i", temp_path.to_str().unwrap()]);
         cmd.args(&args);
         cmd.args([
@@ -413,7 +510,6 @@ async fn download_video(
         ]);
 
         let output = cmd.output().map_err(|e| e.to_string())?;
-
         if output.status.success() {
             app.emit(
                 "download-progress",
@@ -432,40 +528,61 @@ async fn download_video(
     }
 
     let _ = fs::remove_file(&temp_path);
-
     if !transcode_success {
         return Err("All hardware and software FFmpeg encoders failed.".into());
     }
 
-    let db_path = base_dir.join("db.json");
-    let mut entries: Vec<VideoEntry> = if Path::new(&db_path).exists() {
-        let data = fs::read_to_string(&db_path).unwrap_or_default();
-        serde_json::from_str(&data).unwrap_or_else(|_| vec![])
-    } else {
-        vec![]
-    };
+    let mut conn = get_db_connection(&app)?;
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
 
-    entries.retain(|e| e.id != metadata.id);
-    entries.push(metadata);
+    tx.execute(
+        "INSERT OR IGNORE INTO Artists (name) VALUES (?1)",
+        [&metadata.channel],
+    )
+    .map_err(|e| e.to_string())?;
 
-    let json = serde_json::to_string_pretty(&entries).unwrap();
-    fs::write(db_path, json).map_err(|e| e.to_string())?;
+    tx.execute(
+        "INSERT OR REPLACE INTO Videos (id, title, channel_name, video_path, thumbnail_path, is_favorite, added_at) 
+         VALUES (?1, ?2, ?3, ?4, ?5, 0, CURRENT_TIMESTAMP)",
+        (
+            &metadata.id,
+            &metadata.title,
+            &metadata.channel,
+            metadata.video_path.to_str().unwrap(),
+            metadata.thumbnail_path.to_str().unwrap(),
+        ),
+    ).map_err(|e| e.to_string())?;
+
+    tx.commit().map_err(|e| e.to_string())?;
 
     Ok(())
 }
 
 #[tauri::command]
 fn get_downloaded_videos(app: AppHandle) -> Result<Vec<VideoEntry>, String> {
-    let base_dir = get_base_dir(&app)?;
-    let db_path = base_dir.join("db.json");
+    let conn = get_db_connection(&app)?;
+    let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos ORDER BY added_at DESC")
+        .map_err(|e| e.to_string())?;
 
-    if Path::new(&db_path).exists() {
-        let data = fs::read_to_string(db_path).unwrap_or_default();
-        let entries: Vec<VideoEntry> = serde_json::from_str(&data).unwrap_or_else(|_| vec![]);
-        Ok(entries)
-    } else {
-        Ok(vec![])
+    let video_iter = stmt
+        .query_map([], |row| {
+            let v_path: String = row.get(3)?;
+            let t_path: String = row.get(4)?;
+            Ok(VideoEntry {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                channel: row.get(2)?,
+                video_path: PathBuf::from(v_path),
+                thumbnail_path: PathBuf::from(t_path),
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut videos = Vec::new();
+    for video in video_iter {
+        videos.push(video.map_err(|e| e.to_string())?);
     }
+    Ok(videos)
 }
 
 #[tauri::command]
@@ -483,11 +600,15 @@ async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
     if bin_dir.exists() {
         let _ = fs::remove_dir_all(&bin_dir);
     }
-
     let base_dir = get_base_dir(&app)?;
     if base_dir.exists() {
         fs::remove_dir_all(base_dir)
             .map_err(|e| format!("Failed to delete media library: {}", e))?;
+    }
+    let config_dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    let db_path = config_dir.join("ViveStream-Next.db");
+    if db_path.exists() {
+        let _ = fs::remove_file(db_path);
     }
     Ok(())
 }
@@ -525,12 +646,59 @@ fn update_playback_status(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let migrations = vec![Migration {
+        version: 1,
+        description: "Initial schema creation",
+        sql: "
+                CREATE TABLE IF NOT EXISTS Artists (
+                    name TEXT PRIMARY KEY,
+                    avatar_path TEXT
+                );
+                CREATE TABLE IF NOT EXISTS Videos (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    channel_name TEXT,
+                    video_path TEXT NOT NULL,
+                    thumbnail_path TEXT,
+                    is_favorite BOOLEAN DEFAULT 0,
+                    added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(channel_name) REFERENCES Artists(name)
+                );
+                CREATE TABLE IF NOT EXISTS Playlists (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS Playlist_Videos (
+                    playlist_id TEXT,
+                    video_id TEXT,
+                    sort_order INTEGER,
+                    PRIMARY KEY (playlist_id, video_id),
+                    FOREIGN KEY(playlist_id) REFERENCES Playlists(id) ON DELETE CASCADE,
+                    FOREIGN KEY(video_id) REFERENCES Videos(id) ON DELETE CASCADE
+                );
+            ",
+        kind: MigrationKind::Up,
+    }];
+
     tauri::Builder::default()
+        .plugin(
+            SqlBuilder::default()
+                .add_migrations("sqlite:ViveStream-Next.db", migrations)
+                .build(),
+        )
         .setup(|app| {
             let app_handle = app.handle().clone();
-            let base_dir = get_base_dir(&app_handle).unwrap_or_default();
 
-            // Spawn dynamic warp server
+            if let Err(e) = init_db(&app_handle) {
+                eprintln!("Database initialization error: {}", e);
+            }
+
+            if let Err(e) = migrate_json_to_sqlite(&app_handle) {
+                eprintln!("Migration bridge error: {}", e);
+            }
+
+            let base_dir = get_base_dir(&app_handle).unwrap_or_default();
             let port_free = std::net::TcpListener::bind("127.0.0.1:1422").is_ok();
             if port_free {
                 tauri::async_runtime::spawn(async move {
@@ -545,8 +713,6 @@ pub fn run() {
                     "Port 1422 is already actively bound. Skipping duplicate warp server start."
                 );
             }
-
-            // Setup System Tray
             if let Some(icon) = app.default_window_icon() {
                 let handle = app.handle().clone();
                 let _ = TrayIconBuilder::new()
@@ -567,25 +733,19 @@ pub fn run() {
                     })
                     .build(&handle);
             }
-
-            // Initialize souvlaki media controls
             #[cfg(target_os = "windows")]
             let hwnd = Some(
                 app.get_webview_window("main").unwrap().hwnd().unwrap().0 as *mut std::ffi::c_void,
             );
-
             #[cfg(not(target_os = "windows"))]
             let hwnd = None;
-
             let config = PlatformConfig {
                 dbus_name: "vivestream_next",
                 display_name: "ViveStream",
                 hwnd,
             };
-
             if let Ok(mut controls) = MediaControls::new(config) {
                 let emit_handle = app.handle().clone();
-
                 controls
                     .attach(move |event| match event {
                         MediaControlEvent::Play => {
@@ -603,15 +763,12 @@ pub fn run() {
                         _ => {}
                     })
                     .unwrap();
-
                 let _ = controls.set_metadata(MediaMetadata {
                     title: Some("ViveStream Idle"),
                     ..Default::default()
                 });
-
                 app.manage(Mutex::new(controls));
             }
-
             Ok(())
         })
         .plugin(tauri_plugin_fs::init())
@@ -636,25 +793,21 @@ pub fn run() {
 mod tests {
     use super::*;
     use std::path::PathBuf;
-
     #[test]
     fn test_get_binary_paths() {
         let bin_dir = PathBuf::from("/mock/bin/folder");
         let (ytdlp, ffmpeg) = get_binary_paths(&bin_dir);
-
         #[cfg(target_os = "windows")]
         {
             assert_eq!(ytdlp, bin_dir.join("yt-dlp.exe"));
             assert_eq!(ffmpeg, bin_dir.join("ffmpeg.exe"));
         }
-
         #[cfg(not(target_os = "windows"))]
         {
             assert_eq!(ytdlp, bin_dir.join("yt-dlp"));
             assert_eq!(ffmpeg, bin_dir.join("ffmpeg"));
         }
     }
-
     #[test]
     fn test_video_entry_serialization() {
         let entry = VideoEntry {
@@ -664,7 +817,6 @@ mod tests {
             video_path: PathBuf::from("/videos/123.mp4"),
             thumbnail_path: PathBuf::from("/thumbs/123.jpg"),
         };
-
         let json = serde_json::to_string(&entry).unwrap();
         assert!(json.contains("123"));
         assert!(json.contains("Test Video"));

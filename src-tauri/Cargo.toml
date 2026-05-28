@@ -31,3 +31,5 @@ zip = "2.1"
 dirs-next = "2.0"
 sha2 = "0.10"
 souvlaki = "0.8.3"
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+rusqlite = "0.31.0"

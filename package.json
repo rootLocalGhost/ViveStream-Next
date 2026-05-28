@@ -11,7 +11,7 @@
     "tauri": "tauri",
     "clean": "cd src-tauri && cargo clean && rm -rf target gen && cd .. && rm -rf node_modules dist pkg PKGBUILD.1",
     "init": "cd src-tauri && cargo build && cd .. && bun install && vite build",
-    "test": "vitest run"
+    "test": "vitest run && cd src-tauri && cargo test"
   },
   "license": "Polyform Noncommercial License 1.0.0",
   "dependencies": {

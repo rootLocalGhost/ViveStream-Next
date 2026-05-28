@@ -47,7 +47,12 @@ prepare() {
 }
 
 package() {
-    msg2 "Installing into pacman fakeroot directory..."
-    # The extracted .deb creates a 'usr' folder. We mirror that structure into the pkgdir.
-    cp -a "${srcdir}/usr" "${pkgdir}/"
+    msg2 "Mapping extracted filesystem to Arch pkgdir..."
+    
+    # The .deb data.tar extraction creates a 'usr/' directory in $srcdir.
+    # We simply copy that entire structure (binaries, desktop files, and icons) into $pkgdir.
+    cp -r "${srcdir}/usr" "${pkgdir}/"
+
+    # Ensure the binary has strict executable permissions
+    chmod 755 "${pkgdir}/usr/bin/vivestream-next"
 }
