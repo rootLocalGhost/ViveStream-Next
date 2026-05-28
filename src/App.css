@@ -4,13 +4,11 @@
   font-weight: normal;
   font-style: normal;
 }
-
 @font-face {
   font-family: "MajorMonoDisplay";
   src: url("./assets/fonts/MajorMonoDisplay.ttf") format("truetype");
   font-weight: 400;
 }
-
 :root {
   --font-display: "MajorMonoDisplay", monospace;
   --font-body: "Poppins", sans-serif;
@@ -27,12 +25,10 @@
   --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --shadow-heavy: 0 25px 50px rgba(0, 0, 0, 0.8);
 }
-
 * {
   box-sizing: border-box;
   font-family: var(--font-body);
 }
-
 body {
   margin: 0;
   background-color: var(--primary-background);
@@ -40,18 +36,14 @@ body {
   overflow: hidden;
   user-select: none;
 }
-
 .spinIcon {
   animation: spinIcon 1.5s linear infinite;
 }
-
 @keyframes spinIcon {
   100% {
     transform: rotate(360deg);
   }
 }
-
-/* --- Window Controls & Drag Region --- */
 .immersive-titlebar-wrapper {
   position: absolute;
   top: 0;
@@ -64,7 +56,6 @@ body {
   justify-content: flex-end;
   pointer-events: none;
 }
-
 .drag-region {
   position: absolute;
   left: 50%;
@@ -81,16 +72,13 @@ body {
     opacity 0.3s var(--transition-smooth),
     background 0.2s;
 }
-
 .drag-region:hover {
   background: rgba(255, 255, 255, 0.5);
 }
-
 .immersive-titlebar-wrapper:hover .drag-region,
 .immersive-titlebar-wrapper:hover .titlebar-controls {
   opacity: 1;
 }
-
 .titlebar-controls {
   display: flex;
   height: 32px;
@@ -102,7 +90,6 @@ body {
   transition: opacity 0.3s var(--transition-smooth);
   pointer-events: auto;
 }
-
 .titlebar-btn {
   display: flex;
   justify-content: center;
@@ -115,30 +102,24 @@ body {
     background 0.2s,
     color 0.2s;
 }
-
 .titlebar-btn:hover {
   background: var(--tertiary-background);
 }
-
 .titlebar-btn.close-btn:hover {
   background: var(--primary-accent);
   color: white;
 }
-
-/* --- Layout Architecture --- */
 .app-wrapper {
   display: flex;
   flex-direction: column;
   height: 100vh;
 }
-
 .app-container {
   display: flex;
   flex: 1;
   overflow: hidden;
   position: relative;
 }
-
 .main-content {
   flex: 1;
   margin-left: var(--sidebar-collapsed-width);
@@ -147,14 +128,12 @@ body {
   background: var(--primary-background);
   padding-top: 20px;
 }
-
 .page-wrapper {
   padding: 0px 10px;
   width: 100%;
   height: 100%;
   animation: fadeIn 0.4s ease-out;
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -165,8 +144,6 @@ body {
     transform: translateY(0);
   }
 }
-
-/* --- Expandable Sidebar --- */
 .sidebar {
   width: var(--sidebar-collapsed-width);
   background: var(--primary-background);
@@ -179,12 +156,10 @@ body {
   position: absolute;
   height: 100%;
 }
-
 .sidebar.expanded {
   width: var(--sidebar-expanded-width);
   box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
 }
-
 .sidebar-header {
   height: 72px;
   display: flex;
@@ -193,17 +168,14 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
-
 .app-logo {
   min-width: 32px;
   flex-shrink: 0;
   transition: transform 0.3s var(--transition-smooth);
 }
-
 .sidebar-header:hover .app-logo {
   transform: scale(1.08);
 }
-
 .brand-name {
   font-family: var(--font-display);
   font-size: 18px;
@@ -212,24 +184,20 @@ body {
   transition: opacity 0.2s;
   color: var(--primary-text);
 }
-
 .sidebar.expanded .brand-name {
   opacity: 1;
   transition-delay: 0.1s;
 }
-
 .nav-links {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 0 10px;
 }
-
 .bottom-links {
   margin-top: auto;
   padding-bottom: 24px;
 }
-
 .sidebar a {
   display: flex;
   align-items: center;
@@ -244,13 +212,11 @@ body {
   overflow: hidden;
   white-space: nowrap;
 }
-
 .sidebar a:hover,
 .sidebar a.active {
   background: var(--secondary-background);
   color: var(--primary-text);
 }
-
 .nav-text {
   margin-left: 20px;
   opacity: 0;
@@ -258,13 +224,10 @@ body {
   font-size: 15px;
   font-weight: 500;
 }
-
 .sidebar.expanded .nav-text {
   opacity: 1;
   transition-delay: 0.1s;
 }
-
-/* --- Icon Animations --- */
 .icon-stack {
   position: relative;
   width: 24px;
@@ -274,56 +237,45 @@ body {
   align-items: center;
   flex-shrink: 0;
 }
-
 .icon-stack i {
   position: absolute;
   font-size: 24px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .icon-outline {
   opacity: 1;
   transform: scale(1);
 }
-
 .icon-fill {
   opacity: 0;
   transform: scale(0.6);
   color: var(--primary-accent);
 }
-
 .sidebar a:hover .icon-outline,
 .sidebar a.active .icon-outline {
   opacity: 0;
   transform: scale(1.2);
 }
-
 .sidebar a:hover .icon-fill,
 .sidebar a.active .icon-fill {
   opacity: 1;
   transform: scale(1);
 }
-
 .sidebar a:hover .anim-bounce .icon-fill {
   animation: bounceIcon 0.5s ease;
 }
-
 .sidebar a:hover .anim-pulse .icon-fill {
   animation: pulseIcon 0.8s ease infinite;
 }
-
 .sidebar a:hover .anim-shake .icon-fill {
   animation: shakeIcon 0.5s ease-in-out infinite alternate;
 }
-
 .sidebar a:hover .anim-slide .icon-fill {
   animation: slideDownIcon 0.6s ease infinite alternate;
 }
-
 .sidebar a:hover .anim-spin .icon-fill {
   animation: spinIcon 2s linear infinite;
 }
-
 @keyframes bounceIcon {
   0%,
   100% {
@@ -333,7 +285,6 @@ body {
     transform: translateY(-4px) scale(1.1);
   }
 }
-
 @keyframes pulseIcon {
   0%,
   100% {
@@ -344,7 +295,6 @@ body {
     filter: drop-shadow(0 0 8px var(--primary-accent));
   }
 }
-
 @keyframes slideDownIcon {
   0% {
     transform: translateY(-2px);
@@ -353,7 +303,6 @@ body {
     transform: translateY(3px);
   }
 }
-
 @keyframes shakeIcon {
   0% {
     transform: rotate(-10deg);
@@ -362,15 +311,12 @@ body {
     transform: rotate(10deg);
   }
 }
-
-/* --- Media Grid UI --- */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
   padding-top: 10px;
 }
-
 .video-card {
   display: flex;
   flex-direction: column;
@@ -378,11 +324,9 @@ body {
   border-radius: 16px;
   transition: transform 0.2s var(--transition-smooth);
 }
-
 .video-card:hover {
   transform: scale(1.02);
 }
-
 .video-thumbnail {
   width: 100%;
   aspect-ratio: 16/9;
@@ -390,12 +334,10 @@ body {
   border-radius: 12px;
   border: 1px solid var(--border-color);
 }
-
 .video-info {
   margin-top: 12px;
   padding-right: 12px;
 }
-
 .video-title {
   margin: 0;
   font-size: 15px;
@@ -407,22 +349,18 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .video-channel {
   margin: 4px 0 0 0;
   font-size: 13px;
   color: var(--secondary-text);
 }
-
-/* CUSTOM PLAYER CLASSES */
-
 .player-page-container {
   display: flex;
   flex-wrap: wrap;
   gap: 24px;
   padding: 0px 10px;
   width: 100%;
-  max-width: 100%; /* Allows edge-to-edge bleed */
+  max-width: 100%;
   margin: 0 auto;
   min-height: 100vh;
   align-content: flex-start;
@@ -430,13 +368,10 @@ body {
     padding 0.35s var(--transition-smooth),
     max-width 0.35s var(--transition-smooth);
 }
-
 .player-page-container.is-theater {
   padding: 0;
   gap: 0;
 }
-
-/* Left Column (Video + Metadata) */
 .player-main-col {
   flex: 1 1 600px;
   min-width: 0;
@@ -444,12 +379,9 @@ body {
   flex-direction: column;
   transition: flex-basis 0.35s var(--transition-smooth);
 }
-
 .player-page-container.is-theater .player-main-col {
   flex: 1 1 100%;
 }
-
-/* Right Column (Up Next Queue) */
 .player-sidebar {
   flex: 0 0 400px;
   max-width: 400px;
@@ -461,52 +393,51 @@ body {
     max-width 0.35s var(--transition-smooth),
     padding 0.35s ease;
 }
-
 .player-page-container.is-theater .player-sidebar {
   flex: 0 0 100%;
-  max-width: 100%; /* Match the bleed */
+  max-width: 100%;
   margin: 0 auto 40px auto;
   padding: 24px;
 }
 
-/* Video Frame Engine */
+/* FIX: Smooth theater mode transition */
 .player-video-wrapper {
   position: relative;
   width: 100%;
   background: #000;
   border-radius: 12px;
   overflow: hidden;
-  aspect-ratio: 16/9;
   display: flex;
   flex-direction: column;
   justify-content: center;
   transition:
     border-radius 0.35s ease,
-    aspect-ratio 0.35s ease,
-    height 0.35s ease;
+    height 0.35s ease,
+    width 0.35s ease;
 }
-
 .player-page-container.is-theater .player-video-wrapper {
   border-radius: 0;
-  aspect-ratio: auto;
   height: 75vh;
 }
-
 .player-page-container.is-fullscreen .player-video-wrapper {
   border-radius: 0;
-  aspect-ratio: auto;
   height: 100vh;
 }
-
 .player-video-element {
   width: 100%;
-  height: 100%;
+  aspect-ratio: 16/9;
+  max-height: 100%;
   object-fit: contain;
   outline: none;
   cursor: pointer;
+  transition: aspect-ratio 0.35s ease;
+}
+.player-page-container.is-theater .player-video-element,
+.player-page-container.is-fullscreen .player-video-element {
+  aspect-ratio: auto;
+  height: 100%;
 }
 
-/* Custom Controls HUD */
 .player-controls-overlay {
   position: absolute;
   bottom: 0;
@@ -524,7 +455,6 @@ body {
   gap: 6px;
   transition: opacity 0.25s ease-in-out;
 }
-
 .control-btn {
   background: transparent;
   color: white;
@@ -540,56 +470,59 @@ body {
   font-size: 24px;
   outline: none;
 }
-
 .control-btn:hover {
   transform: scale(1.1);
 }
 
-/* Custom Range Sliders (Seek & Volume) */
+/* FIX: Seekbar Fill and clipping */
 .custom-slider {
   -webkit-appearance: none;
   appearance: none;
-  background: transparent;
-  cursor: pointer;
   width: 100%;
   outline: none;
   margin: 0;
-}
-
-.custom-slider::-webkit-slider-runnable-track {
-  background: rgba(255, 255, 255, 0.2);
   height: 4px;
   border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  background-image: linear-gradient(
+    var(--primary-accent),
+    var(--primary-accent)
+  );
+  background-size: var(--progress, 0%) 100%;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: background-size 0.1s linear;
 }
-
+.custom-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+  border: none;
+}
 .custom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  margin-top: -4px; /* Pulls thumb up over the 4px track */
-  background-color: var(--primary-accent);
-  height: 12px;
-  width: 12px;
+  height: 14px;
+  width: 14px;
   border-radius: 50%;
+  background-color: var(--primary-accent);
+  margin-top: -5px;
   transition: transform 0.1s ease;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
-
 .custom-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.3);
+  transform: scale(1.2);
 }
 
-/* Metadata Layout */
 .player-meta-block {
   padding: 16px 0;
   width: 100%;
   transition: padding 0.35s ease;
 }
-
 .player-page-container.is-theater .player-meta-block {
   padding: 24px;
   max-width: 100%;
   margin: 0 auto;
 }
-
 .player-desc-box {
   background: rgba(255, 255, 255, 0.06);
   border-radius: 12px;
@@ -600,11 +533,9 @@ body {
   cursor: pointer;
   transition: background 0.2s;
 }
-
 .player-desc-box:hover {
   background: rgba(255, 255, 255, 0.1);
 }
-
 .queue-item {
   display: flex;
   gap: 12px;
@@ -613,12 +544,9 @@ body {
   transition: background 0.2s;
   padding: 6px;
 }
-
 .queue-item:hover {
   background: rgba(255, 255, 255, 0.05);
 }
-
-/* --- Downloads & Command Bar UI --- */
 .command-bar {
   display: flex;
   background: rgba(18, 18, 18, 0.7);
@@ -746,8 +674,6 @@ body {
   box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.5);
   font-size: 13px;
 }
-
-/* --- Placeholder Components --- */
 .placeholder-container {
   display: flex;
   flex-direction: column;
@@ -796,8 +722,6 @@ body {
   line-height: 1.6;
   margin: 0;
 }
-
-/* --- Setup Deployment Screen --- */
 .immersive-setup-container {
   display: flex;
   flex: 1;
@@ -972,4 +896,58 @@ body {
 }
 .setup-btn.loading {
   color: var(--primary-accent);
+}
+
+.btn-error-glow {
+  animation: errorGlow 1.5s infinite alternate;
+  border-color: #ef233c !important;
+  color: #ef233c !important;
+}
+@keyframes errorGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(239, 35, 60, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(239, 35, 60, 0.8);
+  }
+}
+.progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--primary-accent);
+  transition:
+    width 0.3s ease,
+    background 0.3s ease;
+}
+.progress-bar-fill.transcoding {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--primary-accent),
+    var(--primary-accent) 10px,
+    var(--primary-accent-dark) 10px,
+    var(--primary-accent-dark) 20px
+  );
+  background-size: 28px 28px;
+  animation: moveStripes 1s linear infinite;
+}
+.progress-bar-fill.done {
+  background: #27c93f;
+}
+.progress-bar-fill.error {
+  background: #ef233c;
+}
+@keyframes moveStripes {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 28px 0;
+  }
 }
