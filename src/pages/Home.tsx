@@ -1,24 +1,16 @@
-import { createSignal, onMount, For } from "solid-js";
+import { onMount, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
-
-type VideoEntry = {
-  id: string;
-  title: string;
-  channel: string;
-  video_path: string;
-  thumbnail_path: string;
-};
+import { homeVideos, setHomeVideos } from "../store";
 
 export default function Home() {
-  const [videos, setVideos] = createSignal<VideoEntry[]>([]);
   const navigate = useNavigate();
 
   onMount(async () => {
     try {
-      const data = await invoke<VideoEntry[]>("get_downloaded_videos");
-      setVideos(data);
+      const data = await invoke<any[]>("get_downloaded_videos");
+      setHomeVideos(data);
     } catch (e) {
       console.error("Failed to load library:", e);
     }
@@ -26,7 +18,7 @@ export default function Home() {
 
   return (
     <div class="page-wrapper">
-      {videos().length === 0 ? (
+      {homeVideos().length === 0 ? (
         <PremiumPlaceholder
           title="No Media Found"
           subtitle="Your local library is currently empty. Head over to the Downloads tab to start building your offline collection."
@@ -34,7 +26,7 @@ export default function Home() {
         />
       ) : (
         <div class="grid">
-          <For each={videos()}>
+          <For each={homeVideos()}>
             {(video) => (
               <div
                 class="video-card"
