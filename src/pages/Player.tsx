@@ -31,43 +31,31 @@ const formatTime = (timeInSeconds: number) => {
 export default function Player() {
   const params = useParams();
   const navigate = useNavigate();
-
   const [video, setVideo] = createSignal<VideoEntry | null>(null);
   const [queue, setQueue] = createSignal<VideoEntry[]>([]);
-
-  // Layout Modes
   const [theaterMode, setTheaterMode] = createSignal(false);
   const [isFullscreen, setIsFullscreen] = createSignal(false);
   const [showControls, setShowControls] = createSignal(true);
-
-  // HUD State
   const [isPlaying, setIsPlaying] = createSignal(true);
   const [isMuted, setIsMuted] = createSignal(false);
   const [volume, setVolume] = createSignal(1);
   const [isVolumeHovered, setIsVolumeHovered] = createSignal(false);
-
-  // Time State
   const [currentTime, setCurrentTime] = createSignal(0);
   const [duration, setDuration] = createSignal(0);
   const [isSeeking, setIsSeeking] = createSignal(false);
-
   let videoRef: HTMLVideoElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
   let controlsTimeout: number;
-
   let unlistenPlay: UnlistenFn;
   let unlistenPause: UnlistenFn;
   let unlistenNext: UnlistenFn;
   let unlistenPrev: UnlistenFn;
-
-  // --- Core Player Handlers (Hoisted above lifecycle hooks to prevent TDZ ReferenceError) ---
 
   const loadVideoData = async (targetId?: string) => {
     if (!targetId) return;
     try {
       const db = await invoke<VideoEntry[]>("get_downloaded_videos");
       const currentIndex = db.findIndex((v) => v.id === targetId);
-
       if (currentIndex !== -1) {
         setVideo(db[currentIndex]);
         const nextVideos: VideoEntry[] = [];
@@ -163,18 +151,14 @@ export default function Player() {
     }
   };
 
-  // --- Lifecycle Hooks ---
-
   onMount(async () => {
     await loadVideoData(params.id);
-
     unlistenPlay = await listen("media-play", () => handlePlay());
     unlistenPause = await listen("media-pause", () => handlePause());
     unlistenNext = await listen("media-next", () => handleVideoEnd());
     unlistenPrev = await listen("media-prev", () => {
       if (videoRef) videoRef.currentTime = 0;
     });
-
     document.addEventListener("fullscreenchange", () => {
       setIsFullscreen(!!document.fullscreenElement);
     });
@@ -202,6 +186,10 @@ export default function Player() {
     }
   });
 
+  const seekProgress = () =>
+    duration() > 0 ? (currentTime() / duration()) * 100 : 0;
+  const volProgress = () => (isMuted() ? 0 : volume() * 100);
+
   return (
     <div
       classList={{
@@ -210,7 +198,6 @@ export default function Player() {
         "is-fullscreen": isFullscreen(),
       }}
     >
-      {/* Left Column (Video + Meta) */}
       <div class="player-main-col">
         <Show
           when={video()}
@@ -243,7 +230,6 @@ export default function Player() {
               src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
             />
 
-            {/* Custom Overlay Controls */}
             <div
               class="player-controls-overlay"
               style={{
@@ -262,8 +248,8 @@ export default function Player() {
                 onInput={handleSeek}
                 onMouseDown={() => setIsSeeking(true)}
                 onMouseUp={() => setIsSeeking(false)}
+                style={{ "--progress": `${seekProgress()}%` } as any}
               />
-
               <div
                 style={{
                   display: "flex",
@@ -272,7 +258,6 @@ export default function Player() {
                   "margin-top": "6px",
                 }}
               >
-                {/* Left Playback HUD */}
                 <div
                   style={{
                     display: "flex",
@@ -290,7 +275,6 @@ export default function Player() {
                     ></i>
                   </button>
 
-                  {/* Expandable Volume Container */}
                   <div
                     style={{
                       display: "flex",
@@ -312,6 +296,7 @@ export default function Player() {
                     <div
                       style={{
                         width: isVolumeHovered() ? "80px" : "0px",
+                        height: "24px",
                         overflow: "hidden",
                         transition: "width 0.25s cubic-bezier(0.25, 1, 0.5, 1)",
                         display: "flex",
@@ -327,11 +312,15 @@ export default function Player() {
                         step="0.05"
                         value={isMuted() ? 0 : volume()}
                         onInput={handleVolumeChange}
-                        style={{ width: "70px" }}
+                        style={
+                          {
+                            width: "70px",
+                            "--progress": `${volProgress()}%`,
+                          } as any
+                        }
                       />
                     </div>
                   </div>
-
                   <span
                     style={{
                       color: "#eee",
@@ -347,7 +336,6 @@ export default function Player() {
                   </span>
                 </div>
 
-                {/* Right System HUD */}
                 <div
                   style={{
                     display: "flex",
@@ -358,11 +346,9 @@ export default function Player() {
                   <button class="control-btn" title="Subtitles/CC">
                     <i class="ph-fill ph-closed-captioning"></i>
                   </button>
-
                   <button class="control-btn" title="Settings">
                     <i class="ph-fill ph-gear"></i>
                   </button>
-
                   <button
                     class="control-btn"
                     onClick={() => setTheaterMode(!theaterMode())}
@@ -374,7 +360,6 @@ export default function Player() {
                       }
                     ></i>
                   </button>
-
                   <button
                     class="control-btn"
                     onClick={toggleFullscreen}
@@ -388,7 +373,6 @@ export default function Player() {
               </div>
             </div>
           </div>
-
           <div class="player-meta-block">
             <h1
               style={{
@@ -401,7 +385,6 @@ export default function Player() {
             >
               {video()!.title}
             </h1>
-
             <div
               style={{
                 display: "flex",
@@ -444,7 +427,6 @@ export default function Player() {
                 </h3>
               </div>
             </div>
-
             <div class="player-desc-box">
               <div
                 style={{
@@ -477,7 +459,6 @@ export default function Player() {
         </Show>
       </div>
 
-      {/* Right Column (Up Next Queue) */}
       <div class="player-sidebar">
         <h3
           style={{
