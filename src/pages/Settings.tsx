@@ -1,7 +1,14 @@
 import { createSignal } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, message } from "@tauri-apps/plugin-dialog";
-import { appTheme, toggleAppTheme } from "../store";
+import {
+  appTheme,
+  toggleAppTheme,
+  sidebarHoverMode,
+  toggleSidebarHoverMode,
+  appPalette,
+  toggleAppPalette,
+} from "../store";
 
 export default function Settings() {
   const [loadingDep, setLoadingDep] = createSignal(false);
@@ -12,7 +19,6 @@ export default function Settings() {
       "Are you sure you want to delete yt-dlp and FFmpeg? This will break downloads until you restart the app and run the setup again.\n\nYour downloaded videos will NOT be deleted.",
       { title: "Wipe Core Dependencies", kind: "warning" },
     );
-
     if (yes) {
       setLoadingDep(true);
       try {
@@ -34,10 +40,9 @@ export default function Settings() {
 
   const handleNuclearWipe = async () => {
     const yes = await ask(
-      "WARNING: This will permanently delete ALL core dependencies, your SQLite database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
+      "WARNING: This will permanently delete ALL core engines, your SQLite database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
       { title: "NUCLEAR WIPE", kind: "warning" },
     );
-
     if (yes) {
       setLoadingNuclear(true);
       try {
@@ -77,15 +82,18 @@ export default function Settings() {
       </h2>
 
       <div
+        class="settings-section"
         style={{
-          background: "var(--overlay-bg)",
-          padding: "30px",
           "border-radius": "16px",
           border: "1px solid var(--border-color)",
           "box-shadow": "var(--shadow-heavy)",
           "margin-bottom": "40px",
+          display: "flex",
+          "flex-direction": "column",
+          gap: "24px",
         }}
       >
+        {/* Base Theme */}
         <div
           style={{
             display: "flex",
@@ -115,7 +123,6 @@ export default function Settings() {
               Toggle between Light and Dark interface modes.
             </p>
           </div>
-
           <div
             style={{
               display: "flex",
@@ -187,6 +194,187 @@ export default function Settings() {
               Dark
             </button>
           </div>
+        </div>
+
+        <div
+          style={{
+            width: "100%",
+            height: "1px",
+            background: "var(--border-color)",
+            opacity: 0.2,
+          }}
+        ></div>
+
+        {/* Color Palette (Disabled in Dark Mode) */}
+        <div
+          style={{
+            display: "flex",
+            "justify-content": "space-between",
+            "align-items": "center",
+            opacity: appTheme() === "dark" ? 0.5 : 1,
+            "pointer-events": appTheme() === "dark" ? "none" : "auto",
+          }}
+        >
+          <div>
+            <h3
+              style={{
+                margin: "0 0 5px 0",
+                "font-family": "var(--font-body)",
+                color: "var(--primary-text)",
+              }}
+            >
+              Color Palette
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                color: "var(--secondary-text)",
+                "font-size": "14px",
+                "line-height": "1.5",
+                "max-width": "500px",
+              }}
+            >
+              Choose a primary accent scheme. (Light mode only).
+            </p>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              background: "var(--tertiary-background)",
+              padding: "6px",
+              "border-radius": "12px",
+              border: "1px solid var(--border-color)",
+            }}
+          >
+            <button
+              onClick={() => toggleAppPalette("default")}
+              style={{
+                background:
+                  appPalette() === "default"
+                    ? "var(--primary-background)"
+                    : "transparent",
+                color:
+                  appPalette() === "default"
+                    ? "var(--primary-text)"
+                    : "var(--secondary-text)",
+                border: "none",
+                padding: "8px 16px",
+                "border-radius": "8px",
+                cursor: "pointer",
+                "font-weight": "600",
+                transition: "all 0.2s",
+                display: "flex",
+                "align-items": "center",
+                gap: "6px",
+                "box-shadow":
+                  appPalette() === "default"
+                    ? "0 2px 10px rgba(0,0,0,0.1)"
+                    : "none",
+              }}
+            >
+              <div
+                style={{
+                  width: "12px",
+                  height: "12px",
+                  background: "#ef233c",
+                  "border-radius": "50%",
+                }}
+              ></div>{" "}
+              Standard
+            </button>
+            <button
+              onClick={() => toggleAppPalette("sunset")}
+              style={{
+                background:
+                  appPalette() === "sunset"
+                    ? "var(--primary-background)"
+                    : "transparent",
+                color:
+                  appPalette() === "sunset"
+                    ? "var(--primary-text)"
+                    : "var(--secondary-text)",
+                border: "none",
+                padding: "8px 16px",
+                "border-radius": "8px",
+                cursor: "pointer",
+                "font-weight": "600",
+                transition: "all 0.2s",
+                display: "flex",
+                "align-items": "center",
+                gap: "6px",
+                "box-shadow":
+                  appPalette() === "sunset"
+                    ? "0 2px 10px rgba(0,0,0,0.1)"
+                    : "none",
+              }}
+            >
+              <div
+                style={{
+                  width: "12px",
+                  height: "12px",
+                  background: "#f25c54",
+                  "border-radius": "50%",
+                }}
+              ></div>{" "}
+              Sunset
+            </button>
+          </div>
+        </div>
+
+        <div
+          style={{
+            width: "100%",
+            height: "1px",
+            background: "var(--border-color)",
+            opacity: 0.2,
+          }}
+        ></div>
+
+        {/* Sidebar Expansion */}
+        <div
+          style={{
+            display: "flex",
+            "justify-content": "space-between",
+            "align-items": "center",
+          }}
+        >
+          <div>
+            <h3
+              style={{
+                margin: "0 0 5px 0",
+                "font-family": "var(--font-body)",
+                color: "var(--primary-text)",
+              }}
+            >
+              Auto-Expand Sidebar
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                color: "var(--secondary-text)",
+                "font-size": "14px",
+                "line-height": "1.5",
+                "max-width": "500px",
+              }}
+            >
+              Automatically open the side navigation menu when hovering over it.
+            </p>
+          </div>
+          <button
+            onClick={() => toggleSidebarHoverMode(!sidebarHoverMode())}
+            class="clay-btn"
+          >
+            <i
+              class={
+                sidebarHoverMode() ? "ph-fill ph-check-square" : "ph ph-square"
+              }
+              style={{
+                color: sidebarHoverMode() ? "var(--primary-accent)" : "inherit",
+              }}
+            ></i>
+            {sidebarHoverMode() ? "Enabled" : "Disabled"}
+          </button>
         </div>
       </div>
 
@@ -312,7 +500,7 @@ export default function Settings() {
               class={`ph-fill ${loadingNuclear() ? "ph-spinner spinIcon" : "ph-trash"}`}
               style={{ "font-size": "18px" }}
             ></i>
-            {loadingNuclear() ? "Destroying..." : "Nuclear Wipe"}
+            {loadingNuclear() ? "Destroying..." : "Delete Media & Database"}
           </button>
         </div>
       </div>
