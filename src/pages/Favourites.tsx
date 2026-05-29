@@ -19,21 +19,8 @@ export default function Favourites() {
 
   return (
     <div class="page-wrapper">
-      <h2
-        style={{
-          "font-family": "var(--font-display)",
-          "font-size": "28px",
-          "margin-bottom": "30px",
-          display: "flex",
-          "align-items": "center",
-          gap: "10px",
-        }}
-      >
-        <i
-          class="ph-fill ph-heart"
-          style={{ "font-size": "32px", color: "var(--primary-accent)" }}
-        ></i>{" "}
-        Favourites
+      <h2 class="page-title">
+        <i class="ph-fill ph-heart"></i> Favourites
       </h2>
 
       {videos().length === 0 ? (
