@@ -16,7 +16,7 @@ const AnimatedLogo = () => (
 
     <path
       d="m125 125 125 250 125-250"
-      stroke="#f1f1f1"
+      stroke="#ffffff"
       stroke-width="25"
       fill="none"
       stroke-linecap="round"
