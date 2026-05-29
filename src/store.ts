@@ -2,7 +2,6 @@ import { createSignal } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-// Global UI Prefs & Theme
 const isBrowser =
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
@@ -12,21 +11,39 @@ const storedAnimPref = isBrowser
 const initialAnimState =
   storedAnimPref !== null ? storedAnimPref === "true" : true;
 
+const storedHoverPref = isBrowser
+  ? window.localStorage.getItem("sidebarHoverMode")
+  : null;
+const initialHoverState =
+  storedHoverPref !== null ? storedHoverPref === "true" : true;
+
 const storedTheme = isBrowser ? window.localStorage.getItem("appTheme") : null;
 const initialTheme = storedTheme === "light" ? "light" : "dark";
 
-// Inject theme immediately
+const storedPalette = isBrowser
+  ? window.localStorage.getItem("appPalette")
+  : null;
+const initialPalette = storedPalette || "default";
+
 if (isBrowser) {
   document.documentElement.setAttribute("data-theme", initialTheme);
+  document.documentElement.setAttribute("data-palette", initialPalette);
 }
 
 export const [useAnimatedIcons, setUseAnimatedIcons] =
   createSignal(initialAnimState);
 export const toggleAnimatedIcons = (val: boolean) => {
   setUseAnimatedIcons(val);
-  if (isBrowser) {
+  if (isBrowser)
     window.localStorage.setItem("useAnimatedIcons", val.toString());
-  }
+};
+
+export const [sidebarHoverMode, setSidebarHoverMode] =
+  createSignal(initialHoverState);
+export const toggleSidebarHoverMode = (val: boolean) => {
+  setSidebarHoverMode(val);
+  if (isBrowser)
+    window.localStorage.setItem("sidebarHoverMode", val.toString());
 };
 
 export const [appTheme, setAppTheme] = createSignal(initialTheme);
@@ -35,10 +52,22 @@ export const toggleAppTheme = (theme: "light" | "dark") => {
   if (isBrowser) {
     window.localStorage.setItem("appTheme", theme);
     document.documentElement.setAttribute("data-theme", theme);
+    // Force default palette if switching to dark mode, as sunset is light-only
+    if (theme === "dark" && appPalette() !== "default") {
+      toggleAppPalette("default");
+    }
   }
 };
 
-// Global Types
+export const [appPalette, setAppPalette] = createSignal(initialPalette);
+export const toggleAppPalette = (palette: string) => {
+  setAppPalette(palette);
+  if (isBrowser) {
+    window.localStorage.setItem("appPalette", palette);
+    document.documentElement.setAttribute("data-palette", palette);
+  }
+};
+
 export interface VideoEntry {
   id: string;
   title: string;
@@ -59,7 +88,6 @@ export interface DownloadTask {
   phase: string;
 }
 
-// Global Application State (Persists across Router navigation)
 export const [downloadUrl, setDownloadUrl] = createSignal("");
 export const [downloadQuality, setDownloadQuality] = createSignal("1440p");
 export const [tasks, setTasks] = createSignal<DownloadTask[]>([]);
@@ -81,7 +109,6 @@ export const startDownloadQueue = async () => {
     const metadataList = await invoke<VideoEntry[]>("get_video_metadata", {
       url: targetUrl,
     });
-
     const newTasks: DownloadTask[] = metadataList.map((meta) => ({
       id: meta.id,
       title: meta.title,
@@ -107,11 +134,9 @@ export const startDownloadQueue = async () => {
         `download-progress-${task.id}`,
         (event) => {
           const log = event.payload;
-
-          setTasks((prev) => {
-            return prev.map((t) => {
+          setTasks((prev) =>
+            prev.map((t) => {
               if (t.id !== task.id) return t;
-
               let newProgress = t.progress;
               let newPhase = t.phase;
 
@@ -137,8 +162,8 @@ export const startDownloadQueue = async () => {
                 progress: newProgress,
                 phase: newPhase,
               };
-            });
-          });
+            }),
+          );
         },
       );
 
