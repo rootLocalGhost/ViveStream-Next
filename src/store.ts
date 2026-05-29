@@ -2,14 +2,23 @@ import { createSignal } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-// Global UI Prefs - Safely access localStorage for testing/node environments
+// Global UI Prefs & Theme
 const isBrowser =
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+
 const storedAnimPref = isBrowser
   ? window.localStorage.getItem("useAnimatedIcons")
   : null;
 const initialAnimState =
   storedAnimPref !== null ? storedAnimPref === "true" : true;
+
+const storedTheme = isBrowser ? window.localStorage.getItem("appTheme") : null;
+const initialTheme = storedTheme === "light" ? "light" : "dark";
+
+// Inject theme immediately
+if (isBrowser) {
+  document.documentElement.setAttribute("data-theme", initialTheme);
+}
 
 export const [useAnimatedIcons, setUseAnimatedIcons] =
   createSignal(initialAnimState);
@@ -17,6 +26,15 @@ export const toggleAnimatedIcons = (val: boolean) => {
   setUseAnimatedIcons(val);
   if (isBrowser) {
     window.localStorage.setItem("useAnimatedIcons", val.toString());
+  }
+};
+
+export const [appTheme, setAppTheme] = createSignal(initialTheme);
+export const toggleAppTheme = (theme: "light" | "dark") => {
+  setAppTheme(theme);
+  if (isBrowser) {
+    window.localStorage.setItem("appTheme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
   }
 };
 
@@ -90,7 +108,6 @@ export const startDownloadQueue = async () => {
         (event) => {
           const log = event.payload;
 
-          // Use the setter callback to guarantee fresh reactive state during rapid log streams
           setTasks((prev) => {
             return prev.map((t) => {
               if (t.id !== task.id) return t;
@@ -98,7 +115,6 @@ export const startDownloadQueue = async () => {
               let newProgress = t.progress;
               let newPhase = t.phase;
 
-              // Regex progress parsing
               if (log.includes("[download]") && log.includes("%")) {
                 const match = log.match(/\[download\]\s+([\d\.]+)%/);
                 if (match) {
@@ -159,7 +175,6 @@ export const startDownloadQueue = async () => {
     console.error("Queue Initialization Error:", e);
   } finally {
     setIsProcessingQueue(false);
-    // Refresh the home database silently in the background
     invoke<VideoEntry[]>("get_downloaded_videos")
       .then(setHomeVideos)
       .catch(console.error);
