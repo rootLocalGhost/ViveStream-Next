@@ -20,7 +20,11 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
   release:
+    needs: test
     strategy:
       fail-fast: false
       matrix:
@@ -29,9 +33,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-
     runs-on: ${{ matrix.os }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,18 +47,13 @@ jobs:
           VERSION=$(cat VERSION | tr -d '\n\r ')
           PKG_VERSION=$(jq -r .version package.json)
           TAURI_VERSION=$(jq -r .version src-tauri/tauri.conf.json)
-
           echo "VERSION file: $VERSION"
           echo "package.json: $PKG_VERSION"
           echo "tauri.conf.json: $TAURI_VERSION"
-
-          # 1. Verify internal files match each other
           if [ "$VERSION" != "$PKG_VERSION" ] || [ "$VERSION" != "$TAURI_VERSION" ]; then
             echo "::error::Internal version mismatch detected! Check VERSION, package.json, and tauri.conf.json."
             exit 1
           fi
-
-          # 2. If triggered manually, verify the input tag matches the files
           INPUT_TAG="${{ github.event.inputs.tag }}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "$INPUT_TAG" ]; then
             CLEAN_INPUT_TAG=${INPUT_TAG#v}
@@ -66,63 +63,51 @@ jobs:
             fi
             echo "Manual tag verified against file versions."
           fi
-
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Generate Auto-Release Notes
+      - name: Generate Release Notes
         id: generate_notes
         shell: bash
         run: |
           echo "release_body<<EOF" >> $GITHUB_OUTPUT
-          echo "🎉🚀✨ **Welcome to ViveStream v${{ steps.version_check.outputs.app_version }}!** ✨🚀🎉" >> $GITHUB_OUTPUT
+          echo "ViveStream v${{ steps.version_check.outputs.app_version }}" >> $GITHUB_OUTPUT
+          echo "==========================================" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
-          echo "Your lightning-fast, hardware-accelerated media client just got better! 🎬⚡" >> $GITHUB_OUTPUT
+          echo "A new version of ViveStream is now available." >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
-          echo "### ⚠️ Important: Installation Warnings 🛡️" >> $GITHUB_OUTPUT
-          echo "ViveStream is a completely free, PolyForm Noncommercial open-source project. Because we don't monetize you, we do not pay the extortionate yearly fees required for corporate Microsoft/Apple code-signing certificates. 💸🚫" >> $GITHUB_OUTPUT
+          echo "Security Notice (Unknown Publisher)" >> $GITHUB_OUTPUT
+          echo "---------------------------------" >> $GITHUB_OUTPUT
+          echo "ViveStream is a non-commercial open-source project. We do not purchase corporate code-signing certificates. Your operating system may flag the installer as coming from an Unknown Publisher." >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
-          echo "As a result, your operating system will flag the installer as coming from an **Unknown Publisher**. This is a standard security prompt for unsigned binaries." >> $GITHUB_OUTPUT
+          echo "- Windows: Click 'More Info' -> 'Run Anyway' in Defender SmartScreen." >> $GITHUB_OUTPUT
+          echo "- Linux: Right-click the binary -> Properties -> Check 'Allow executing file as program'." >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
-          echo "👉 **How to bypass the warnings:**" >> $GITHUB_OUTPUT
-          echo "- 🪟 **Windows Defender SmartScreen:** Click **More Info** ➡️ then click **Run Anyway**." >> $GITHUB_OUTPUT
-          echo "- 🐧 **Linux:** If your desktop environment blocks the AppImage/binary, right-click it, go to Properties, and check **Allow executing file as program** (or run \`chmod +x\` in terminal)." >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "### 📦 Automated Changelog 📝" >> $GITHUB_OUTPUT
-          git log -15 --pretty=format:"* %s (%h) 🛠️" >> $GITHUB_OUTPUT
+          echo "Changelog" >> $GITHUB_OUTPUT
+          echo "---------" >> $GITHUB_OUTPUT
+          git log -15 --pretty=format:"* %s (%h)" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 24
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
-
-      - name: Cache Bun dependencies
-        uses: actions/cache@v4
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
+          bun-version: latest
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
-
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf squashfs-tools libfuse2
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf squashfs-tools libfuse2 binutils zstd tar
 
       - name: Install frontend dependencies
         run: bun install
@@ -137,3 +122,48 @@ jobs:
           releaseBody: ${{ steps.generate_notes.outputs.release_body }}
           releaseDraft: true
           prerelease: false
+
+      - name: Generate Arch Linux Package (.pkg.tar.zst)
+        if: matrix.os == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          DEB_FILE=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
+          if [ -z "$DEB_FILE" ]; then
+            echo "::error::.deb package not found. Cannot generate Arch package."
+            exit 1
+          fi
+          echo "Generating Arch package from $DEB_FILE..."
+
+          mkdir arch_build
+          cd arch_build
+          ar x "../$DEB_FILE"
+
+          tar -xf data.tar.*
+          rm -f control.tar.* data.tar.* debian-binary
+
+          SIZE=$(du -sb . | awk '{print $1}')
+
+          cat <<EOT > .PKGINFO
+          pkgname = vivestream-next-bin
+          pkgbase = vivestream-next-bin
+          pkgver = ${{ steps.version_check.outputs.app_version }}-1
+          pkgdesc = A lightning-fast, natively integrated YouTube downloader and local media library.
+          url = https://github.com/rootlocalghost/ViveStream-Next
+          builddate = $(date +%s)
+          packager = ViveStream CI <noreply@github.com>
+          size = $SIZE
+          arch = x86_64
+          license = custom:PolyForm Noncommercial 1.0.0
+          depend = webkit2gtk-4.1
+          depend = yt-dlp
+          depend = ffmpeg
+          depend = intel-media-driver
+          depend = libva-utils
+          EOT
+
+          ARCH_PKG_NAME="vivestream-next_${{ steps.version_check.outputs.app_version }}_x86_64.pkg.tar.zst"
+          tar -c --zstd -f "../$ARCH_PKG_NAME" .
+
+          gh release upload v${{ steps.version_check.outputs.app_version }} "../$ARCH_PKG_NAME" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
