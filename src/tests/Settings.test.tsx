@@ -20,10 +20,8 @@ describe("Settings Component", () => {
 
   it("handles wipe dependencies", async () => {
     render(() => <Settings />);
-
     const wipeBtn = screen.getByText("Wipe Engines");
     expect(wipeBtn).toBeInTheDocument();
-
     fireEvent.click(wipeBtn);
 
     await waitFor(() => {
@@ -38,10 +36,8 @@ describe("Settings Component", () => {
 
   it("handles nuclear wipe", async () => {
     render(() => <Settings />);
-
-    const nuclearBtn = screen.getByText("Nuclear Wipe");
+    const nuclearBtn = screen.getByText("Delete Media & Database");
     expect(nuclearBtn).toBeInTheDocument();
-
     fireEvent.click(nuclearBtn);
 
     await waitFor(() => {
