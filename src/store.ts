@@ -17,13 +17,14 @@ const storedHoverPref = isBrowser
 const initialHoverState =
   storedHoverPref !== null ? storedHoverPref === "true" : true;
 
+// Force Light/Sunset as default
 const storedTheme = isBrowser ? window.localStorage.getItem("appTheme") : null;
-const initialTheme = storedTheme === "light" ? "light" : "dark";
+const initialTheme = storedTheme || "light";
 
 const storedPalette = isBrowser
   ? window.localStorage.getItem("appPalette")
   : null;
-const initialPalette = storedPalette || "default";
+const initialPalette = storedPalette || "sunset";
 
 if (isBrowser) {
   document.documentElement.setAttribute("data-theme", initialTheme);
@@ -52,9 +53,10 @@ export const toggleAppTheme = (theme: "light" | "dark") => {
   if (isBrowser) {
     window.localStorage.setItem("appTheme", theme);
     document.documentElement.setAttribute("data-theme", theme);
-    // Force default palette if switching to dark mode, as sunset is light-only
     if (theme === "dark" && appPalette() !== "default") {
       toggleAppPalette("default");
+    } else if (theme === "light" && appPalette() === "default") {
+      toggleAppPalette("sunset");
     }
   }
 };
