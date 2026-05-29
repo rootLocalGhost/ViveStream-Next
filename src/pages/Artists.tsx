@@ -22,21 +22,8 @@ export default function Artists() {
 
   return (
     <div class="page-wrapper">
-      <h2
-        style={{
-          "font-family": "var(--font-display)",
-          "font-size": "28px",
-          "margin-bottom": "30px",
-          display: "flex",
-          "align-items": "center",
-          gap: "10px",
-        }}
-      >
-        <i
-          class="ph-fill ph-microphone-stage"
-          style={{ "font-size": "32px", color: "var(--primary-accent)" }}
-        ></i>{" "}
-        Artists
+      <h2 class="page-title">
+        <i class="ph-fill ph-microphone-stage"></i> Artists
       </h2>
 
       {artists().length === 0 ? (
@@ -66,14 +53,7 @@ export default function Artists() {
                   }}
                   class="avatar-large"
                 />
-                <h3
-                  style={{
-                    margin: "0",
-                    "font-size": "16px",
-                    "text-align": "center",
-                    color: "var(--primary-text)",
-                  }}
-                >
+                <h3 class="settings-title" style={{ "text-align": "center" }}>
                   {artist.name}
                 </h3>
               </div>
