@@ -2,18 +2,21 @@ import { lazy, Component, createSignal, onMount, Show } from "solid-js";
 import { Router, Route, A } from "@solidjs/router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
-
 import "@phosphor-icons/web/regular";
 import "@phosphor-icons/web/fill";
 import "./App.css";
 
-import PremiumPlaceholder from "./components/PremiumPlaceholder";
+import { sidebarHoverMode } from "./store";
 
 const Home = lazy(() => import("./pages/Home"));
 const Downloads = lazy(() => import("./pages/Downloads"));
 const Player = lazy(() => import("./pages/Player"));
 const Setup = lazy(() => import("./pages/Setup"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Favourites = lazy(() => import("./pages/Favourites"));
+const Playlists = lazy(() => import("./pages/Playlists"));
+const Artists = lazy(() => import("./pages/Artists"));
+const ArtistPage = lazy(() => import("./pages/ArtistPage"));
 
 const AppLogo = () => (
   <svg
@@ -29,7 +32,7 @@ const AppLogo = () => (
     />
     <path
       d="m125 125 125 250 125-250"
-      stroke="var(--primary-text)"
+      stroke="#ffffff"
       stroke-width="25"
       fill="none"
       stroke-linecap="round"
@@ -90,18 +93,14 @@ const ImmersiveTitleBar = () => {
 
 const AppLifecycle: Component<{ children?: any }> = (props) => {
   const [needsSetup, setNeedsSetup] = createSignal<boolean | null>(null);
-
   onMount(async () => {
     try {
       const status = await invoke<{
         ytdlp_exists: boolean;
         ffmpeg_exists: boolean;
       }>("check_binaries");
-      if (status.ytdlp_exists && status.ffmpeg_exists) {
-        setNeedsSetup(false);
-      } else {
-        setNeedsSetup(true);
-      }
+      if (status.ytdlp_exists && status.ffmpeg_exists) setNeedsSetup(false);
+      else setNeedsSetup(true);
     } catch (e) {
       console.error("Core engine validation failure:", e);
       setNeedsSetup(true);
@@ -164,8 +163,12 @@ const AppLayout: Component<{ children?: any }> = (props) => {
     <div class="app-container">
       <nav
         class={`sidebar ${isExpanded() ? "expanded" : "collapsed"}`}
-        onMouseEnter={() => !isPinned() && setIsHovered(true)}
-        onMouseLeave={() => !isPinned() && setIsHovered(false)}
+        onMouseEnter={() =>
+          sidebarHoverMode() && !isPinned() && setIsHovered(true)
+        }
+        onMouseLeave={() =>
+          sidebarHoverMode() && !isPinned() && setIsHovered(false)
+        }
       >
         <div class="sidebar-header" onClick={() => setIsPinned(!isPinned())}>
           <AppLogo />
@@ -219,36 +222,10 @@ const App: Component = () => {
         <Route path="/" component={Home} />
         <Route path="/downloads" component={Downloads} />
         <Route path="/settings" component={Settings} />
-        <Route
-          path="/playlists"
-          component={() => (
-            <PremiumPlaceholder
-              title="Playlists"
-              subtitle="Curate your ultimate local media collections. Drag, drop, and organize your files seamlessly."
-              iconName="list-dashes"
-            />
-          )}
-        />
-        <Route
-          path="/artists"
-          component={() => (
-            <PremiumPlaceholder
-              title="Artists"
-              subtitle="Automatically sorted by creator. Upload custom profile pictures and manage discographies."
-              iconName="microphone-stage"
-            />
-          )}
-        />
-        <Route
-          path="/favourites"
-          component={() => (
-            <PremiumPlaceholder
-              title="Favourites"
-              subtitle="Your most-loved content, instantly accessible and heavily optimized for offline playback."
-              iconName="heart"
-            />
-          )}
-        />
+        <Route path="/playlists" component={Playlists} />
+        <Route path="/artists" component={Artists} />
+        <Route path="/artist/:name" component={ArtistPage} />
+        <Route path="/favourites" component={Favourites} />
         <Route path="/player/:id" component={Player} />
       </Route>
     </Router>
