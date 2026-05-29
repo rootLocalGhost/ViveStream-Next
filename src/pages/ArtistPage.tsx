@@ -22,16 +22,8 @@ export default function ArtistPage() {
   return (
     <div class="page-wrapper">
       <div
-        style={{
-          display: "flex",
-          "align-items": "center",
-          gap: "24px",
-          "margin-bottom": "40px",
-          padding: "20px",
-          background: "var(--clay-bg)",
-          "border-radius": "var(--clay-radius)",
-          border: "var(--app-border)",
-        }}
+        class="clay-card flex-row-gap"
+        style={{ "margin-bottom": "40px", padding: "20px" }}
       >
         <img
           src={`http://127.0.0.1:1422/Avatars/${params.name}.jpg`}
@@ -43,17 +35,10 @@ export default function ArtistPage() {
           style={{ width: "100px", height: "100px" }}
         />
         <div>
-          <h2
-            style={{
-              "font-family": "var(--font-display)",
-              "font-size": "32px",
-              margin: "0 0 8px 0",
-              color: "var(--primary-text)",
-            }}
-          >
+          <h2 class="page-title" style={{ margin: "0 0 8px 0" }}>
             {params.name}
           </h2>
-          <span style={{ color: "var(--secondary-text)" }}>
+          <span class="settings-desc">
             {videos().length} Video{videos().length !== 1 && "s"}
           </span>
         </div>
