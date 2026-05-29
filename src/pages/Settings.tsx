@@ -64,100 +64,23 @@ export default function Settings() {
 
   return (
     <div class="page-wrapper">
-      <h2
-        style={{
-          "font-family": "var(--font-display)",
-          "font-size": "28px",
-          "margin-bottom": "30px",
-          display: "flex",
-          "align-items": "center",
-          gap: "10px",
-        }}
-      >
-        <i
-          class="ph-fill ph-gear"
-          style={{ "font-size": "32px", color: "var(--primary-accent)" }}
-        ></i>{" "}
-        Settings
+      <h2 class="page-title">
+        <i class="ph-fill ph-gear"></i> Settings
       </h2>
 
-      <div
-        class="settings-section"
-        style={{
-          "border-radius": "16px",
-          border: "1px solid var(--border-color)",
-          "box-shadow": "var(--shadow-heavy)",
-          "margin-bottom": "40px",
-          display: "flex",
-          "flex-direction": "column",
-          gap: "24px",
-        }}
-      >
+      <div class="settings-card">
         {/* Base Theme */}
-        <div
-          style={{
-            display: "flex",
-            "justify-content": "space-between",
-            "align-items": "center",
-          }}
-        >
+        <div class="flex-row-between">
           <div>
-            <h3
-              style={{
-                margin: "0 0 5px 0",
-                "font-family": "var(--font-body)",
-                color: "var(--primary-text)",
-              }}
-            >
-              Appearance
-            </h3>
-            <p
-              style={{
-                margin: 0,
-                color: "var(--secondary-text)",
-                "font-size": "14px",
-                "line-height": "1.5",
-                "max-width": "500px",
-              }}
-            >
+            <h3 class="settings-title">Appearance</h3>
+            <p class="settings-desc">
               Toggle between Light and Dark interface modes.
             </p>
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              background: "var(--tertiary-background)",
-              padding: "6px",
-              "border-radius": "12px",
-              border: "1px solid var(--border-color)",
-            }}
-          >
+          <div class="toggle-group">
             <button
               onClick={() => toggleAppTheme("light")}
-              style={{
-                background:
-                  appTheme() === "light"
-                    ? "var(--primary-background)"
-                    : "transparent",
-                color:
-                  appTheme() === "light"
-                    ? "var(--primary-text)"
-                    : "var(--secondary-text)",
-                border: "none",
-                padding: "8px 16px",
-                "border-radius": "8px",
-                cursor: "pointer",
-                "font-weight": "600",
-                transition: "all 0.2s",
-                display: "flex",
-                "align-items": "center",
-                gap: "6px",
-                "box-shadow":
-                  appTheme() === "light"
-                    ? "0 2px 10px rgba(0,0,0,0.1)"
-                    : "none",
-              }}
+              class={`toggle-btn ${appTheme() === "light" ? "active" : ""}`}
             >
               <i
                 class={appTheme() === "light" ? "ph-fill ph-sun" : "ph ph-sun"}
@@ -166,27 +89,7 @@ export default function Settings() {
             </button>
             <button
               onClick={() => toggleAppTheme("dark")}
-              style={{
-                background:
-                  appTheme() === "dark"
-                    ? "var(--primary-background)"
-                    : "transparent",
-                color:
-                  appTheme() === "dark"
-                    ? "var(--primary-text)"
-                    : "var(--secondary-text)",
-                border: "none",
-                padding: "8px 16px",
-                "border-radius": "8px",
-                cursor: "pointer",
-                "font-weight": "600",
-                transition: "all 0.2s",
-                display: "flex",
-                "align-items": "center",
-                gap: "6px",
-                "box-shadow":
-                  appTheme() === "dark" ? "0 2px 10px rgba(0,0,0,0.2)" : "none",
-              }}
+              class={`toggle-btn ${appTheme() === "dark" ? "active" : ""}`}
             >
               <i
                 class={appTheme() === "dark" ? "ph-fill ph-moon" : "ph ph-moon"}
@@ -196,168 +99,47 @@ export default function Settings() {
           </div>
         </div>
 
-        <div
-          style={{
-            width: "100%",
-            height: "1px",
-            background: "var(--border-color)",
-            opacity: 0.2,
-          }}
-        ></div>
+        <div class="full-divider"></div>
 
         {/* Color Palette (Disabled in Dark Mode) */}
         <div
+          class="flex-row-between"
           style={{
-            display: "flex",
-            "justify-content": "space-between",
-            "align-items": "center",
             opacity: appTheme() === "dark" ? 0.5 : 1,
             "pointer-events": appTheme() === "dark" ? "none" : "auto",
           }}
         >
           <div>
-            <h3
-              style={{
-                margin: "0 0 5px 0",
-                "font-family": "var(--font-body)",
-                color: "var(--primary-text)",
-              }}
-            >
-              Color Palette
-            </h3>
-            <p
-              style={{
-                margin: 0,
-                color: "var(--secondary-text)",
-                "font-size": "14px",
-                "line-height": "1.5",
-                "max-width": "500px",
-              }}
-            >
+            <h3 class="settings-title">Color Palette</h3>
+            <p class="settings-desc">
               Choose a primary accent scheme. (Light mode only).
             </p>
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              background: "var(--tertiary-background)",
-              padding: "6px",
-              "border-radius": "12px",
-              border: "1px solid var(--border-color)",
-            }}
-          >
+          <div class="toggle-group">
             <button
               onClick={() => toggleAppPalette("default")}
-              style={{
-                background:
-                  appPalette() === "default"
-                    ? "var(--primary-background)"
-                    : "transparent",
-                color:
-                  appPalette() === "default"
-                    ? "var(--primary-text)"
-                    : "var(--secondary-text)",
-                border: "none",
-                padding: "8px 16px",
-                "border-radius": "8px",
-                cursor: "pointer",
-                "font-weight": "600",
-                transition: "all 0.2s",
-                display: "flex",
-                "align-items": "center",
-                gap: "6px",
-                "box-shadow":
-                  appPalette() === "default"
-                    ? "0 2px 10px rgba(0,0,0,0.1)"
-                    : "none",
-              }}
+              class={`toggle-btn ${appPalette() === "default" ? "active" : ""}`}
             >
-              <div
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  background: "#ef233c",
-                  "border-radius": "50%",
-                }}
-              ></div>{" "}
+              <div class="color-swatch" style={{ background: "#ef233c" }}></div>{" "}
               Standard
             </button>
             <button
               onClick={() => toggleAppPalette("sunset")}
-              style={{
-                background:
-                  appPalette() === "sunset"
-                    ? "var(--primary-background)"
-                    : "transparent",
-                color:
-                  appPalette() === "sunset"
-                    ? "var(--primary-text)"
-                    : "var(--secondary-text)",
-                border: "none",
-                padding: "8px 16px",
-                "border-radius": "8px",
-                cursor: "pointer",
-                "font-weight": "600",
-                transition: "all 0.2s",
-                display: "flex",
-                "align-items": "center",
-                gap: "6px",
-                "box-shadow":
-                  appPalette() === "sunset"
-                    ? "0 2px 10px rgba(0,0,0,0.1)"
-                    : "none",
-              }}
+              class={`toggle-btn ${appPalette() === "sunset" ? "active" : ""}`}
             >
-              <div
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  background: "#f25c54",
-                  "border-radius": "50%",
-                }}
-              ></div>{" "}
+              <div class="color-swatch" style={{ background: "#f25c54" }}></div>{" "}
               Sunset
             </button>
           </div>
         </div>
 
-        <div
-          style={{
-            width: "100%",
-            height: "1px",
-            background: "var(--border-color)",
-            opacity: 0.2,
-          }}
-        ></div>
+        <div class="full-divider"></div>
 
         {/* Sidebar Expansion */}
-        <div
-          style={{
-            display: "flex",
-            "justify-content": "space-between",
-            "align-items": "center",
-          }}
-        >
+        <div class="flex-row-between">
           <div>
-            <h3
-              style={{
-                margin: "0 0 5px 0",
-                "font-family": "var(--font-body)",
-                color: "var(--primary-text)",
-              }}
-            >
-              Auto-Expand Sidebar
-            </h3>
-            <p
-              style={{
-                margin: 0,
-                color: "var(--secondary-text)",
-                "font-size": "14px",
-                "line-height": "1.5",
-                "max-width": "500px",
-              }}
-            >
+            <h3 class="settings-title">Auto-Expand Sidebar</h3>
+            <p class="settings-desc">
               Automatically open the side navigation menu when hovering over it.
             </p>
           </div>
@@ -378,59 +160,15 @@ export default function Settings() {
         </div>
       </div>
 
-      <h2
-        style={{
-          "font-family": "var(--font-display)",
-          "font-size": "22px",
-          "margin-bottom": "20px",
-          color: "var(--primary-accent)",
-          display: "flex",
-          "align-items": "center",
-          gap: "10px",
-        }}
-      >
-        <i
-          class="ph-fill ph-warning-circle"
-          style={{ "font-size": "24px" }}
-        ></i>{" "}
-        Danger Zone
+      <h2 class="page-title page-title-danger">
+        <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
 
-      <div
-        style={{
-          background: "rgba(239, 35, 60, 0.05)",
-          padding: "30px",
-          "border-radius": "16px",
-          border: "1px solid rgba(239, 35, 60, 0.3)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            "justify-content": "space-between",
-            "align-items": "center",
-            "margin-bottom": "30px",
-          }}
-        >
+      <div class="danger-card">
+        <div class="flex-row-between">
           <div>
-            <h3
-              style={{
-                margin: "0 0 5px 0",
-                "font-family": "var(--font-body)",
-                color: "var(--primary-text)",
-              }}
-            >
-              Wipe Core Engines
-            </h3>
-            <p
-              style={{
-                margin: 0,
-                color: "var(--secondary-text)",
-                "font-size": "14px",
-                "line-height": "1.5",
-                "max-width": "450px",
-              }}
-            >
+            <h3 class="settings-title">Wipe Core Engines</h3>
+            <p class="settings-desc">
               Deletes `yt-dlp` and `ffmpeg` from your hidden app data. Use this
               to force a clean re-download of the core engines.{" "}
               <strong>Does not delete videos.</strong>
@@ -450,41 +188,14 @@ export default function Settings() {
           </button>
         </div>
 
-        <div
-          style={{
-            width: "100%",
-            height: "1px",
-            background: "rgba(239, 35, 60, 0.2)",
-            "margin-bottom": "30px",
-          }}
-        ></div>
+        <div class="full-divider danger-divider"></div>
 
-        <div
-          style={{
-            display: "flex",
-            "justify-content": "space-between",
-            "align-items": "center",
-          }}
-        >
+        <div class="flex-row-between">
           <div>
-            <h3
-              style={{
-                margin: "0 0 5px 0",
-                "font-family": "var(--font-body)",
-                color: "#e81123",
-              }}
-            >
+            <h3 class="settings-title danger">
               Nuclear Wipe (Delete Everything)
             </h3>
-            <p
-              style={{
-                margin: 0,
-                color: "var(--secondary-text)",
-                "font-size": "14px",
-                "line-height": "1.5",
-                "max-width": "450px",
-              }}
-            >
+            <p class="settings-desc">
               Permanently destroys the SQLite database, all core engines, and{" "}
               <strong>ALL gigabytes of downloaded video/audio</strong>. Run this
               before uninstalling the OS app.
