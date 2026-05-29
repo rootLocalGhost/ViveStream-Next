@@ -9,14 +9,7 @@ import {
 import { useParams, useNavigate } from "@solidjs/router";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-
-interface VideoEntry {
-  id: string;
-  title: string;
-  channel: string;
-  video_path: string;
-  thumbnail_path: string;
-}
+import { VideoEntry } from "../store";
 
 const formatTime = (timeInSeconds: number) => {
   if (isNaN(timeInSeconds)) return "0:00";
@@ -31,6 +24,7 @@ const formatTime = (timeInSeconds: number) => {
 export default function Player() {
   const params = useParams();
   const navigate = useNavigate();
+
   const [video, setVideo] = createSignal<VideoEntry | null>(null);
   const [queue, setQueue] = createSignal<VideoEntry[]>([]);
   const [theaterMode, setTheaterMode] = createSignal(false);
@@ -43,6 +37,8 @@ export default function Player() {
   const [currentTime, setCurrentTime] = createSignal(0);
   const [duration, setDuration] = createSignal(0);
   const [isSeeking, setIsSeeking] = createSignal(false);
+  const [isFavorite, setIsFavorite] = createSignal(false);
+
   let videoRef: HTMLVideoElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
   let controlsTimeout: number;
@@ -56,21 +52,47 @@ export default function Player() {
     try {
       const db = await invoke<VideoEntry[]>("get_downloaded_videos");
       const currentIndex = db.findIndex((v) => v.id === targetId);
+
       if (currentIndex !== -1) {
         setVideo(db[currentIndex]);
+
+        // Fetch the favorite status from the database
+        const favStatus = await invoke<boolean>("check_favorite", {
+          id: targetId,
+        });
+        setIsFavorite(favStatus);
+
         const nextVideos: VideoEntry[] = [];
         for (let i = 1; i <= 15; i++) {
           if (db[(currentIndex + i) % db.length]) {
             nextVideos.push(db[(currentIndex + i) % db.length]);
           }
         }
+
         const uniqueQueue = Array.from(
           new Set(nextVideos.map((a) => a.id)),
         ).map((id) => nextVideos.find((a) => a.id === id)!);
+
         setQueue(uniqueQueue.filter((v) => v.id !== targetId));
       }
     } catch (e) {
       console.error("Could not load video library", e);
+    }
+  };
+
+  const toggleFavoriteStatus = async () => {
+    if (!video()) return;
+    try {
+      const newStatus = !isFavorite();
+
+      await invoke("toggle_favorite", {
+        id: video()!.id,
+        isFavorite: newStatus,
+      });
+
+      setIsFavorite(newStatus);
+    } catch (e) {
+      console.error("Failed to toggle favorite:", e);
     }
   };
 
@@ -159,6 +181,7 @@ export default function Player() {
     unlistenPrev = await listen("media-prev", () => {
       if (videoRef) videoRef.currentTime = 0;
     });
+
     document.addEventListener("fullscreenchange", () => {
       setIsFullscreen(!!document.fullscreenElement);
     });
@@ -201,7 +224,7 @@ export default function Player() {
       <div class="player-main-col">
         <Show
           when={video()}
-          fallback={<p style={{ padding: "24px" }}>Loading player...</p>}
+          fallback={<div style={{ padding: "24px" }}>Loading engine...</div>}
         >
           <div
             class="player-video-wrapper"
@@ -373,6 +396,7 @@ export default function Player() {
               </div>
             </div>
           </div>
+
           <div class="player-meta-block">
             <h1
               style={{
@@ -388,45 +412,70 @@ export default function Player() {
             <div
               style={{
                 display: "flex",
+                "justify-content": "space-between",
                 "align-items": "center",
-                gap: "12px",
                 "margin-bottom": "16px",
               }}
             >
               <div
                 style={{
-                  width: "42px",
-                  height: "42px",
-                  "border-radius": "50%",
-                  background: "var(--tertiary-background)",
                   display: "flex",
                   "align-items": "center",
-                  "justify-content": "center",
-                  "flex-shrink": "0",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  gap: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    "border-radius": "50%",
+                    background: "var(--tertiary-background)",
+                    display: "flex",
+                    "align-items": "center",
+                    "justify-content": "center",
+                    "flex-shrink": "0",
+                  }}
+                >
+                  <i
+                    class="ph-fill ph-user"
+                    style={{
+                      "font-size": "22px",
+                      color: "var(--secondary-text)",
+                    }}
+                  ></i>
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      margin: "0",
+                      "font-size": "16px",
+                      "font-weight": "600",
+                      color: "var(--primary-text)",
+                    }}
+                  >
+                    {video()!.channel}
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                class="clay-btn"
+                onClick={toggleFavoriteStatus}
+                style={{
+                  color: isFavorite()
+                    ? "var(--primary-accent)"
+                    : "var(--primary-text)",
+                  padding: "10px 20px",
                 }}
               >
                 <i
-                  class="ph-fill ph-user"
-                  style={{
-                    "font-size": "22px",
-                    color: "var(--secondary-text)",
-                  }}
+                  class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}
+                  style={{ "font-size": "20px" }}
                 ></i>
-              </div>
-              <div>
-                <h3
-                  style={{
-                    margin: "0",
-                    "font-size": "16px",
-                    "font-weight": "600",
-                    color: "var(--primary-text)",
-                  }}
-                >
-                  {video()!.channel}
-                </h3>
-              </div>
+                {isFavorite() ? "Saved" : "Save"}
+              </button>
             </div>
+
             <div class="player-desc-box">
               <div
                 style={{
@@ -444,15 +493,6 @@ export default function Player() {
                 Description parsing is currently disabled. Data fetches for
                 localized channel icons and Markdown descriptions will be
                 architected in the database schema refactor.
-              </p>
-              <p
-                style={{
-                  margin: "12px 0 0 0",
-                  "font-weight": "600",
-                  color: "var(--primary-text)",
-                }}
-              >
-                Show more
               </p>
             </div>
           </div>
@@ -489,7 +529,6 @@ export default function Player() {
                     width: "100%",
                     "aspect-ratio": "16/9",
                     "object-fit": "cover",
-                    "border-radius": "8px",
                   }}
                 />
               </div>
