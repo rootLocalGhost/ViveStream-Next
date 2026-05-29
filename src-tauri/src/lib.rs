@@ -98,6 +98,13 @@ fn init_db(app: &AppHandle) -> Result<(), String> {
     )
     .map_err(|e| e.to_string())?;
 
+    // PATCH: Force-inject the missing column into existing databases
+    // We intentionally ignore the Result here because it will error if the column already exists on new installs.
+    let _ = conn.execute(
+        "ALTER TABLE Videos ADD COLUMN is_favorite BOOLEAN DEFAULT 0",
+        [],
+    );
+
     Ok(())
 }
 
@@ -343,6 +350,7 @@ async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<VideoEntr
 
     let output = cmd
         .args([
+            "--force-ipv4",
             "--flat-playlist",
             "--extractor-args",
             "youtube:player_client=web_safari,web_embedded",
@@ -407,8 +415,8 @@ async fn download_video(
 
     let progress_event = format!("download-progress-{}", metadata.id);
 
-    app.emit(&progress_event, "Step 1: Downloading stream...")
-        .unwrap();
+    // Using let _ = ignores the result, preventing panics if the frontend isn't listening
+    let _ = app.emit(&progress_event, "Step 1: Downloading stream...");
 
     let res_filter = match quality.as_str() {
         "720p" => "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
@@ -425,6 +433,13 @@ async fn download_video(
 
     let mut child = yt_cmd
         .args([
+            "--force-ipv4",
+            "--ffmpeg-location",
+            ffmpeg_path.to_str().unwrap(),
+            "--retries",
+            "10",
+            "--fragment-retries",
+            "10",
             "--newline",
             "-f",
             res_filter,
@@ -451,9 +466,11 @@ async fn download_video(
 
     let stdout = child.stdout.take().unwrap();
     let reader = BufReader::new(stdout);
+
     for line in reader.lines() {
         if let Ok(line) = line {
-            app.emit(&progress_event, line).unwrap();
+            // No .unwrap() to prevent Tauri from panicking and dropping the pipe
+            let _ = app.emit(&progress_event, line);
         }
     }
 
@@ -466,8 +483,7 @@ async fn download_video(
     let final_thumb = metadata.thumbnail_path.clone();
     let _ = fs::rename(&raw_thumb, &final_thumb);
 
-    app.emit(&progress_event, "Step 2: Starting FFmpeg transcoder...")
-        .unwrap();
+    let _ = app.emit(&progress_event, "Step 2: Starting FFmpeg transcoder...");
 
     let encoders = if cfg!(target_os = "windows") {
         vec![
@@ -516,8 +532,7 @@ async fn download_video(
 
     let mut transcode_success = false;
     for (name, args) in encoders {
-        app.emit(&progress_event, format!("Attempting encoder: {}", name))
-            .unwrap();
+        let _ = app.emit(&progress_event, format!("Attempting encoder: {}", name));
 
         let mut cmd = Command::new(&ffmpeg_path);
         #[cfg(target_os = "windows")]
@@ -535,19 +550,17 @@ async fn download_video(
 
         let output = cmd.output().map_err(|e| e.to_string())?;
         if output.status.success() {
-            app.emit(
+            let _ = app.emit(
                 &progress_event,
                 format!("Success! Transcoded via: {}", name),
-            )
-            .unwrap();
+            );
             transcode_success = true;
             break;
         } else {
-            app.emit(
+            let _ = app.emit(
                 &progress_event,
                 format!("Encoder {} failed, dropping to next fallback...", name),
-            )
-            .unwrap();
+            );
         }
     }
 
@@ -586,6 +599,59 @@ async fn download_video(
 fn get_downloaded_videos(app: AppHandle) -> Result<Vec<VideoEntry>, String> {
     let conn = get_db_connection(&app)?;
     let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos ORDER BY added_at DESC")
+        .map_err(|e| e.to_string())?;
+
+    let video_iter = stmt
+        .query_map([], |row| {
+            let v_path: String = row.get(3)?;
+            let t_path: String = row.get(4)?;
+            Ok(VideoEntry {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                channel: row.get(2)?,
+                video_path: PathBuf::from(v_path),
+                thumbnail_path: PathBuf::from(t_path),
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut videos = Vec::new();
+    for video in video_iter {
+        videos.push(video.map_err(|e| e.to_string())?);
+    }
+    Ok(videos)
+}
+
+#[tauri::command]
+fn check_favorite(app: AppHandle, id: String) -> Result<bool, String> {
+    let conn = get_db_connection(&app)?;
+    let mut stmt = conn
+        .prepare("SELECT is_favorite FROM Videos WHERE id = ?1")
+        .map_err(|e| e.to_string())?;
+
+    let is_fav: bool = stmt.query_row([&id], |row| row.get(0)).unwrap_or(false);
+    Ok(is_fav)
+}
+
+#[tauri::command]
+fn toggle_favorite(app: AppHandle, id: String, is_favorite: bool) -> Result<(), String> {
+    let conn = get_db_connection(&app)?;
+
+    let fav_int = if is_favorite { 1 } else { 0 };
+
+    conn.execute(
+        "UPDATE Videos SET is_favorite = ?1 WHERE id = ?2",
+        rusqlite::params![fav_int, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn get_favorites(app: AppHandle) -> Result<Vec<VideoEntry>, String> {
+    let conn = get_db_connection(&app)?;
+    let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos WHERE is_favorite = 1 ORDER BY added_at DESC")
         .map_err(|e| e.to_string())?;
 
     let video_iter = stmt
@@ -765,6 +831,9 @@ pub fn run() {
             get_video_metadata,
             download_video,
             get_downloaded_videos,
+            check_favorite,
+            toggle_favorite,
+            get_favorites,
             wipe_dependencies,
             nuclear_wipe,
             update_media_metadata,
