@@ -31,22 +31,23 @@ const AppLogo = () => (
       d="M83.333 0h333.334A83.333 83.333 0 0 1 500 83.333v333.334A83.333 83.333 0 0 1 416.667 500H83.333A83.333 83.333 0 0 1 0 416.667V83.333A83.333 83.333 0 0 1 83.333 0"
     />
     <path
-      d="m125 125 125 250 125-250"
-      stroke="#ffffff"
-      stroke-width="25"
+      d="M95 125 L250 385 L405 125"
+      stroke="#f1f1f1"
+      stroke-width="30"
       fill="none"
       stroke-linecap="round"
+      stroke-linejoin="round"
     />
     <path
-      d="M375 125c-241.667 62.5-270.833-41.667-225 0 8.333 41.667 16.667-20.833 25 0s16.667-62.5 25 0 16.667-33.333 25 0 16.667-8.333 25 0c8.333 50 16.667-58.333 25 0 8.333 20.833 16.667-41.667 25 0 8.333 62.5 16.667-20.833 25 0 8.333 41.667 16.667-50 25 0 8.333 25 16.667-33.333 25 0"
-      stroke="#fff"
-      stroke-width="5.208"
+      d="M100 125 Q110 125 118 85 Q126 45 134 125 Q142 175 150 125 Q158 75 166 125 Q174 25 182 125 Q190 215 198 125 Q206 55 214 125 Q222 195 230 125 Q238 35 246 125 Q254 235 262 125 Q270 45 278 125 Q286 205 294 125 Q302 65 310 125 Q318 175 326 125 Q334 85 342 125 Q350 225 358 125 Q366 55 374 125 Q382 165 390 125 Q398 105 405 125"
+      stroke="#ffffff"
+      stroke-width="6"
       fill="none"
       stroke-linecap="round"
+      stroke-linejoin="round"
       style={{
-        "stroke-dasharray": "1000",
-        "stroke-dashoffset": "0",
-        filter: "drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #fff)",
+        filter:
+          "drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 0 10px #fff)",
       }}
     />
   </svg>
@@ -113,15 +114,7 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
       <Show
         when={needsSetup() !== null}
         fallback={
-          <div
-            style={{
-              display: "flex",
-              flex: "1",
-              "align-items": "center",
-              "justify-content": "center",
-              background: "var(--primary-background)",
-            }}
-          >
+          <div class="setup-loading-screen">
             <i
               class="ph ph-spinner spinIcon"
               style={{ "font-size": "48px", color: "var(--primary-accent)" }}
