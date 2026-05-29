@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, message } from "@tauri-apps/plugin-dialog";
+import { appTheme, toggleAppTheme } from "../store";
 
 export default function Settings() {
   const [loadingDep, setLoadingDep] = createSignal(false);
@@ -33,7 +34,7 @@ export default function Settings() {
 
   const handleNuclearWipe = async () => {
     const yes = await ask(
-      "WARNING: This will permanently delete ALL core dependencies, your JSON database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
+      "WARNING: This will permanently delete ALL core dependencies, your SQLite database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
       { title: "NUCLEAR WIPE", kind: "warning" },
     );
 
@@ -77,11 +78,11 @@ export default function Settings() {
 
       <div
         style={{
-          background: "rgba(18, 18, 18, 0.6)",
+          background: "var(--overlay-bg)",
           padding: "30px",
           "border-radius": "16px",
           border: "1px solid var(--border-color)",
-          "box-shadow": "0 10px 30px rgba(0,0,0,0.5)",
+          "box-shadow": "var(--shadow-heavy)",
           "margin-bottom": "40px",
         }}
       >
@@ -100,7 +101,7 @@ export default function Settings() {
                 color: "var(--primary-text)",
               }}
             >
-              General Configuration
+              Appearance
             </h3>
             <p
               style={{
@@ -111,13 +112,84 @@ export default function Settings() {
                 "max-width": "500px",
               }}
             >
-              Global preferences will be populated here in future updates.
+              Toggle between Light and Dark interface modes.
             </p>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              background: "var(--tertiary-background)",
+              padding: "6px",
+              "border-radius": "12px",
+              border: "1px solid var(--border-color)",
+            }}
+          >
+            <button
+              onClick={() => toggleAppTheme("light")}
+              style={{
+                background:
+                  appTheme() === "light"
+                    ? "var(--primary-background)"
+                    : "transparent",
+                color:
+                  appTheme() === "light"
+                    ? "var(--primary-text)"
+                    : "var(--secondary-text)",
+                border: "none",
+                padding: "8px 16px",
+                "border-radius": "8px",
+                cursor: "pointer",
+                "font-weight": "600",
+                transition: "all 0.2s",
+                display: "flex",
+                "align-items": "center",
+                gap: "6px",
+                "box-shadow":
+                  appTheme() === "light"
+                    ? "0 2px 10px rgba(0,0,0,0.1)"
+                    : "none",
+              }}
+            >
+              <i
+                class={appTheme() === "light" ? "ph-fill ph-sun" : "ph ph-sun"}
+              ></i>{" "}
+              Light
+            </button>
+            <button
+              onClick={() => toggleAppTheme("dark")}
+              style={{
+                background:
+                  appTheme() === "dark"
+                    ? "var(--primary-background)"
+                    : "transparent",
+                color:
+                  appTheme() === "dark"
+                    ? "var(--primary-text)"
+                    : "var(--secondary-text)",
+                border: "none",
+                padding: "8px 16px",
+                "border-radius": "8px",
+                cursor: "pointer",
+                "font-weight": "600",
+                transition: "all 0.2s",
+                display: "flex",
+                "align-items": "center",
+                gap: "6px",
+                "box-shadow":
+                  appTheme() === "dark" ? "0 2px 10px rgba(0,0,0,0.2)" : "none",
+              }}
+            >
+              <i
+                class={appTheme() === "dark" ? "ph-fill ph-moon" : "ph ph-moon"}
+              ></i>{" "}
+              Dark
+            </button>
           </div>
         </div>
       </div>
 
-      {/* DANGER ZONE */}
       <h2
         style={{
           "font-family": "var(--font-display)",
@@ -225,7 +297,7 @@ export default function Settings() {
                 "max-width": "450px",
               }}
             >
-              Permanently destroys the JSON database, all core engines, and{" "}
+              Permanently destroys the SQLite database, all core engines, and{" "}
               <strong>ALL gigabytes of downloaded video/audio</strong>. Run this
               before uninstalling the OS app.
             </p>
