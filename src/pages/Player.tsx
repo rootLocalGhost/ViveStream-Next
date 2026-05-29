@@ -27,6 +27,7 @@ export default function Player() {
   const [video, setVideo] = createSignal<VideoEntry | null>(null);
   const [queue, setQueue] = createSignal<VideoEntry[]>([]);
   const [description, setDescription] = createSignal<string>("");
+  const [descExpanded, setDescExpanded] = createSignal(false);
   const [theaterMode, setTheaterMode] = createSignal(false);
   const [isFullscreen, setIsFullscreen] = createSignal(false);
   const [showControls, setShowControls] = createSignal(true);
@@ -54,6 +55,7 @@ export default function Player() {
       const currentIndex = db.findIndex((v) => v.id === targetId);
       if (currentIndex !== -1) {
         setVideo(db[currentIndex]);
+        setDescExpanded(false);
         const favStatus = await invoke<boolean>("check_favorite", {
           id: targetId,
         });
@@ -228,7 +230,7 @@ export default function Player() {
       <div class="player-main-col">
         <Show
           when={video()}
-          fallback={<div style={{ padding: "24px" }}>Loading engine...</div>}
+          fallback={<div class="flex-row-gap">Loading engine...</div>}
         >
           <div
             class="player-video-wrapper"
@@ -276,21 +278,8 @@ export default function Player() {
                 onMouseUp={() => setIsSeeking(false)}
                 style={{ "--progress": `${seekProgress()}%` } as any}
               />
-              <div
-                style={{
-                  display: "flex",
-                  "justify-content": "space-between",
-                  "align-items": "center",
-                  "margin-top": "6px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    "align-items": "center",
-                    gap: "4px",
-                  }}
-                >
+              <div class="flex-row-between" style={{ "margin-top": "6px" }}>
+                <div class="flex-row-gap" style={{ gap: "4px" }}>
                   <button
                     class="control-btn"
                     onClick={togglePlay}
@@ -301,11 +290,8 @@ export default function Player() {
                     ></i>
                   </button>
                   <div
-                    style={{
-                      display: "flex",
-                      "align-items": "center",
-                      cursor: "pointer",
-                    }}
+                    class="flex-row-gap"
+                    style={{ gap: "0", cursor: "pointer" }}
                     onMouseEnter={() => setIsVolumeHovered(true)}
                     onMouseLeave={() => setIsVolumeHovered(false)}
                   >
@@ -360,13 +346,7 @@ export default function Player() {
                     {formatTime(duration())}
                   </span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    "align-items": "center",
-                    gap: "4px",
-                  }}
-                >
+                <div class="flex-row-gap" style={{ gap: "4px" }}>
                   <button class="control-btn" title="Subtitles/CC">
                     <i class="ph-fill ph-closed-captioning"></i>
                   </button>
@@ -398,32 +378,9 @@ export default function Player() {
             </div>
           </div>
           <div class="player-meta-block">
-            <h1
-              style={{
-                "font-size": "22px",
-                margin: "0 0 16px 0",
-                "font-weight": "700",
-                color: "var(--primary-text)",
-                "line-height": "1.3",
-              }}
-            >
-              {video()!.title}
-            </h1>
-            <div
-              style={{
-                display: "flex",
-                "justify-content": "space-between",
-                "align-items": "center",
-                "margin-bottom": "16px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  "align-items": "center",
-                  gap: "12px",
-                }}
-              >
+            <h1 class="player-title">{video()!.title}</h1>
+            <div class="flex-row-between" style={{ "margin-bottom": "16px" }}>
+              <div class="flex-row-gap">
                 <img
                   src={`http://127.0.0.1:1422/Avatars/${video()!.channel}.jpg`}
                   onError={(e) => {
@@ -434,13 +391,7 @@ export default function Player() {
                 />
                 <div>
                   <h3
-                    style={{
-                      margin: "0",
-                      "font-size": "16px",
-                      "font-weight": "600",
-                      color: "var(--primary-text)",
-                      cursor: "pointer",
-                    }}
+                    class="player-channel"
                     onClick={() => navigate(`/artist/${video()!.channel}`)}
                   >
                     {video()!.channel}
@@ -454,46 +405,46 @@ export default function Player() {
                   color: isFavorite()
                     ? "var(--primary-accent)"
                     : "var(--primary-text)",
-                  padding: "10px 20px",
                 }}
               >
                 <i
                   class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}
                   style={{ "font-size": "20px" }}
                 ></i>
-                {isFavorite() ? "Favourited" : "Favourite"}
+                {isFavorite() ? "Saved" : "Save"}
               </button>
             </div>
-            <div class="player-desc-box">
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  "font-weight": "600",
-                  "margin-bottom": "12px",
-                  "font-size": "15px",
-                }}
-              >
+
+            <div
+              class={`player-desc-box ${descExpanded() ? "expanded" : ""}`}
+              onClick={() => {
+                if (!descExpanded()) setDescExpanded(true);
+              }}
+            >
+              <div class="desc-meta">
                 <span>{formatTime(duration())} length</span>
                 <span>•</span>
                 <span>Local Hardware Library</span>
               </div>
-              {description()}
+              <div>{description()}</div>
+
+              <Show when={descExpanded()}>
+                <div
+                  class="desc-toggle"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDescExpanded(false);
+                  }}
+                >
+                  Show less
+                </div>
+              </Show>
             </div>
           </div>
         </Show>
       </div>
       <div class="player-sidebar">
-        <h3
-          style={{
-            margin: "0 0 4px 0",
-            "font-size": "18px",
-            "font-weight": "600",
-            color: "var(--primary-text)",
-          }}
-        >
-          Up next
-        </h3>
+        <h3 class="settings-title">Up next</h3>
         <For each={queue()}>
           {(qVideo) => (
             <div
@@ -524,29 +475,8 @@ export default function Player() {
                   padding: "2px 0",
                 }}
               >
-                <span
-                  style={{
-                    color: "var(--primary-text)",
-                    "font-size": "14px",
-                    "font-weight": "500",
-                    display: "-webkit-box",
-                    "-webkit-line-clamp": "2",
-                    "-webkit-box-orient": "vertical",
-                    overflow: "hidden",
-                    "line-height": "1.4",
-                  }}
-                >
-                  {qVideo.title}
-                </span>
-                <span
-                  style={{
-                    color: "var(--secondary-text)",
-                    "font-size": "12px",
-                    "margin-top": "6px",
-                  }}
-                >
-                  {qVideo.channel}
-                </span>
+                <span class="queue-title">{qVideo.title}</span>
+                <span class="queue-channel">{qVideo.channel}</span>
               </div>
             </div>
           )}
