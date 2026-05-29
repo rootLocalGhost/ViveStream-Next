@@ -24,9 +24,9 @@ const formatTime = (timeInSeconds: number) => {
 export default function Player() {
   const params = useParams();
   const navigate = useNavigate();
-
   const [video, setVideo] = createSignal<VideoEntry | null>(null);
   const [queue, setQueue] = createSignal<VideoEntry[]>([]);
+  const [description, setDescription] = createSignal<string>("");
   const [theaterMode, setTheaterMode] = createSignal(false);
   const [isFullscreen, setIsFullscreen] = createSignal(false);
   const [showControls, setShowControls] = createSignal(true);
@@ -52,15 +52,25 @@ export default function Player() {
     try {
       const db = await invoke<VideoEntry[]>("get_downloaded_videos");
       const currentIndex = db.findIndex((v) => v.id === targetId);
-
       if (currentIndex !== -1) {
         setVideo(db[currentIndex]);
-
-        // Fetch the favorite status from the database
         const favStatus = await invoke<boolean>("check_favorite", {
           id: targetId,
         });
         setIsFavorite(favStatus);
+
+        try {
+          const descRes = await fetch(
+            `http://127.0.0.1:1422/Descriptions/${targetId}.txt`,
+          );
+          if (descRes.ok) {
+            setDescription(await descRes.text());
+          } else {
+            setDescription("No description available.");
+          }
+        } catch {
+          setDescription("No description available.");
+        }
 
         const nextVideos: VideoEntry[] = [];
         for (let i = 1; i <= 15; i++) {
@@ -68,11 +78,9 @@ export default function Player() {
             nextVideos.push(db[(currentIndex + i) % db.length]);
           }
         }
-
         const uniqueQueue = Array.from(
           new Set(nextVideos.map((a) => a.id)),
         ).map((id) => nextVideos.find((a) => a.id === id)!);
-
         setQueue(uniqueQueue.filter((v) => v.id !== targetId));
       }
     } catch (e) {
@@ -84,12 +92,10 @@ export default function Player() {
     if (!video()) return;
     try {
       const newStatus = !isFavorite();
-
       await invoke("toggle_favorite", {
         id: video()!.id,
         isFavorite: newStatus,
       });
-
       setIsFavorite(newStatus);
     } catch (e) {
       console.error("Failed to toggle favorite:", e);
@@ -181,7 +187,6 @@ export default function Player() {
     unlistenPrev = await listen("media-prev", () => {
       if (videoRef) videoRef.currentTime = 0;
     });
-
     document.addEventListener("fullscreenchange", () => {
       setIsFullscreen(!!document.fullscreenElement);
     });
@@ -197,7 +202,6 @@ export default function Player() {
   createEffect(() => {
     loadVideoData(params.id);
   });
-
   createEffect(() => {
     if (video() && videoRef) {
       invoke("update_media_metadata", {
@@ -252,7 +256,6 @@ export default function Player() {
               onClick={togglePlay}
               src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
             />
-
             <div
               class="player-controls-overlay"
               style={{
@@ -297,7 +300,6 @@ export default function Player() {
                       class={`ph-fill ph-${isPlaying() ? "pause" : "play"}`}
                     ></i>
                   </button>
-
                   <div
                     style={{
                       display: "flex",
@@ -358,7 +360,6 @@ export default function Player() {
                     {formatTime(duration())}
                   </span>
                 </div>
-
                 <div
                   style={{
                     display: "flex",
@@ -396,7 +397,6 @@ export default function Player() {
               </div>
             </div>
           </div>
-
           <div class="player-meta-block">
             <h1
               style={{
@@ -424,26 +424,14 @@ export default function Player() {
                   gap: "12px",
                 }}
               >
-                <div
-                  style={{
-                    width: "42px",
-                    height: "42px",
-                    "border-radius": "50%",
-                    background: "var(--tertiary-background)",
-                    display: "flex",
-                    "align-items": "center",
-                    "justify-content": "center",
-                    "flex-shrink": "0",
+                <img
+                  src={`http://127.0.0.1:1422/Avatars/${video()!.channel}.jpg`}
+                  onError={(e) => {
+                    e.currentTarget.src = "";
+                    e.currentTarget.className = "ph-fill ph-user avatar-small";
                   }}
-                >
-                  <i
-                    class="ph-fill ph-user"
-                    style={{
-                      "font-size": "22px",
-                      color: "var(--secondary-text)",
-                    }}
-                  ></i>
-                </div>
+                  class="avatar-small"
+                />
                 <div>
                   <h3
                     style={{
@@ -451,13 +439,14 @@ export default function Player() {
                       "font-size": "16px",
                       "font-weight": "600",
                       color: "var(--primary-text)",
+                      cursor: "pointer",
                     }}
+                    onClick={() => navigate(`/artist/${video()!.channel}`)}
                   >
                     {video()!.channel}
                   </h3>
                 </div>
               </div>
-
               <button
                 class="clay-btn"
                 onClick={toggleFavoriteStatus}
@@ -472,33 +461,28 @@ export default function Player() {
                   class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}
                   style={{ "font-size": "20px" }}
                 ></i>
-                {isFavorite() ? "Saved" : "Save"}
+                {isFavorite() ? "Favourited" : "Favourite"}
               </button>
             </div>
-
             <div class="player-desc-box">
               <div
                 style={{
                   display: "flex",
                   gap: "12px",
                   "font-weight": "600",
-                  "margin-bottom": "8px",
+                  "margin-bottom": "12px",
+                  "font-size": "15px",
                 }}
               >
                 <span>{formatTime(duration())} length</span>
                 <span>•</span>
                 <span>Local Hardware Library</span>
               </div>
-              <p style={{ margin: "0", color: "var(--secondary-text)" }}>
-                Description parsing is currently disabled. Data fetches for
-                localized channel icons and Markdown descriptions will be
-                architected in the database schema refactor.
-              </p>
+              {description()}
             </div>
           </div>
         </Show>
       </div>
-
       <div class="player-sidebar">
         <h3
           style={{
