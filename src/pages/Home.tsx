@@ -38,8 +38,17 @@ export default function Home() {
                   class="video-thumbnail"
                 />
                 <div class="video-info">
-                  <h3 class="video-title">{video.title}</h3>
-                  <p class="video-channel">{video.channel}</p>
+                  <img
+                    src={`http://127.0.0.1:1422/Avatars/${video.channel}.jpg`}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                    class="avatar-small"
+                  />
+                  <div class="video-text-content">
+                    <h3 class="video-title">{video.title}</h3>
+                    <p class="video-channel">{video.channel}</p>
+                  </div>
                 </div>
               </div>
             )}
