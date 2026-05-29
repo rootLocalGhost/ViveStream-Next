@@ -84,22 +84,8 @@ export default function Playlists() {
   return (
     <div class="page-wrapper">
       <Show when={!activePlaylist()}>
-        <h2
-          style={{
-            "font-family": "var(--font-display)",
-            "font-size": "28px",
-            "margin-bottom": "30px",
-            display: "flex",
-            "align-items": "center",
-            gap: "10px",
-            color: "var(--primary-text)",
-          }}
-        >
-          <i
-            class="ph-fill ph-list-dashes"
-            style={{ "font-size": "32px", color: "var(--primary-accent)" }}
-          ></i>
-          Playlists
+        <h2 class="page-title">
+          <i class="ph-fill ph-list-dashes"></i> Playlists
         </h2>
 
         <div class="command-bar" style={{ "margin-bottom": "30px" }}>
@@ -127,30 +113,12 @@ export default function Playlists() {
           <For each={playlists()}>
             {(playlist) => (
               <div
-                class="clay-card"
+                class="clay-card flex-col-gap"
                 onClick={() => openPlaylist(playlist)}
-                style={{
-                  display: "flex",
-                  "flex-direction": "column",
-                  gap: "12px",
-                }}
+                style={{ gap: "12px" }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    "justify-content": "space-between",
-                    "align-items": "center",
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: "0",
-                      "font-size": "18px",
-                      color: "var(--primary-text)",
-                    }}
-                  >
-                    {playlist.name}
-                  </h3>
+                <div class="flex-row-between">
+                  <h3 class="settings-title">{playlist.name}</h3>
                   <button
                     class="control-btn"
                     onClick={(e) => handleDelete(e, playlist.id)}
@@ -159,12 +127,7 @@ export default function Playlists() {
                     <i class="ph-fill ph-trash"></i>
                   </button>
                 </div>
-                <span
-                  style={{
-                    color: "var(--secondary-text)",
-                    "font-size": "13px",
-                  }}
-                >
+                <span class="settings-desc" style={{ "font-size": "13px" }}>
                   {playlist.created_at}
                 </span>
               </div>
@@ -174,30 +137,17 @@ export default function Playlists() {
       </Show>
 
       <Show when={activePlaylist()}>
-        <div
-          style={{
-            display: "flex",
-            "align-items": "center",
-            gap: "16px",
-            "margin-bottom": "30px",
-          }}
-        >
+        <div class="flex-row-gap" style={{ "margin-bottom": "30px" }}>
           <button class="clay-btn" onClick={() => setActivePlaylist(null)}>
             <i class="ph ph-arrow-left"></i> Back
           </button>
-          <h2
-            style={{
-              margin: "0",
-              "font-family": "var(--font-display)",
-              color: "var(--primary-text)",
-            }}
-          >
+          <h2 class="page-title" style={{ margin: "0" }}>
             {activePlaylist()?.name}
           </h2>
         </div>
 
         {playlistVideos().length === 0 ? (
-          <p style={{ color: "var(--secondary-text)" }}>
+          <p class="settings-desc">
             This playlist is empty. Add videos from the player menu.
           </p>
         ) : (
