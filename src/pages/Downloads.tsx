@@ -92,11 +92,11 @@ export default function Downloads() {
           {(task) => (
             <div
               style={{
-                background: "rgba(18, 18, 18, 0.7)",
+                background: "var(--card-bg)",
                 border:
                   task.status === "error"
                     ? "1px solid #ef233c"
-                    : "1px solid var(--border-color)",
+                    : "1px solid #ffffff",
                 "border-radius": "12px",
                 padding: "16px",
                 "box-shadow":
