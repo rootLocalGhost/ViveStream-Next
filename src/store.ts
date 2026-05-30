@@ -5,26 +5,23 @@ import { listen } from "@tauri-apps/api/event";
 const isBrowser =
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
-const storedAnimPref = isBrowser
-  ? window.localStorage.getItem("useAnimatedIcons")
-  : null;
-const initialAnimState =
-  storedAnimPref !== null ? storedAnimPref === "true" : true;
+const getBool = (key: string, def: boolean) =>
+  isBrowser && window.localStorage.getItem(key) !== null
+    ? window.localStorage.getItem(key) === "true"
+    : def;
+const getStr = (key: string, def: string) =>
+  isBrowser && window.localStorage.getItem(key) !== null
+    ? window.localStorage.getItem(key)!
+    : def;
+const getNum = (key: string, def: number) =>
+  isBrowser && window.localStorage.getItem(key) !== null
+    ? parseInt(window.localStorage.getItem(key)!, 10)
+    : def;
 
-const storedHoverPref = isBrowser
-  ? window.localStorage.getItem("sidebarHoverMode")
-  : null;
-const initialHoverState =
-  storedHoverPref !== null ? storedHoverPref === "true" : true;
-
-// Force Light/Sunset as default
-const storedTheme = isBrowser ? window.localStorage.getItem("appTheme") : null;
-const initialTheme = storedTheme || "light";
-
-const storedPalette = isBrowser
-  ? window.localStorage.getItem("appPalette")
-  : null;
-const initialPalette = storedPalette || "sunset";
+const initialAnimState = getBool("useAnimatedIcons", true);
+const initialHoverState = getBool("sidebarHoverMode", true);
+const initialTheme = getStr("appTheme", "light");
+const initialPalette = getStr("appPalette", "sunset");
 
 if (isBrowser) {
   document.documentElement.setAttribute("data-theme", initialTheme);
@@ -70,6 +67,82 @@ export const toggleAppPalette = (palette: string) => {
   }
 };
 
+// --- Download & Engine Settings ---
+export const [concurrentDownloads, setConcurrentDownloads] = createSignal(
+  getNum("concurrentDownloads", 3),
+);
+export const updateConcurrentDownloads = (val: number) => {
+  setConcurrentDownloads(val);
+  if (isBrowser)
+    window.localStorage.setItem("concurrentDownloads", val.toString());
+};
+
+export const [concurrentFragments, setConcurrentFragments] = createSignal(
+  getNum("concurrentFragments", 1),
+);
+export const updateConcurrentFragments = (val: number) => {
+  setConcurrentFragments(val);
+  if (isBrowser)
+    window.localStorage.setItem("concurrentFragments", val.toString());
+};
+
+export const [speedLimit, setSpeedLimit] = createSignal(
+  getStr("speedLimit", ""),
+);
+export const updateSpeedLimit = (val: string) => {
+  setSpeedLimit(val);
+  if (isBrowser) window.localStorage.setItem("speedLimit", val);
+};
+
+export const [browserCookies, setBrowserCookies] = createSignal(
+  getStr("browserCookies", "None"),
+);
+export const updateBrowserCookies = (val: string) => {
+  setBrowserCookies(val);
+  if (isBrowser) window.localStorage.setItem("browserCookies", val);
+};
+
+export const [autoSubtitles, setAutoSubtitles] = createSignal(
+  getBool("autoSubtitles", false),
+);
+export const toggleAutoSubtitles = (val: boolean) => {
+  setAutoSubtitles(val);
+  if (isBrowser) window.localStorage.setItem("autoSubtitles", val.toString());
+};
+
+export const [removeSponsorBlock, setRemoveSponsorBlock] = createSignal(
+  getBool("removeSponsorBlock", false),
+);
+export const toggleRemoveSponsorBlock = (val: boolean) => {
+  setRemoveSponsorBlock(val);
+  if (isBrowser)
+    window.localStorage.setItem("removeSponsorBlock", val.toString());
+};
+
+export const [downloadType, setDownloadType] = createSignal(
+  getStr("downloadType", "Video"),
+);
+export const updateDownloadType = (val: string) => {
+  setDownloadType(val);
+  if (isBrowser) window.localStorage.setItem("downloadType", val);
+};
+
+export const [dlSubtitles, setDlSubtitles] = createSignal(
+  getBool("dlSubtitles", false),
+);
+export const toggleDlSubtitles = (val: boolean) => {
+  setDlSubtitles(val);
+  if (isBrowser) window.localStorage.setItem("dlSubtitles", val.toString());
+};
+
+export const [liveFromStart, setLiveFromStart] = createSignal(
+  getBool("liveFromStart", false),
+);
+export const toggleLiveFromStart = (val: boolean) => {
+  setLiveFromStart(val);
+  if (isBrowser) window.localStorage.setItem("liveFromStart", val.toString());
+};
+
 export interface VideoEntry {
   id: string;
   title: string;
@@ -91,7 +164,14 @@ export interface DownloadTask {
 }
 
 export const [downloadUrl, setDownloadUrl] = createSignal("");
-export const [downloadQuality, setDownloadQuality] = createSignal("1440p");
+export const [downloadQuality, setDownloadQuality] = createSignal(
+  getStr("downloadQuality", "1440p"),
+);
+export const updateDownloadQuality = (val: string) => {
+  setDownloadQuality(val);
+  if (isBrowser) window.localStorage.setItem("downloadQuality", val);
+};
+
 export const [tasks, setTasks] = createSignal<DownloadTask[]>([]);
 export const [isProcessingQueue, setIsProcessingQueue] = createSignal(false);
 export const [homeVideos, setHomeVideos] = createSignal<VideoEntry[]>([]);
