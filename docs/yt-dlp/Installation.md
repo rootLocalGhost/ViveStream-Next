@@ -30,7 +30,8 @@ aria2c https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp --dir ~/
 chmod a+rx ~/.local/bin/yt-dlp  # Make executable
 ```
 
-To update, run: 
+To update, run:
+
 ```bash
 yt-dlp -U
 ```
@@ -40,17 +41,21 @@ To use shell completion (autocomplete), look for the completion files in the [so
 # With [pip](https://pypi.org/project/pip)
 
 You can install the [PyPI package](https://pypi.org/project/yt-dlp) with:
+
 ```bash
 python3 -m pip install -U "yt-dlp[default]"
 ```
 
 You can install without any of the optional dependencies using:
+
 ```bash
 python3 -m pip install --no-deps -U yt-dlp
 ```
+
 <a id="pip-nightly"></a>
 
 You can also install the nightly version of yt-dlp with:
+
 ```bash
 python3 -m pip install -U --pre "yt-dlp[default]"
 ```
@@ -58,6 +63,7 @@ python3 -m pip install -U --pre "yt-dlp[default]"
 <a id="pip-master"></a>
 
 If you want to be on the bleeding edge, you can also install the master branch with:
+
 ```bash
 python3 -m pip install -U pip hatchling wheel
 python3 -m pip install --force-reinstall "yt-dlp[default] @ https://github.com/yt-dlp/yt-dlp/archive/master.tar.gz"
@@ -66,10 +72,10 @@ python3 -m pip install --force-reinstall "yt-dlp[default] @ https://github.com/y
 On some systems, you may need to use `py` or `python` instead of `python3`
 
 To update, run:
+
 ```bash
 python3 -m pip install -U "yt-dlp[default]"
 ```
-
 
 # Third-party package managers
 
@@ -84,11 +90,13 @@ python3 -m pip install -U "yt-dlp[default]"
 ### [Homebrew](https://formulae.brew.sh/formula/yt-dlp)
 
 macOS or Linux users that are using Homebrew can also install it by:
+
 ```bash
 brew install yt-dlp
 ```
 
 To update, run:
+
 ```bash
 brew upgrade yt-dlp
 ```
@@ -96,24 +104,29 @@ brew upgrade yt-dlp
 ### [pacman](https://archlinux.org/packages/extra/any/yt-dlp/)
 
 Arch Linux users can install it from the official community repository:
+
 ```bash
 sudo pacman -Syu yt-dlp
 ```
 
 pacman will now automatically download the correct dependencies and keep the package up-to-date whenever you update your system with:
+
 ```bash
 sudo pacman -Syu
 ```
 
-### [APT](https://en.wikipedia.org/wiki/APT_(software))
+### [APT](<https://en.wikipedia.org/wiki/APT_(software)>)
 
 You can download and install yt-dlp for recent Ubuntu and other related Debian-based distributions by adding [this PPA](https://launchpad.net/~tomtomtom/+archive/ubuntu/yt-dlp)
+
 ```bash
 sudo add-apt-repository ppa:tomtomtom/yt-dlp    # Add ppa repo to apt
 sudo apt update                                 # Update package list
 sudo apt install yt-dlp                         # Install yt-dlp
 ```
+
 Your system's package manager will now automatically download the correct dependencies and keep the package updated with the rest of your system whenever you run:
+
 ```bash
 sudo apt update
 sudo apt install yt-dlp
@@ -122,11 +135,13 @@ sudo apt install yt-dlp
 ### [Snap](https://snapcraft.io/yt-dlp)
 
 You can install yt-dlp on Linux using Snap:
+
 ```bash
 sudo snap install --edge yt-dlp
 ```
 
 To manually update, run:
+
 ```bash
 sudo snap refresh --edge yt-dlp
 ```
@@ -134,11 +149,13 @@ sudo snap refresh --edge yt-dlp
 ### [MacPorts](https://ports.macports.org/port/yt-dlp/)
 
 You can install yt-dlp on macOS using MacPorts:
+
 ```bash
 sudo port install yt-dlp
 ```
 
 To update, run:
+
 ```bash
 sudo port selfupdate
 sudo port upgrade yt-dlp
@@ -149,20 +166,25 @@ sudo port upgrade yt-dlp
 Make sure you're on the latest version (or edge) - older versions don't receive updates for community repo.
 
 To install yt-dlp on Alpine Linux:
+
 ```sh
 doas apk -U add yt-dlp
 ```
+
 Or alternatively, without any optional dependencies:
+
 ```sh
 doas apk -U add yt-dlp-core
 ```
 
 yt-dlp should upgrade with your system. If you want to do that explicitly:
+
 ```sh
 doas apk -U upgrade yt-dlp
 ```
 
 To uninstall:
+
 ```sh
 doas apk del yt-dlp
 ```
@@ -178,6 +200,7 @@ scoop install yt-dlp
 ```
 
 To update, run:
+
 ```powershell
 scoop update yt-dlp
 ```
@@ -189,6 +212,7 @@ choco install yt-dlp
 ```
 
 To update, run:
+
 ```powershell
 choco upgrade yt-dlp
 ```
@@ -200,6 +224,7 @@ winget install yt-dlp
 ```
 
 To update, run:
+
 ```powershell
 winget upgrade yt-dlp
 ```
@@ -207,6 +232,7 @@ winget upgrade yt-dlp
 ## Android
 
 You can use yt-dlp on Android using [Termux](https://termux.dev). Once Termux is installed, open it and run the following commands:
+
 ```bash
 termux-setup-storage                 # Allow termux to download files into your phone's storage
 pkg update && pkg upgrade            # Update all packages
@@ -216,6 +242,7 @@ pkg install ffmpeg                   # OPTIONAL: Install ffmpeg
 ```
 
 To update, run:
+
 ```bash
 pip install -U "yt-dlp[default]"
 ```

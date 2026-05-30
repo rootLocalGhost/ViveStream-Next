@@ -4,21 +4,20 @@
 
 > [!TIP]
 > TL;DR recommended setup: Use a [PO Token Provider plugin](#po-token-provider-plugins) to provide the `mweb` client with a [PO Token for GVS requests](#cases-where-a-po-token-is-required).
-> 
+>
 > See the notice in the [YouTube Extractor Wiki](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#youtube) for more information on the current state of downloading videos from YouTube.
 
-
-<!-- TOC -->
-* [YouTube PO Token Guide](#youtube-po-token-guide)
-  * [Introduction](#introduction)
-  * [Cases where a PO Token is required](#cases-where-a-po-token-is-required)
-    * [Current PO Token enforcement](#current-po-token-enforcement)
-  * [PO Token Provider Plugins](#po-token-provider-plugins)
-    * [Featured Plugins](#featured-plugins)
-  * [Other PO Token related tools](#other-po-token-related-tools)
-  * [Technical details](#technical-details)
 <!-- TOC -->
 
+- [YouTube PO Token Guide](#youtube-po-token-guide)
+  - [Introduction](#introduction)
+  - [Cases where a PO Token is required](#cases-where-a-po-token-is-required)
+    - [Current PO Token enforcement](#current-po-token-enforcement)
+  - [PO Token Provider Plugins](#po-token-provider-plugins)
+    - [Featured Plugins](#featured-plugins)
+  - [Other PO Token related tools](#other-po-token-related-tools)
+  - [Technical details](#technical-details)
+  <!-- TOC -->
 
 ## Introduction
 
@@ -33,6 +32,7 @@ For more technical details on these tokens, refer to the [technical details sect
 ## Cases where a PO Token is required
 
 There are currently three cases yt-dlp may require PO Tokens for video downloads, [depending on the client used](#current-po-token-enforcement):
+
 - GVS: Google Video Server requests (video streaming - https, dash, hls, etc.)
 - Player: Innertube `player` requests (fetch video format URLs)
 - Subs: Subtitle requests
@@ -44,9 +44,9 @@ The PO Tokens may be generated differently for each of these cases, depending on
 YouTube is at present rolling out changes to enforce PO Tokens for video playback. Currently, only GVS and Subs require PO Tokens for some clients.
 
 | Client         | PO Token Required For | Notes                                                                                                             |
-|----------------|-----------------------|-------------------------------------------------------------------------------------------------------------------|
+| -------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `web`          | Subs, GVS             | Only SABR formats available                                                                                       |
-| `web_safari`   | GVS*                  | Same as `web`. *Provides HLS (m3u8) formats which do not require PO Token for GVS at this time.                   |
+| `web_safari`   | GVS\*                 | Same as `web`. \*Provides HLS (m3u8) formats which do not require PO Token for GVS at this time.                  |
 | `mweb`         | GVS                   |                                                                                                                   |
 | `tv`           | Not required          | All formats DRM'd if cookies (logged-in or active guest) aren't passed. Only SABR formats available in some cases |
 | `tv_simply`    | GVS                   | Account cookies not supported                                                                                     |
@@ -58,6 +58,7 @@ YouTube is at present rolling out changes to enforce PO Tokens for video playbac
 | `ios`          | GVS or Player         | Account cookies not supported                                                                                     |
 
 For all clients:
+
 - GVS PO Token is not required for YouTube Premium subscribers
 - HLS live streams do not require a PO Token (excluding `ios` client)
 
@@ -68,7 +69,7 @@ You can select what client to use with the [`player_client` extractor argument](
 > [!TIP]
 > Recommended
 
-Manually extracting PO Tokens is no longer recommended. YouTube now binds PO Tokens to the video ID, so a new token needs to be generated for each video. 
+Manually extracting PO Tokens is no longer recommended. YouTube now binds PO Tokens to the video ID, so a new token needs to be generated for each video.
 
 It is recommended to use a PO Token Provider plugin to automatically fetch and provide PO Tokens to yt-dlp.
 
@@ -80,7 +81,7 @@ It is recommended to use a PO Token Provider plugin to automatically fetch and p
 - [bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) by [Brainicism](https://github.com/Brainicism)
   - A PO Token Provider which uses [BgUtils](https://github.com/LuanRT/BgUtils) to generate PO Tokens. _Maintained by a yt-dlp maintainer_
 - [yt-dlp-getpot-wpc](https://github.com/coletdjnz/yt-dlp-getpot-wpc) by [coletdjnz](https://github.com/coletdjnz)
-  - A PO Token Provider which uses YouTube in the browser to generate PO Tokens. Useful as a fallback/alternative if the above fails.  _Maintained by a yt-dlp core maintainer_
+  - A PO Token Provider which uses YouTube in the browser to generate PO Tokens. Useful as a fallback/alternative if the above fails. _Maintained by a yt-dlp core maintainer_
 
 Check out the [yt-dlp-pot-provider GitHub topic](https://github.com/topics/yt-dlp-pot-provider) for more PO Token Provider plugins.
 
@@ -89,7 +90,7 @@ For developers, refer to the [PO Token Provider developer documentation](https:/
 ## Other PO Token related tools
 
 - [BgUtils](https://github.com/LuanRT/BgUtils) by [LuanRT](https://github.com/LuanRT)
-  - Utility to generate PoTokens and run BotGuard attestation challenges. 
+  - Utility to generate PoTokens and run BotGuard attestation challenges.
 - [YouTube Trusted Session Generator](https://github.com/iv-org/youtube-trusted-session-generator) by [Invidious](https://github.com/iv-org)
   - A generator for getting a session that passes all the checks from YouTube side
 
