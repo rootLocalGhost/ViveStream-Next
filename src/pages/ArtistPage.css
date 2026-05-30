@@ -1,0 +1,11 @@
+.artist-page .artist-hero-card {
+  margin-bottom: 40px;
+  padding: 20px;
+}
+.artist-hero-card .artist-avatar {
+  width: 100px;
+  height: 100px;
+}
+.artist-header-title {
+  margin: 0 0 8px 0;
+}

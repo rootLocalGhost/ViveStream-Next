@@ -148,18 +148,12 @@ export default function Setup() {
         >
           {loading() ? (
             <>
-              <i
-                class="ph ph-spinner spinIcon"
-                style={{ "font-size": "22px" }}
-              ></i>{" "}
+              <i class="ph ph-spinner spinIcon"></i>{" "}
               DEPLOYING ENGINES
             </>
           ) : (
             <>
-              <i
-                class="ph-fill ph-download-simple"
-                style={{ "font-size": "22px" }}
-              ></i>{" "}
+              <i class="ph-fill ph-download-simple"></i>{" "}
               INITIALIZE DEPLOYMENT
             </>
           )}

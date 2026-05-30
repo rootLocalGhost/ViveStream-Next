@@ -21,6 +21,7 @@ import {
   removeSponsorBlock,
   toggleRemoveSponsorBlock,
 } from "../store";
+import "./Settings.css";
 
 export default function Settings() {
   const [loadingDep, setLoadingDep] = createSignal(false);
@@ -75,7 +76,7 @@ export default function Settings() {
   };
 
   return (
-    <div class="page-wrapper">
+    <div class="page-wrapper settings-page">
       <h2 class="page-title">
         <i class="ph-fill ph-gear"></i> Settings
       </h2>
@@ -116,10 +117,7 @@ export default function Settings() {
         {/* Color Palette */}
         <div
           class="flex-row-between"
-          style={{
-            opacity: appTheme() === "dark" ? 0.5 : 1,
-            "pointer-events": appTheme() === "dark" ? "none" : "auto",
-          }}
+          classList={{ "palette-disabled": appTheme() === "dark" }}
         >
           <div>
             <h3 class="settings-title">Color Palette</h3>
@@ -132,15 +130,13 @@ export default function Settings() {
               onClick={() => toggleAppPalette("default")}
               class={`toggle-btn ${appPalette() === "default" ? "active" : ""}`}
             >
-              <div class="color-swatch" style={{ background: "#ef233c" }}></div>{" "}
-              Standard
+              <div class="color-swatch standard"></div> Standard
             </button>
             <button
               onClick={() => toggleAppPalette("sunset")}
               class={`toggle-btn ${appPalette() === "sunset" ? "active" : ""}`}
             >
-              <div class="color-swatch" style={{ background: "#f25c54" }}></div>{" "}
-              Sunset
+              <div class="color-swatch sunset"></div> Sunset
             </button>
           </div>
         </div>
@@ -166,7 +162,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <h2 class="page-title" style={{ "margin-top": "40px" }}>
+      <h2 class="page-title page-title-spaced">
         <i class="ph-fill ph-sliders"></i> Engine Preferences
       </h2>
 
@@ -315,7 +311,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <h2 class="page-title page-title-danger" style={{ "margin-top": "40px" }}>
+      <h2 class="page-title page-title-spaced page-title-danger">
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
 
@@ -332,12 +328,7 @@ export default function Settings() {
           <button
             onClick={handleWipeDependencies}
             disabled={loadingDep() || loadingNuclear()}
-            class="command-btn"
-            style={{
-              background: "transparent",
-              border: "1px solid var(--border-color)",
-              color: "var(--primary-text)",
-            }}
+            class="command-btn secondary"
           >
             {loadingDep() ? "Wiping..." : "Wipe Engines"}
           </button>
@@ -359,12 +350,10 @@ export default function Settings() {
           <button
             onClick={handleNuclearWipe}
             disabled={loadingNuclear() || loadingDep()}
-            class="command-btn"
-            style={{ background: "#e81123" }}
+            class="command-btn danger"
           >
             <i
               class={`ph-fill ${loadingNuclear() ? "ph-spinner spinIcon" : "ph-trash"}`}
-              style={{ "font-size": "18px" }}
             ></i>
             {loadingNuclear() ? "Destroying..." : "Delete Media & Database"}
           </button>

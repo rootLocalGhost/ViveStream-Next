@@ -10,6 +10,8 @@ import { useParams, useNavigate } from "@solidjs/router";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { VideoEntry } from "../store";
+import "./Player.css";
+import "./Player.css";
 
 const formatTime = (timeInSeconds: number) => {
   if (isNaN(timeInSeconds)) return "0:00";
@@ -259,12 +261,11 @@ export default function Player() {
               src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
             />
             <div
-              class="player-controls-overlay"
-              style={{
-                opacity: showControls() || !isPlaying() ? 1 : 0,
-                "pointer-events":
-                  showControls() || !isPlaying() ? "auto" : "none",
-              }}
+              class={
+                showControls() || !isPlaying()
+                  ? "player-controls-overlay visible"
+                  : "player-controls-overlay"
+              }
             >
               <input
                 class="custom-slider"
@@ -278,8 +279,8 @@ export default function Player() {
                 onMouseUp={() => setIsSeeking(false)}
                 style={{ "--progress": `${seekProgress()}%` } as any}
               />
-              <div class="flex-row-between" style={{ "margin-top": "6px" }}>
-                <div class="flex-row-gap" style={{ gap: "4px" }}>
+              <div class="flex-row-between player-controls-bar">
+                <div class="flex-row-gap gap-4">
                   <button
                     class="control-btn"
                     onClick={togglePlay}
@@ -290,8 +291,7 @@ export default function Player() {
                     ></i>
                   </button>
                   <div
-                    class="flex-row-gap"
-                    style={{ gap: "0", cursor: "pointer" }}
+                    class="volume-control-group"
                     onMouseEnter={() => setIsVolumeHovered(true)}
                     onMouseLeave={() => setIsVolumeHovered(false)}
                   >
@@ -305,15 +305,11 @@ export default function Player() {
                       ></i>
                     </button>
                     <div
-                      style={{
-                        width: isVolumeHovered() ? "80px" : "0px",
-                        height: "24px",
-                        overflow: "hidden",
-                        transition: "width 0.25s cubic-bezier(0.25, 1, 0.5, 1)",
-                        display: "flex",
-                        "align-items": "center",
-                        "padding-left": isVolumeHovered() ? "4px" : "0",
-                      }}
+                      class={
+                        isVolumeHovered()
+                          ? "volume-slider-wrapper hovered"
+                          : "volume-slider-wrapper"
+                      }
                     >
                       <input
                         class="custom-slider"
@@ -325,28 +321,19 @@ export default function Player() {
                         onInput={handleVolumeChange}
                         style={
                           {
-                            width: "70px",
                             "--progress": `${volProgress()}%`,
                           } as any
                         }
                       />
                     </div>
                   </div>
-                  <span
-                    style={{
-                      color: "#eee",
-                      "font-size": "13px",
-                      "font-weight": "500",
-                      "font-family": "var(--font-body)",
-                      "margin-left": "8px",
-                    }}
-                  >
+                  <span class="player-timecode">
                     {formatTime(currentTime())}{" "}
-                    <span style={{ opacity: 0.6 }}>/</span>{" "}
+                    <span class="player-timecode-separator">/</span>{" "}
                     {formatTime(duration())}
                   </span>
                 </div>
-                <div class="flex-row-gap" style={{ gap: "4px" }}>
+                <div class="flex-row-gap gap-4">
                   <button class="control-btn" title="Subtitles/CC">
                     <i class="ph-fill ph-closed-captioning"></i>
                   </button>
@@ -379,7 +366,7 @@ export default function Player() {
           </div>
           <div class="player-meta-block">
             <h1 class="player-title">{video()!.title}</h1>
-            <div class="flex-row-between" style={{ "margin-bottom": "16px" }}>
+            <div class="flex-row-between player-meta-row">
               <div class="flex-row-gap">
                 <img
                   src={`http://127.0.0.1:1422/Avatars/${video()!.channel}.jpg`}
@@ -399,18 +386,10 @@ export default function Player() {
                 </div>
               </div>
               <button
-                class="clay-btn"
+                class={`clay-btn player-favorite-status ${isFavorite() ? "active" : ""}`}
                 onClick={toggleFavoriteStatus}
-                style={{
-                  color: isFavorite()
-                    ? "var(--primary-accent)"
-                    : "var(--primary-text)",
-                }}
               >
-                <i
-                  class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}
-                  style={{ "font-size": "20px" }}
-                ></i>
+                <i class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}></i>
                 {isFavorite() ? "Saved" : "Save"}
               </button>
             </div>
@@ -451,30 +430,13 @@ export default function Player() {
               class="queue-item"
               onClick={() => navigate(`/player/${qVideo.id}`)}
             >
-              <div
-                style={{
-                  position: "relative",
-                  width: "168px",
-                  "flex-shrink": "0",
-                }}
-              >
+              <div class="queue-thumbnail-wrapper">
                 <img
                   src={`http://127.0.0.1:1422/Thumbnails/${qVideo.id}.jpg`}
-                  style={{
-                    width: "100%",
-                    "aspect-ratio": "16/9",
-                    "object-fit": "cover",
-                  }}
+                  class="queue-thumbnail"
                 />
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  "flex-direction": "column",
-                  "justify-content": "flex-start",
-                  padding: "2px 0",
-                }}
-              >
+              <div class="queue-meta">
                 <span class="queue-title">{qVideo.title}</span>
                 <span class="queue-channel">{qVideo.channel}</span>
               </div>

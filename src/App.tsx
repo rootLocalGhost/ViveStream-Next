@@ -39,16 +39,13 @@ const AppLogo = () => (
       stroke-linejoin="round"
     />
     <path
+      class="logo-glow"
       d="M100 125 Q110 125 118 85 Q126 45 134 125 Q142 175 150 125 Q158 75 166 125 Q174 25 182 125 Q190 215 198 125 Q206 55 214 125 Q222 195 230 125 Q238 35 246 125 Q254 235 262 125 Q270 45 278 125 Q286 205 294 125 Q302 65 310 125 Q318 175 326 125 Q334 85 342 125 Q350 225 358 125 Q366 55 374 125 Q382 165 390 125 Q398 105 405 125"
       stroke="#ffffff"
       stroke-width="6"
       fill="none"
       stroke-linecap="round"
       stroke-linejoin="round"
-      style={{
-        filter:
-          "drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 0 10px #fff)",
-      }}
     />
   </svg>
 );
@@ -64,28 +61,28 @@ const ImmersiveTitleBar = () => {
           onClick={() => win.hide()}
           title="Hide to Tray"
         >
-          <i class="ph ph-caret-down" style={{ "font-size": "16px" }}></i>
+          <i class="ph ph-caret-down"></i>
         </div>
         <div
           class="titlebar-btn"
           onClick={() => win.minimize()}
           title="Minimize"
         >
-          <i class="ph ph-minus" style={{ "font-size": "16px" }}></i>
+          <i class="ph ph-minus"></i>
         </div>
         <div
           class="titlebar-btn"
           onClick={() => win.toggleMaximize()}
           title="Maximize"
         >
-          <i class="ph ph-square" style={{ "font-size": "14px" }}></i>
+          <i class="ph ph-square"></i>
         </div>
         <div
           class="titlebar-btn close-btn"
           onClick={() => win.close()}
           title="Close"
         >
-          <i class="ph ph-x" style={{ "font-size": "16px" }}></i>
+          <i class="ph ph-x"></i>
         </div>
       </div>
     </div>
@@ -115,10 +112,7 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
         when={needsSetup() !== null}
         fallback={
           <div class="setup-loading-screen">
-            <i
-              class="ph ph-spinner spinIcon"
-              style={{ "font-size": "48px", color: "var(--primary-accent)" }}
-            ></i>
+            <i class="ph ph-spinner spinIcon setup-loading-spinner"></i>
           </div>
         }
       >

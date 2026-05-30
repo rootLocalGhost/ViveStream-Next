@@ -2,6 +2,7 @@ import { onMount, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
+import "./Home.css";
 import { homeVideos, setHomeVideos } from "../store";
 
 export default function Home() {
@@ -17,7 +18,7 @@ export default function Home() {
   });
 
   return (
-    <div class="page-wrapper">
+    <div class="page-wrapper home-page">
       {homeVideos().length === 0 ? (
         <PremiumPlaceholder
           title="No Media Found"

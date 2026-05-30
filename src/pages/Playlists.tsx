@@ -2,6 +2,7 @@ import { createSignal, onMount, For, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import { VideoEntry } from "../store";
+import "./Playlists.css";
 
 interface Playlist {
   id: string;
@@ -82,13 +83,13 @@ export default function Playlists() {
   };
 
   return (
-    <div class="page-wrapper">
+    <div class="page-wrapper playlists-page">
       <Show when={!activePlaylist()}>
         <h2 class="page-title">
           <i class="ph-fill ph-list-dashes"></i> Playlists
         </h2>
 
-        <div class="command-bar" style={{ "margin-bottom": "30px" }}>
+        <div class="command-bar">
           <input
             type="text"
             placeholder="Name your new playlist..."
@@ -101,10 +102,7 @@ export default function Playlists() {
             onClick={handleCreate}
             disabled={!newPlaylistName().trim()}
           >
-            <i
-              class="ph-fill ph-plus-circle"
-              style={{ "font-size": "20px" }}
-            ></i>
+            <i class="ph-fill ph-plus-circle"></i>
             Create
           </button>
         </div>
@@ -113,21 +111,19 @@ export default function Playlists() {
           <For each={playlists()}>
             {(playlist) => (
               <div
-                class="clay-card flex-col-gap"
+                class="clay-card flex-col-gap playlist-card"
                 onClick={() => openPlaylist(playlist)}
-                style={{ gap: "12px" }}
               >
                 <div class="flex-row-between">
                   <h3 class="settings-title">{playlist.name}</h3>
                   <button
-                    class="control-btn"
+                    class="control-btn playlist-remove-btn"
                     onClick={(e) => handleDelete(e, playlist.id)}
-                    style={{ color: "#ef233c" }}
                   >
                     <i class="ph-fill ph-trash"></i>
                   </button>
                 </div>
-                <span class="settings-desc" style={{ "font-size": "13px" }}>
+                <span class="settings-desc playlist-date">
                   {playlist.created_at}
                 </span>
               </div>
@@ -137,11 +133,11 @@ export default function Playlists() {
       </Show>
 
       <Show when={activePlaylist()}>
-        <div class="flex-row-gap" style={{ "margin-bottom": "30px" }}>
+        <div class="flex-row-gap playlist-item-row">
           <button class="clay-btn" onClick={() => setActivePlaylist(null)}>
             <i class="ph ph-arrow-left"></i> Back
           </button>
-          <h2 class="page-title" style={{ margin: "0" }}>
+          <h2 class="page-title playlist-active-title">
             {activePlaylist()?.name}
           </h2>
         </div>
@@ -158,27 +154,17 @@ export default function Playlists() {
                   class="video-card"
                   onClick={() => navigate(`/player/${video.id}`)}
                 >
-                  <div style={{ position: "relative" }}>
+                  <div class="relative-action">
                     <img
                       src={`http://127.0.0.1:1422/Thumbnails/${video.id}.jpg`}
                       alt={video.title}
                       class="video-thumbnail"
                     />
                     <button
-                      class="control-btn"
+                      class="control-btn playlist-remove-btn"
                       onClick={(e) => removeFromPlaylist(e, video.id)}
-                      style={{
-                        position: "absolute",
-                        top: "8px",
-                        right: "8px",
-                        background: "rgba(0,0,0,0.7)",
-                        "border-radius": "50%",
-                      }}
                     >
-                      <i
-                        class="ph-fill ph-minus"
-                        style={{ color: "#ef233c" }}
-                      ></i>
+                      <i class="ph-fill ph-minus"></i>
                     </button>
                   </div>
                   <div class="video-info">

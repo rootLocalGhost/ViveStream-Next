@@ -1,0 +1,37 @@
+.playlists-page .command-bar {
+  margin-bottom: 30px;
+}
+.playlists-page .playlist-card {
+  gap: 12px;
+}
+.playlists-page .playlist-item-row {
+  margin-bottom: 30px;
+}
+.playlists-page .playlist-active-title {
+  margin: 0;
+}
+.playlists-page .relative-action {
+  position: relative;
+}
+.playlists-page .playlist-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.playlists-page .playlist-remove-btn:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+.playlists-page .playlist-remove-btn i {
+  color: #ef233c;
+}
+.playlists-page .playlist-date {
+  font-size: 13px;
+}

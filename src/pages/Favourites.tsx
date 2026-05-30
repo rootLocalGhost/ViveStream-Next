@@ -2,6 +2,7 @@ import { createSignal, onMount, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
+import "./Favourites.css";
 import { VideoEntry } from "../store";
 
 export default function Favourites() {
@@ -18,7 +19,7 @@ export default function Favourites() {
   });
 
   return (
-    <div class="page-wrapper">
+    <div class="page-wrapper favourites-page">
       <h2 class="page-title">
         <i class="ph-fill ph-heart"></i> Favourites
       </h2>

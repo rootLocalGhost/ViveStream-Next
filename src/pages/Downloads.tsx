@@ -15,6 +15,7 @@ import {
   liveFromStart,
   toggleLiveFromStart,
 } from "../store";
+import "./Downloads.css";
 
 export default function Downloads() {
   const [dropdownOpen, setDropdownOpen] = createSignal(false);
@@ -42,12 +43,9 @@ export default function Downloads() {
   };
 
   return (
-    <div class="page-wrapper">
+    <div class="page-wrapper downloads-page">
       <div class="download-input-group">
-        <i
-          class="ph ph-link"
-          style={{ "font-size": "20px", color: "var(--secondary-text)" }}
-        ></i>
+        <i class="ph ph-link"></i>
         <input
           type="text"
           placeholder="Paste video or playlist URL..."
@@ -79,7 +77,6 @@ export default function Downloads() {
                 ? "ph-fill ph-spinner spinIcon"
                 : "ph-fill ph-download-simple"
             }
-            style={{ "font-size": "20px" }}
           ></i>
         </button>
       </div>
@@ -88,9 +85,8 @@ export default function Downloads() {
         <div class="dl-option-card">
           <span class="dl-option-title">Quality</span>
           <div
-            class={`custom-select-wrapper ${dropdownOpen() ? "open" : ""}`}
+            class={`custom-select-wrapper full-width ${dropdownOpen() ? "open" : ""}`}
             ref={dropdownRef}
-            style={{ width: "100%" }}
           >
             <div
               class="custom-select-trigger"
@@ -121,10 +117,7 @@ export default function Downloads() {
           </div>
         </div>
 
-        <div
-          class="dl-option-card flex-row-between"
-          style={{ "flex-direction": "row" }}
-        >
+        <div class="dl-option-card flex-row-between">
           <span class="dl-option-title">Subtitles</span>
           <label class="switch">
             <input
@@ -136,10 +129,7 @@ export default function Downloads() {
           </label>
         </div>
 
-        <div
-          class="dl-option-card flex-row-between"
-          style={{ "flex-direction": "row" }}
-        >
+        <div class="dl-option-card flex-row-between">
           <span class="dl-option-title">Live from start</span>
           <label class="switch">
             <input
@@ -153,7 +143,7 @@ export default function Downloads() {
       </div>
 
       <div class="tabs-header">
-        <div style={{ display: "flex", gap: "16px" }}>
+        <div class="tabs-controls">
           <button
             class={`tab-btn ${activeTab() === "Active Queue" ? "active" : ""}`}
             onClick={() => setActiveTab("Active Queue")}
@@ -168,174 +158,63 @@ export default function Downloads() {
           </button>
         </div>
         <button
-          class="control-btn"
+          class="control-btn clear-history-btn"
           onClick={clearHistory}
-          style={{
-            position: "absolute",
-            right: "0",
-            color: "var(--secondary-text)",
-          }}
         >
           <i class="ph ph-trash"></i>
         </button>
       </div>
 
       <Show when={tasks().length === 0}>
-        <div
-          style={{
-            display: "flex",
-            "flex-direction": "column",
-            "align-items": "center",
-            "justify-content": "center",
-            "margin-top": "60px",
-            opacity: 0.5,
-            gap: "16px",
-          }}
-        >
-          <i
-            class="ph ph-stack"
-            style={{ "font-size": "48px", color: "var(--secondary-text)" }}
-          ></i>
-          <span
-            style={{ color: "var(--secondary-text)", "font-weight": "600" }}
-          >
-            Queue is empty
-          </span>
+        <div class="empty-queue-state">
+          <i class="ph ph-stack empty-icon"></i>
+          <span class="empty-message">Queue is empty</span>
         </div>
       </Show>
 
       <Show when={tasks().length > 0}>
-        <div class="flex-col-gap" style={{ gap: "16px" }}>
+        <div class="flex-col-gap download-task-list">
           <For each={tasks()}>
             {(task) => (
-              <div
-                style={{
-                  background: "var(--bg-card)",
-                  border:
-                    task.status === "error"
-                      ? "1px solid #ef233c"
-                      : "1px solid var(--border-color)",
-                  "border-radius": "12px",
-                  padding: "16px",
-                  "box-shadow":
-                    task.status === "error"
-                      ? "0 0 15px rgba(239, 35, 60, 0.15)"
-                      : "var(--shadow-card)",
-                  transition: "all 0.3s ease",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    "align-items": "center",
-                    gap: "16px",
-                  }}
-                >
+              <div class={`download-task-card ${task.status === "error" ? "error" : ""}`}>
+                <div class="download-task-row">
                   <img
                     src={`https://i.ytimg.com/vi/${task.id}/hqdefault.jpg`}
-                    style={{
-                      width: "120px",
-                      "aspect-ratio": "16/9",
-                      "object-fit": "cover",
-                      "border-radius": "8px",
-                      "flex-shrink": "0",
-                    }}
+                    class="task-thumbnail"
                   />
-                  <div style={{ flex: 1, "min-width": "0" }}>
-                    <h4
-                      style={{
-                        margin: "0 0 4px 0",
-                        color: "var(--primary-text)",
-                        "font-size": "15px",
-                        "white-space": "nowrap",
-                        overflow: "hidden",
-                        "text-overflow": "ellipsis",
-                      }}
-                    >
+                  <div class="task-meta">
+                    <h4 class="task-title">
                       {task.title}
                     </h4>
-                    <p
-                      style={{
-                        margin: "0",
-                        color: "var(--secondary-text)",
-                        "font-size": "13px",
-                      }}
-                    >
+                    <p class="task-channel">
                       {task.channel}
                     </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        "align-items": "center",
-                        gap: "8px",
-                        "margin-top": "10px",
-                      }}
-                    >
+                    <div class="task-stats">
                       {task.status === "pending" && (
-                        <span
-                          style={{
-                            color: "var(--secondary-text)",
-                            "font-size": "12px",
-                          }}
-                        >
+                        <span class="task-state pending">
                           <i class="ph ph-clock"></i> {task.phase}
                         </span>
                       )}
                       {task.status === "downloading" && (
-                        <span
-                          style={{
-                            color: "var(--primary-accent)",
-                            "font-size": "12px",
-                            "font-weight": "bold",
-                          }}
-                        >
+                        <span class="task-state downloading">
                           <i class="ph ph-spinner spinIcon"></i> {task.phase}
                         </span>
                       )}
                       {task.status === "done" && (
-                        <span
-                          style={{
-                            color: "#27c93f",
-                            "font-size": "12px",
-                            "font-weight": "bold",
-                          }}
-                        >
+                        <span class="task-state done">
                           <i class="ph-fill ph-check-circle"></i> {task.phase}
                         </span>
                       )}
                       {task.status === "error" && (
-                        <span
-                          style={{
-                            color: "#ef233c",
-                            "font-size": "12px",
-                            "font-weight": "bold",
-                          }}
-                        >
+                        <span class="task-state error">
                           <i class="ph-fill ph-warning-circle"></i> {task.phase}
                         </span>
                       )}
                     </div>
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "6px",
-                        background: "var(--divider)",
-                        "border-radius": "3px",
-                        "margin-top": "12px",
-                        overflow: "hidden",
-                      }}
-                    >
+                    <div class="task-progress">
                       <div
                         class={`progress-fill ${task.status === "done" ? "done" : task.status === "error" ? "error" : task.phase.includes("Transcoding") ? "transcoding" : ""}`}
-                        style={{
-                          width: `${task.progress}%`,
-                          background:
-                            task.status === "done"
-                              ? "#27c93f"
-                              : task.status === "error"
-                                ? "#ef233c"
-                                : "var(--primary-accent)",
-                        }}
+                        style={{ width: `${task.progress}%` }}
                       ></div>
                     </div>
                   </div>
@@ -343,39 +222,17 @@ export default function Downloads() {
                     onClick={() =>
                       updateTask(task.id, { showLogs: !task.showLogs })
                     }
-                    class={task.status === "error" ? "btn-error-glow" : ""}
-                    style={{
-                      background: task.showLogs
-                        ? "var(--tertiary-background)"
-                        : "transparent",
-                      border: "1px solid var(--border-color)",
-                      color: "var(--primary-text)",
-                      padding: "8px 12px",
-                      "border-radius": "8px",
-                      cursor: "pointer",
-                      display: "flex",
-                      "align-items": "center",
-                      gap: "6px",
-                      "font-size": "13px",
-                      transition: "all 0.2s",
-                    }}
+                    class={`task-toggle-btn ${task.showLogs ? "active" : ""} ${task.status === "error" ? "btn-error-glow" : ""}`}
                   >
                     <i class="ph ph-terminal-window"></i>{" "}
                     {task.showLogs ? "Hide Logs" : "Show Logs"}
                   </button>
                 </div>
                 <Show when={task.showLogs}>
-                  <div
-                    class="terminal-block"
-                    style={{
-                      "margin-top": "16px",
-                      "max-height": "150px",
-                      "overflow-y": "auto",
-                    }}
-                  >
+                  <div class="terminal-block">
                     <For each={task.logs}>
                       {(log) => (
-                        <div style={{ "margin-bottom": "4px" }}>{log}</div>
+                        <div class="task-log-line">{log}</div>
                       )}
                     </For>
                   </div>

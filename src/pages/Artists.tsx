@@ -2,6 +2,7 @@ import { createSignal, onMount, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
+import "./Artists.css";
 
 interface ArtistEntry {
   name: string;
@@ -21,7 +22,7 @@ export default function Artists() {
   });
 
   return (
-    <div class="page-wrapper">
+    <div class="page-wrapper artists-page">
       <h2 class="page-title">
         <i class="ph-fill ph-microphone-stage"></i> Artists
       </h2>
@@ -33,12 +34,7 @@ export default function Artists() {
           iconName="microphone-stage"
         />
       ) : (
-        <div
-          class="grid"
-          style={{
-            "grid-template-columns": "repeat(auto-fill, minmax(200px, 1fr))",
-          }}
-        >
+        <div class="grid artists-grid">
           <For each={artists()}>
             {(artist) => (
               <div
@@ -53,7 +49,7 @@ export default function Artists() {
                   }}
                   class="avatar-large"
                 />
-                <h3 class="settings-title" style={{ "text-align": "center" }}>
+                <h3 class="settings-title artist-card-title">
                   {artist.name}
                 </h3>
               </div>

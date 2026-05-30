@@ -2,6 +2,7 @@ import { createSignal, onMount, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useParams, useNavigate } from "@solidjs/router";
 import { VideoEntry } from "../store";
+import "./ArtistPage.css";
 
 export default function ArtistPage() {
   const params = useParams();
@@ -20,22 +21,18 @@ export default function ArtistPage() {
   });
 
   return (
-    <div class="page-wrapper">
-      <div
-        class="clay-card flex-row-gap"
-        style={{ "margin-bottom": "40px", padding: "20px" }}
-      >
+    <div class="page-wrapper artist-page">
+      <div class="clay-card flex-row-gap artist-hero-card">
         <img
           src={`http://127.0.0.1:1422/Avatars/${params.name}.jpg`}
           onError={(e) => {
             e.currentTarget.src = "";
             e.currentTarget.className = "ph-fill ph-user avatar-large";
           }}
-          class="avatar-large"
-          style={{ width: "100px", height: "100px" }}
+          class="avatar-large artist-avatar"
         />
         <div>
-          <h2 class="page-title" style={{ margin: "0 0 8px 0" }}>
+          <h2 class="page-title artist-header-title">
             {params.name}
           </h2>
           <span class="settings-desc">

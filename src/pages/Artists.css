@@ -1,0 +1,27 @@
+.artists-page .grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.artist-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--clay-bg);
+  border-radius: var(--clay-radius);
+  box-shadow: var(--clay-card-shadow);
+  border: var(--app-border);
+  padding: 30px 16px;
+  transition: transform 0.2s var(--transition-smooth);
+  cursor: pointer;
+  gap: 16px;
+}
+.artist-card:hover {
+  transform: var(--card-hover-transform);
+}
+.artist-card .avatar-large {
+  width: 80px;
+  height: 80px;
+}
+.artist-card-title {
+  text-align: center;
+}
