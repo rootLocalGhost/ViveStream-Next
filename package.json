@@ -9,7 +9,7 @@
     "build": "vite build",
     "serve": "vite preview",
     "tauri": "tauri",
-    "clean": "cd src-tauri && cargo clean && rm -rf target gen && cd .. && rm -rf node_modules dist pkg PKGBUILD.1",
+    "cleanup": "cd src-tauri && cargo clean && rm -rf target gen && cd .. && rm -rf node_modules dist pkg PKGBUILD.1",
     "init": "cd src-tauri && cargo build && cd .. && bun install && vite build",
     "test": "vitest run && cd src-tauri && cargo test",
     "format": "prettier -w -u . && cd src-tauri && cargo fmt --all"
