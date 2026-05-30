@@ -4,13 +4,14 @@ This document explains the core philosophy, technical architecture, and specific
 
 ## 1. What We Are Doing
 
-We are building a highly optimized, native desktop YouTube downloader and media player for Windows and Linux.
-The core objective is to maintain a **minimal application footprint** while leveraging **hardware-accelerated GPU transcoding** (Intel QSV, NVIDIA NVENC, VAAPI) for optimal performance.
+We are building a highly optimized, native desktop YouTube downloader and media player for Windows and Linux. The core objective is to maintain a **minimal application footprint** while leveraging **hardware-accelerated GPU transcoding** (Intel QSV, NVIDIA NVENC, VAAPI) for optimal performance.
 
 ### The Stack
 
 - **Frontend:** SolidJS (Chosen for extreme performance and lack of Virtual DOM overhead).
 - **Backend/Wrapper:** Tauri v2 with Rust (Chosen over Electron to avoid shipping a bundled Chromium engine, keeping the app size under 15MB).
+- **Local Server:** Internal `warp` server routing media from the local filesystem to the frontend on port `1422`.
+- **Database:** SQLite via `rusqlite` tracking metadata for immediate offline retrieval.
 - **Core Engines:** `yt-dlp` (Extraction) and `FFmpeg` (Transcoding).
 
 ---
@@ -20,6 +21,7 @@ The core objective is to maintain a **minimal application footprint** while leve
 ### Post-Install Dependency Fetching vs. Bundling
 
 **Decision:** We DO NOT bundle `yt-dlp` or `FFmpeg` inside the Tauri installer. Instead, the Rust backend fetches these binaries from GitHub directly to the user's `app_data` directory on the first launch.
+
 **Why:**
 
 1. **App Size:** Bundling Windows and Linux binaries for FFmpeg and yt-dlp would bloat the app installer from ~10MB to over 150MB. This defeats the purpose of using Tauri.
@@ -39,9 +41,9 @@ YouTube actively fights automated scrapers using IP trust scores and a cryptogra
 
 ### The `web_safari` and `web_embedded` API Strategy
 
-**Decision:** We actively strip out standard API clients (`android`, `ios`, `web`) from `yt-dlp` and force it to use `web_safari` and `web_embedded`.
-**Why:** Google owns Chrome and Android, allowing them to strictly enforce BotGuard JS scripts to verify human users. If you do not pass a PO Token on these clients, YouTube throttles the video to 144p (SABR formats).
-However, Apple's ecosystem (Safari/iOS) relies on Apple's proprietary HLS (`.m3u8`) streaming protocol. Google has not yet found a reliable way to enforce strict PO Tokens on HLS streams without breaking native playback for millions of legitimate Mac users. By disguising our requests as a Safari client, we bypass the PO Token requirement entirely and access 1080p/4K streams.
+**Decision:** We actively strip out standard API clients (`android`, `ios`, `web`) from `yt-dlp` and force it to use `web_safari` and `web_embedded` (`Youtubeer_client=web_safari,web_embedded`).
+
+**Why:** Google owns Chrome and Android, allowing them to strictly enforce BotGuard JS scripts to verify human users. If you do not pass a PO Token on these clients, YouTube throttles the video to 144p (SABR formats). However, Apple's ecosystem (Safari/iOS) relies on Apple's proprietary HLS (`.m3u8`) streaming protocol. Google has not yet found a reliable way to enforce strict PO Tokens on HLS streams without breaking native playback for millions of legitimate Mac users. By disguising our requests as a Safari client, we bypass the PO Token requirement entirely and access 1080p/4K streams.
 
 ---
 
@@ -65,4 +67,4 @@ If downloads suddenly fail or return 144p video, the protocol is:
 
 1. Check the `yt-dlp` GitHub Issues page for ongoing API changes.
 2. Verify the Nightly build has been updated.
-3. Adjust the `--extractor-args` in `src-tauri/src/lib.rs` to pivot to a new loophole client (e.g., `tv`, `mweb`, or VR clients) if Apple HLS streams get locked down.
+3. Adjust the `--extractor-args` in `src-tauri/src/downloader.rs` to pivot to a new loophole client (e.g., `tv`, `mweb`, or VR clients) if Apple HLS streams get locked down.

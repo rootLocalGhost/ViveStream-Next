@@ -1,3 +1,4 @@
+<div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px;">
 <img src="./src/assets/Banner.png" alt="ViveStream Banner">
 
 ![Tauri](https://img.shields.io/badge/Tauri-v2-24C8D6?logo=tauri&logoColor=white)
@@ -7,26 +8,21 @@
 
 Lightning-fast, native YouTube downloader and local media library. Built on Tauri v2 & SolidJS for maximum performance, hardware acceleration, and zero bloat.
 
----
+</div>
 
 ## 🚀 Core Features
 
-- ⚙️ **Smart Hardware Transcoding:**
-- Automatically detects and utilizes your GPU for rendering.
-- Highly optimized fallback matrix: **Intel QSV ➔ NVIDIA NVENC ➔ VAAPI ➔ CPU (libx264)**.
-
-- 🎯 **Intelligent Quality Selection:**
-- 🎨 **Immersive & Lightweight UI:**
-- ⚡ **Flawless Local Playback:**
-- 🗄️ **Absolute Privacy:**
+- ⚙️ **Smart Hardware Transcoding**
+- 🎯 **Intelligent Quality Selection**
+- 🎨 **Immersive & Lightweight UI**
+- ⚡ **Flawless Local Playback**
+- 🗄️ **Absolute Privacy**
 
 ---
 
 ## 📦 Installation
 
 ### 🐧 Arch Linux / Manjaro (Recommended)
-
-We officially support Arch Linux via a native `PKGBUILD`. This handles everything: verifying system requirements, installing hardware acceleration drivers (VAAPI/Intel Media Driver), and safely registering the app via `pacman`.
 
 ```bash
 wget https://raw.githubusercontent.com/rootlocalghost/ViveStream-Next/main/PKGBUILD
@@ -38,7 +34,7 @@ makepkg -si
 
 Download the latest `.exe` or `.deb` installer directly from the **[Releases](https://www.google.com/search?q=https://github.com/rootlocalghost/ViveStream-Next/releases)** page.
 
-> ⚠️ **Important Security Prompt:** > ViveStream is a free, non-commercial open-source project. Because we do not monetize users, we do not pay the extortionate fees for corporate Microsoft/Apple code-signing certificates.
+> ⚠️ **Important Security Prompt:** ViveStream is a free, non-commercial open-source project. Because we do not monetize users, we do not pay the extortionate fees for corporate Microsoft/Apple code-signing certificates.
 >
 > - **Windows Defender SmartScreen:** Click **More Info** ➔ **Run Anyway**.
 > - **Linux:** Right-click the binary ➔ **Properties** ➔ Check **Allow executing file as program**.
@@ -68,17 +64,19 @@ cd ViveStream-Next
 
 ```bash
 bun install
+# or
+bun run init
 
 ```
 
 3. **Run in Development Mode:**
 
 ```bash
-bun run tauri dev
+bun start
 
 ```
 
-_Note: If you experience a blank/white screen on Linux Wayland (Hyprland), force XWayland rendering by running: `WEBKIT_DISABLE_DMABUF_RENDERER=1 GDK_BACKEND=x11 bun run tauri dev_` 4. **Build for Production:**
+Note: If you experience a blank/white screen on Linux Wayland (Hyprland), force XWayland rendering by running: `WEBKIT_DISABLE_DMABUF_RENDERER=1 GDK_BACKEND=x11 bun run tauri dev_` 4. **Build for Production:**
 
 ```bash
 bun run tauri build
