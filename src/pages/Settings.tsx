@@ -8,6 +8,18 @@ import {
   toggleSidebarHoverMode,
   appPalette,
   toggleAppPalette,
+  concurrentDownloads,
+  updateConcurrentDownloads,
+  concurrentFragments,
+  updateConcurrentFragments,
+  speedLimit,
+  updateSpeedLimit,
+  browserCookies,
+  updateBrowserCookies,
+  autoSubtitles,
+  toggleAutoSubtitles,
+  removeSponsorBlock,
+  toggleRemoveSponsorBlock,
 } from "../store";
 
 export default function Settings() {
@@ -101,7 +113,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Color Palette (Disabled in Dark Mode) */}
+        {/* Color Palette */}
         <div
           class="flex-row-between"
           style={{
@@ -143,24 +155,167 @@ export default function Settings() {
               Automatically open the side navigation menu when hovering over it.
             </p>
           </div>
-          <button
-            onClick={() => toggleSidebarHoverMode(!sidebarHoverMode())}
-            class="clay-btn"
-          >
-            <i
-              class={
-                sidebarHoverMode() ? "ph-fill ph-check-square" : "ph ph-square"
-              }
-              style={{
-                color: sidebarHoverMode() ? "var(--primary-accent)" : "inherit",
-              }}
-            ></i>
-            {sidebarHoverMode() ? "Enabled" : "Disabled"}
-          </button>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={sidebarHoverMode()}
+              onChange={(e) => toggleSidebarHoverMode(e.target.checked)}
+            />
+            <span class="slider"></span>
+          </label>
         </div>
       </div>
 
-      <h2 class="page-title page-title-danger">
+      <h2 class="page-title" style={{ "margin-top": "40px" }}>
+        <i class="ph-fill ph-sliders"></i> Engine Preferences
+      </h2>
+
+      <div class="settings-card">
+        {/* Concurrent Downloads */}
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Concurrent Downloads</h3>
+            <p class="settings-desc">
+              Maximum number of videos to download at the same time.
+            </p>
+          </div>
+          <div class="flex-row-gap">
+            <input
+              type="range"
+              class="setting-slider"
+              min="1"
+              max="10"
+              step="1"
+              value={concurrentDownloads()}
+              onInput={(e) =>
+                updateConcurrentDownloads(parseInt(e.target.value))
+              }
+              style={
+                {
+                  "--progress": `${((concurrentDownloads() - 1) / 9) * 100}%`,
+                } as any
+              }
+            />
+            <span class="slider-val">{concurrentDownloads()}</span>
+          </div>
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* Concurrent Fragments */}
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Concurrent Fragments</h3>
+            <p class="settings-desc">
+              Speeds up HLS/DASH downloads by fetching parts in parallel.
+            </p>
+          </div>
+          <div class="flex-row-gap">
+            <input
+              type="range"
+              class="setting-slider"
+              min="1"
+              max="10"
+              step="1"
+              value={concurrentFragments()}
+              onInput={(e) =>
+                updateConcurrentFragments(parseInt(e.target.value))
+              }
+              style={
+                {
+                  "--progress": `${((concurrentFragments() - 1) / 9) * 100}%`,
+                } as any
+              }
+            />
+            <span class="slider-val">{concurrentFragments()}</span>
+          </div>
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* Speed Limit */}
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Download Speed Limit</h3>
+            <p class="settings-desc">
+              e.g., 500K, 2.5M. Leave blank for no limit.
+            </p>
+          </div>
+          <input
+            type="text"
+            class="setting-input"
+            placeholder="No limit"
+            value={speedLimit()}
+            onInput={(e) => updateSpeedLimit(e.target.value)}
+          />
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* Browser Cookies */}
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Browser Cookies</h3>
+            <p class="settings-desc">
+              Use cookies from a browser to bypass login/age restrictions.
+            </p>
+          </div>
+          <select
+            class="setting-select"
+            value={browserCookies()}
+            onChange={(e) => updateBrowserCookies(e.target.value)}
+          >
+            <option value="None">None</option>
+            <option value="Chrome">Chrome</option>
+            <option value="Firefox">Firefox</option>
+            <option value="Edge">Edge</option>
+            <option value="Brave">Brave</option>
+            <option value="Safari">Safari</option>
+          </select>
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* Auto Subtitles */}
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Download Automatic Subtitles</h3>
+            <p class="settings-desc">
+              If official subtitles aren't found, download auto-generated ones.
+            </p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={autoSubtitles()}
+              onChange={(e) => toggleAutoSubtitles(e.target.checked)}
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* SponsorBlock */}
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Remove Sponsored Segments</h3>
+            <p class="settings-desc">
+              Automatically cut sponsored sections, intros, etc.
+            </p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={removeSponsorBlock()}
+              onChange={(e) => toggleRemoveSponsorBlock(e.target.checked)}
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <h2 class="page-title page-title-danger" style={{ "margin-top": "40px" }}>
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
 
