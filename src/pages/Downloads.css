@@ -8,9 +8,46 @@
   box-shadow: var(--clay-card-shadow);
   gap: 16px;
 }
+.downloads-page .download-input-group input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: var(--primary-text);
+  outline: none;
+  font-family: var(--font-body);
+}
+.downloads-page .download-input-group input::placeholder {
+  color: var(--secondary-text);
+}
 .downloads-page .download-input-group .ph-link {
   font-size: 20px;
   color: var(--secondary-text);
+}
+.downloads-page .dl-action-btn {
+  background: var(--primary-accent);
+  color: white;
+  border-radius: calc(var(--clay-radius) - 8px);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--app-border);
+  cursor: pointer;
+  transition: 0.2s;
+  flex-shrink: 0;
+  box-shadow: var(--clay-btn-shadow);
+}
+.downloads-page .dl-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: var(--primary-accent-dark);
+}
+.downloads-page .dl-action-btn:disabled {
+  background: var(--tertiary-background);
+  color: var(--secondary-text);
+  cursor: not-allowed;
+  box-shadow: none;
 }
 .downloads-page .dl-action-btn i {
   font-size: 20px;
@@ -18,9 +55,45 @@
 .downloads-page .custom-select-wrapper.full-width {
   width: 100%;
 }
+.downloads-page .tabs-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+  margin-top: 40px;
+  margin-bottom: 24px;
+}
+body[data-theme="light"] .downloads-page .tabs-header {
+  border-color: rgba(0, 0, 0, 0.1);
+}
 .downloads-page .tabs-controls {
   display: flex;
   gap: 16px;
+}
+.downloads-page .tab-btn {
+  background: transparent;
+  border: none;
+  padding: 12px 32px;
+  font-weight: 600;
+  color: var(--secondary-text);
+  cursor: pointer;
+  font-size: 15px;
+  position: relative;
+  transition: color 0.2s;
+  font-family: var(--font-body);
+}
+.downloads-page .tab-btn.active {
+  color: var(--primary-accent);
+}
+.downloads-page .tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-accent);
 }
 .downloads-page .clear-history-btn {
   position: absolute;
@@ -166,6 +239,17 @@
   gap: 4px;
   padding: 6px;
 }
+body[data-theme="dark"] .downloads-page .segmented-control {
+  background: var(--tertiary-background);
+  border: 2px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: 4px 4px 0px var(--border-color);
+}
+body[data-theme="light"] .downloads-page .segmented-control {
+  background: var(--clay-bg);
+  border-radius: 20px;
+  box-shadow: var(--clay-inset-shadow);
+}
 .downloads-page .segmented-btn {
   font-family: var(--font-body);
   font-size: 13px;
@@ -177,6 +261,30 @@
   color: var(--secondary-text);
   padding: 8px 24px;
   border-radius: 0;
+}
+body[data-theme="dark"] .downloads-page .segmented-btn {
+  background: transparent;
+  color: var(--secondary-text);
+  padding: 8px 24px;
+  border-radius: 0;
+  border: 2px solid transparent;
+}
+body[data-theme="dark"] .downloads-page .segmented-btn.active {
+  background: var(--primary-accent);
+  color: white;
+  border-color: var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
+}
+body[data-theme="light"] .downloads-page .segmented-btn {
+  background: transparent;
+  color: var(--secondary-text);
+  padding: 10px 28px;
+  border-radius: 14px;
+}
+body[data-theme="light"] .downloads-page .segmented-btn.active {
+  background: var(--clay-bg);
+  color: var(--primary-accent);
+  box-shadow: var(--clay-btn-shadow);
 }
 .downloads-page .segmented-btn.active {
   background: var(--primary-accent);
@@ -197,18 +305,24 @@
   gap: 16px;
   justify-content: space-between;
 }
+body[data-theme="dark"] .downloads-page .dl-option-card {
+  background: var(--tertiary-background);
+  border: 2px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: 4px 4px 0px var(--border-color);
+}
+body[data-theme="light"] .downloads-page .dl-option-card {
+  background: var(--clay-bg);
+  border-radius: var(--clay-radius);
+  box-shadow: var(--clay-inset-shadow);
+  border: none;
+}
 .downloads-page .dl-option-title {
   font-size: 12px;
   font-weight: 800;
   color: var(--secondary-text);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-.downloads-page .dl-option-card {
-  background: var(--clay-bg);
-  border-radius: var(--clay-radius);
-  box-shadow: var(--clay-inset-shadow);
-  border: none;
 }
 .downloads-page .custom-select-wrapper {
   position: relative;

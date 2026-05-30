@@ -1,5 +1,13 @@
 .playlists-page .command-bar {
   margin-bottom: 30px;
+  display: flex;
+  background: var(--clay-bg);
+  border-radius: var(--clay-radius);
+  padding: 12px;
+  border: var(--app-border);
+  box-shadow: var(--clay-card-shadow);
+  align-items: center;
+  gap: 12px;
 }
 .playlists-page .playlist-card {
   gap: 12px;

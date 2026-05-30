@@ -268,3 +268,57 @@
 .player-favorite-status.active {
   color: var(--primary-accent);
 }
+.control-btn {
+  background: transparent;
+  color: white;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.1s,
+    color 0.1s;
+  font-size: 24px;
+  outline: none;
+}
+.control-btn:hover {
+  transform: scale(1.1);
+}
+.custom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  outline: none;
+  margin: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  background-image: linear-gradient(
+    var(--primary-accent),
+    var(--primary-accent)
+  );
+  background-size: var(--progress, 0%) 100%;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: none;
+}
+.custom-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--tertiary-background);
+  border: none;
+}
+[data-theme="light"] .custom-slider::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background-color: var(--primary-accent);
+  margin-top: -5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}

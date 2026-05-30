@@ -18,6 +18,9 @@
   flex-direction: column;
   gap: 24px;
 }
+body[data-theme="dark"] .settings-page .danger-card {
+  border-radius: 0;
+}
 .settings-page .palette-disabled {
   opacity: 0.5;
   pointer-events: none;
@@ -35,6 +38,17 @@
   gap: 8px;
   padding: 6px;
 }
+body[data-theme="dark"] .settings-page .toggle-group {
+  background: var(--tertiary-background);
+  border: 2px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: 4px 4px 0px var(--border-color);
+}
+body[data-theme="light"] .settings-page .toggle-group {
+  background: var(--clay-bg);
+  border-radius: 16px;
+  box-shadow: var(--clay-inset-shadow);
+}
 .settings-page .toggle-btn {
   background: transparent;
   color: var(--secondary-text);
@@ -49,7 +63,24 @@
   gap: 8px;
   font-family: var(--font-body);
 }
+body[data-theme="dark"] .settings-page .toggle-btn {
+  border-radius: 0;
+}
+body[data-theme="light"] .settings-page .toggle-btn {
+  border-radius: 12px;
+}
 .settings-page .toggle-btn.active {
+  background: var(--clay-bg);
+  color: var(--primary-text);
+  box-shadow: var(--clay-btn-shadow);
+}
+body[data-theme="dark"] .settings-page .toggle-btn.active {
+  background: var(--bg-card);
+  color: var(--primary-text);
+  box-shadow: 2px 2px 0px var(--border-color);
+  border: 1px solid var(--border-color);
+}
+body[data-theme="light"] .settings-page .toggle-btn.active {
   background: var(--clay-bg);
   color: var(--primary-text);
   box-shadow: var(--clay-btn-shadow);
@@ -61,6 +92,9 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
+}
+body[data-theme="dark"] .settings-page .color-swatch {
+  border-radius: 0;
 }
 .settings-page .color-swatch.standard {
   background: #ef233c;
@@ -98,6 +132,46 @@
   background: transparent;
   border: none;
 }
+body[data-theme="dark"] .settings-page .setting-slider {
+  height: 10px;
+  background-color: var(--tertiary-background);
+  border: 2px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
+  border-radius: 0;
+}
+body[data-theme="dark"] .settings-page .setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: var(--primary-accent);
+  border: 2px solid var(--border-color);
+  width: 14px;
+  height: 20px;
+  margin-top: -7px;
+  border-radius: 0;
+  transition: transform 0.1s;
+}
+body[data-theme="dark"] .settings-page .setting-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+body[data-theme="light"] .settings-page .setting-slider {
+  height: 14px;
+  background-color: var(--clay-bg);
+  border-radius: 12px;
+  box-shadow: var(--clay-inset-shadow);
+  border: none;
+}
+body[data-theme="light"] .settings-page .setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: var(--primary-accent);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  margin-top: -5px;
+  box-shadow: var(--clay-btn-shadow);
+  transition: transform 0.1s;
+}
+body[data-theme="light"] .settings-page .setting-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
 .settings-page .setting-input,
 .settings-page .setting-select {
   font-family: var(--font-body);
@@ -105,9 +179,7 @@
   outline: none;
   transition: 0.2s;
 }
-.settings-page .setting-input::placeholder {
-  color: var(--secondary-text);
-}
+.settings-page .setting-input::placeholder,
 .settings-page .setting-select::placeholder {
   color: var(--secondary-text);
 }
