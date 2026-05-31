@@ -49,9 +49,7 @@ export default function Artists() {
                   }}
                   class="avatar-large"
                 />
-                <h3 class="settings-title artist-card-title">
-                  {artist.name}
-                </h3>
+                <h3 class="settings-title artist-card-title">{artist.name}</h3>
               </div>
             )}
           </For>

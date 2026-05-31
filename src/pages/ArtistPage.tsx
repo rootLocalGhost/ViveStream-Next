@@ -32,9 +32,7 @@ export default function ArtistPage() {
           class="avatar-large artist-avatar"
         />
         <div>
-          <h2 class="page-title artist-header-title">
-            {params.name}
-          </h2>
+          <h2 class="page-title artist-header-title">{params.name}</h2>
           <span class="settings-desc">
             {videos().length} Video{videos().length !== 1 && "s"}
           </span>

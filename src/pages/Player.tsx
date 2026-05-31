@@ -389,7 +389,9 @@ export default function Player() {
                 class={`clay-btn player-favorite-status ${isFavorite() ? "active" : ""}`}
                 onClick={toggleFavoriteStatus}
               >
-                <i class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}></i>
+                <i
+                  class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}
+                ></i>
                 {isFavorite() ? "Saved" : "Save"}
               </button>
             </div>
