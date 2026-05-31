@@ -13,6 +13,7 @@
 :root {
   --font-display: "MajorMonoDisplay", monospace;
   --font-body: "Poppins", sans-serif;
+  /* Base Accent Default (Sunset) */
   --primary-accent: #f25c54;
   --primary-accent-dark: #e04b43;
   --sidebar-collapsed-width: 72px;
@@ -23,8 +24,14 @@
   --clay-radius: 24px;
 }
 
+/* OVERRIDE ACCENT: CRIMSON (Applies to Light and Dark) */
+[data-palette="crimson"] {
+  --primary-accent: #ef233c;
+  --primary-accent-dark: #d90429;
+}
+
 /* =========================================
-   DARK CLAYMORPHISM (Sunset Accents)
+   DARK CLAYMORPHISM (Canvas remains the same, accent changes based on palette)
    ========================================= */
 [data-theme="dark"] {
   --primary-background: #1e1e24;
@@ -55,7 +62,7 @@
 }
 
 /* =========================================
-   LIGHT CLAYMORPHISM (Warm Cream/Sunset)
+   LIGHT CLAYMORPHISM (Sunset Canvas Default)
    ========================================= */
 [data-theme="light"] {
   --primary-background: #fdf6f0;
@@ -87,6 +94,34 @@
   box-shadow:
     8px 8px 16px rgba(242, 92, 84, 0.4),
     inset -3px -3px 6px rgba(244, 132, 95, 0.6),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.5);
+}
+
+/* =========================================
+   LIGHT CLAYMORPHISM (Crimson Canvas Override)
+   ========================================= */
+[data-theme="light"][data-palette="crimson"] {
+  --primary-background: #eef0f5;
+  --secondary-background: #ffffff;
+  --tertiary-background: #e2e4e9;
+  --clay-bg: #eef0f5;
+  --border-color: transparent;
+  --clay-card-shadow:
+    16px 16px 32px rgba(166, 180, 200, 0.5),
+    inset -6px -6px 12px rgba(166, 180, 200, 0.4), inset 6px 6px 12px #ffffff;
+  --clay-btn-shadow:
+    8px 8px 16px rgba(166, 180, 200, 0.5),
+    inset -3px -3px 6px rgba(166, 180, 200, 0.4), inset 3px 3px 6px #ffffff;
+  --clay-inset-shadow:
+    inset 6px 6px 12px rgba(166, 180, 200, 0.5), inset -6px -6px 12px #ffffff;
+  --clay-btn-active:
+    inset 6px 6px 12px rgba(166, 180, 200, 0.6), inset -6px -6px 12px #ffffff;
+}
+
+[data-theme="light"][data-palette="crimson"] .clay-btn.primary {
+  box-shadow:
+    8px 8px 16px rgba(239, 35, 60, 0.4),
+    inset -3px -3px 6px rgba(239, 35, 60, 0.6),
     inset 3px 3px 6px rgba(255, 255, 255, 0.5);
 }
 
@@ -151,6 +186,9 @@ body {
 .danger-divider {
   background: rgba(242, 92, 84, 0.1) !important;
   margin-bottom: 30px;
+}
+[data-palette="crimson"] .danger-divider {
+  background: rgba(239, 35, 60, 0.1) !important;
 }
 
 /* CLAYMORPHISM GLOBAL TOGGLE SWITCH */
@@ -288,7 +326,7 @@ input:checked + .slider:before {
   font-weight: 600;
 }
 .settings-title.danger {
-  color: #f25c54;
+  color: var(--primary-accent);
 }
 .settings-desc {
   margin: 0;
