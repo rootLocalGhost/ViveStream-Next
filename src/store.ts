@@ -9,10 +9,12 @@ const getBool = (key: string, def: boolean) =>
   isBrowser && window.localStorage.getItem(key) !== null
     ? window.localStorage.getItem(key) === "true"
     : def;
+
 const getStr = (key: string, def: string) =>
   isBrowser && window.localStorage.getItem(key) !== null
     ? window.localStorage.getItem(key)!
     : def;
+
 const getNum = (key: string, def: number) =>
   isBrowser && window.localStorage.getItem(key) !== null
     ? parseInt(window.localStorage.getItem(key)!, 10)
@@ -67,7 +69,6 @@ export const toggleAppPalette = (palette: string) => {
   }
 };
 
-// --- Download & Engine Settings ---
 export const [concurrentDownloads, setConcurrentDownloads] = createSignal(
   getNum("concurrentDownloads", 3),
 );
@@ -180,6 +181,12 @@ export const updateTask = (id: string, updates: Partial<DownloadTask>) => {
   setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
 };
 
+export const clearDownloadHistory = () => {
+  setTasks((prev) =>
+    prev.filter((t) => t.status !== "done" && t.status !== "error"),
+  );
+};
+
 export const startDownloadQueue = async () => {
   const targetUrl = downloadUrl();
   if (!targetUrl) return;
@@ -191,6 +198,7 @@ export const startDownloadQueue = async () => {
     const metadataList = await invoke<VideoEntry[]>("get_video_metadata", {
       url: targetUrl,
     });
+
     const newTasks: DownloadTask[] = metadataList.map((meta) => ({
       id: meta.id,
       title: meta.title,
@@ -216,9 +224,11 @@ export const startDownloadQueue = async () => {
         `download-progress-${task.id}`,
         (event) => {
           const log = event.payload;
+
           setTasks((prev) =>
             prev.map((t) => {
               if (t.id !== task.id) return t;
+
               let newProgress = t.progress;
               let newPhase = t.phase;
 
@@ -254,12 +264,21 @@ export const startDownloadQueue = async () => {
           url: `https://www.youtube.com/watch?v=${task.id}`,
           metadata: task.metadata,
           quality: downloadQuality(),
+          dlType: downloadType(),
+          cookies: browserCookies(),
+          speedLimit: speedLimit(),
+          concurrentFragments: concurrentFragments(),
+          autoSubs: autoSubtitles(),
+          dlSubs: dlSubtitles(),
+          sponsorblock: removeSponsorBlock(),
         });
+
         updateTask(task.id, {
           status: "done",
           phase: "Complete",
           progress: 100,
         });
+
         setTasks((prev) =>
           prev.map((t) =>
             t.id === task.id
