@@ -14,6 +14,7 @@ use tauri_plugin_dialog::DialogExt;
 pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
     return (bin_dir.join("yt-dlp.exe"), bin_dir.join("ffmpeg.exe"));
+
     #[cfg(not(target_os = "windows"))]
     return (bin_dir.join("yt-dlp"), bin_dir.join("ffmpeg"));
 }
@@ -22,6 +23,7 @@ pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
 pub async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String> {
     let bin_dir = get_bin_dir(&app)?;
     let (ytdlp, ffmpeg) = get_binary_paths(&bin_dir);
+
     Ok(BinaryCheckStatus {
         ytdlp_exists: ytdlp.exists(),
         ffmpeg_exists: ffmpeg.exists(),
@@ -47,11 +49,13 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     let ytdlp_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe";
+
     #[cfg(not(target_os = "windows"))]
     let ytdlp_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp";
 
     emit_progress("Fetching latest yt-dlp Nightly from GitHub...");
+
     let bytes = client
         .get(ytdlp_url)
         .send()
@@ -62,8 +66,10 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     emit_progress("Validating yt-dlp SHA256 checksum...");
+
     let sums_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
+
     let sums_text = client
         .get(sums_url)
         .send()
@@ -78,6 +84,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     } else {
         "yt-dlp"
     };
+
     let expected_hash = sums_text
         .lines()
         .find(|line| line.ends_with(target_bin_name))
@@ -93,6 +100,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     emit_progress("yt-dlp checksum verified. Proceeding with write.");
+
     let ytdlp_path = bin_dir.join(target_bin_name);
     File::create(&ytdlp_path)
         .map_err(|e| e.to_string())?
@@ -122,6 +130,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
             .bytes()
             .await
             .map_err(|e| e.to_string())?;
+
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
 
         for i in 0..archive.len() {
@@ -149,6 +158,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
         use tar::Archive;
         use xz2::read::XzDecoder;
+
         let mut archive = Archive::new(XzDecoder::new(Cursor::new(bytes)));
 
         for entry in archive.entries().map_err(|e| e.to_string())? {
@@ -162,18 +172,21 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
             {
                 let outpath = bin_dir.join("ffmpeg");
                 entry.unpack(&outpath).map_err(|e| e.to_string())?;
+
                 use std::os::unix::fs::PermissionsExt;
                 let mut perms = fs::metadata(&outpath)
                     .map_err(|e| e.to_string())?
                     .permissions();
                 perms.set_mode(0o755);
                 fs::set_permissions(&outpath, perms).map_err(|e| e.to_string())?;
+
                 break;
             }
         }
     }
 
     emit_progress("FFmpeg ready.");
+
     app.dialog()
         .message("Deployment complete. ViveStream will now restart to initialize engines.")
         .kind(tauri_plugin_dialog::MessageDialogKind::Info)
@@ -188,6 +201,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 pub async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<VideoEntry>, String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
+
     let (ytdlp_path, _) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() {
@@ -196,6 +210,7 @@ pub async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<Video
 
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
+
     let mut cmd = Command::new(&ytdlp_path);
     #[cfg(target_os = "windows")]
     cmd.creation_flags(0x08000000);
@@ -254,6 +269,7 @@ pub async fn download_video(
 ) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
+
     let (ytdlp_path, ffmpeg_path) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() || !ffmpeg_path.exists() {
@@ -274,19 +290,8 @@ pub async fn download_video(
     let final_path = metadata.video_path.clone();
     let progress_event = format!("download-progress-{}", metadata.id);
 
-    let avatar_path = av_dir.join(format!("{}.jpg", metadata.channel));
-    if !avatar_path.exists() {
-        let _ = app.emit(&progress_event, "Fetching channel profile picture...");
-        if let Ok(resp) =
-            reqwest::get(format!("https://unavatar.io/youtube/{}", metadata.channel)).await
-        {
-            if let Ok(bytes) = resp.bytes().await {
-                let _ = fs::write(&avatar_path, bytes);
-            }
-        }
-    }
-
     let _ = app.emit(&progress_event, "Step 1: Downloading stream...");
+
     let is_audio = dl_type == "Audio";
     let res_filter = if is_audio {
         "bestaudio[ext=m4a]/bestaudio".to_string()
@@ -334,13 +339,15 @@ pub async fn download_video(
         yt_args.push("mp4".to_string());
     }
 
+    // FIX: Compare the lowercase version to avoid "None" matching "none" incorrectly
     let cookies_lower = cookies.to_lowercase();
-    if cookies != "none" && cookies != "" {
+    if cookies_lower != "none" && !cookies_lower.is_empty() {
         yt_args.push("--cookies-from-browser".to_string());
         yt_args.push(cookies_lower);
     }
 
     yt_args.push(url);
+
     let mut yt_cmd = Command::new(&ytdlp_path);
     #[cfg(target_os = "windows")]
     yt_cmd.creation_flags(0x08000000);
@@ -350,8 +357,8 @@ pub async fn download_video(
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|e| e.to_string())?;
-    let reader = BufReader::new(child.stdout.take().unwrap());
 
+    let reader = BufReader::new(child.stdout.take().unwrap());
     for line in reader.lines() {
         if let Ok(line) = line {
             let _ = app.emit(&progress_event, line);
@@ -364,6 +371,11 @@ pub async fn download_video(
 
     let raw_thumb = thumb_dir.join(format!("raw_{}.jpg", metadata.id));
     let _ = fs::rename(&raw_thumb, &metadata.thumbnail_path);
+
+    let avatar_path = av_dir.join(format!("{}.jpg", metadata.channel));
+    if !avatar_path.exists() {
+        let _ = fs::copy(&metadata.thumbnail_path, &avatar_path);
+    }
 
     let raw_desc = vid_dir.join(format!("raw_{}.description", metadata.id));
     let final_desc = desc_dir.join(format!("{}.txt", metadata.id));
@@ -384,6 +396,7 @@ pub async fn download_video(
         transcode_success = true;
     } else {
         let _ = app.emit(&progress_event, "Step 2: Starting FFmpeg transcoder...");
+
         let encoders = if cfg!(target_os = "windows") {
             vec![
                 (
@@ -453,6 +466,7 @@ pub async fn download_video(
 
         for (name, args) in encoders {
             let _ = app.emit(&progress_event, format!("Attempting encoder: {}", name));
+
             let mut cmd = Command::new(&ffmpeg_path);
             #[cfg(target_os = "windows")]
             cmd.creation_flags(0x08000000);
@@ -484,6 +498,7 @@ pub async fn download_video(
                 );
             }
         }
+
         let _ = fs::remove_file(&temp_path);
     }
 
@@ -499,9 +514,11 @@ pub async fn download_video(
         [&metadata.channel, &format!("{}.jpg", metadata.channel)],
     )
     .map_err(|e| e.to_string())?;
+
     tx.execute("INSERT INTO Videos (id, title, channel_name, video_path, thumbnail_path, is_favorite) VALUES (?1, ?2, ?3, ?4, ?5, 0) ON CONFLICT(id) DO UPDATE SET title = excluded.title, channel_name = excluded.channel_name, video_path = excluded.video_path, thumbnail_path = excluded.thumbnail_path",
         (&metadata.id, &metadata.title, &metadata.channel, metadata.video_path.to_str().unwrap(), metadata.thumbnail_path.to_str().unwrap())).map_err(|e| e.to_string())?;
 
     tx.commit().map_err(|e| e.to_string())?;
+
     Ok(())
 }
