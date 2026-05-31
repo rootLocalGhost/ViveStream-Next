@@ -23,9 +23,11 @@ const getNum = (key: string, def: number) =>
 const initialAnimState = getBool("useAnimatedIcons", true);
 const initialHoverState = getBool("sidebarHoverMode", true);
 const initialTheme = getStr("appTheme", "dark");
+const initialPalette = getStr("appPalette", "sunset");
 
 if (isBrowser) {
   document.documentElement.setAttribute("data-theme", initialTheme);
+  document.documentElement.setAttribute("data-palette", initialPalette);
 }
 
 export const [useAnimatedIcons, setUseAnimatedIcons] =
@@ -50,6 +52,15 @@ export const toggleAppTheme = (theme: "light" | "dark") => {
   if (isBrowser) {
     window.localStorage.setItem("appTheme", theme);
     document.documentElement.setAttribute("data-theme", theme);
+  }
+};
+
+export const [appPalette, setAppPalette] = createSignal(initialPalette);
+export const toggleAppPalette = (palette: string) => {
+  setAppPalette(palette);
+  if (isBrowser) {
+    window.localStorage.setItem("appPalette", palette);
+    document.documentElement.setAttribute("data-palette", palette);
   }
 };
 
