@@ -11,7 +11,7 @@
 }
 
 .settings-page .danger-card {
-  background: rgba(242, 92, 84, 0.05); /* Soft sunset red */
+  background: rgba(242, 92, 84, 0.05);
   padding: 30px;
   border-radius: 32px;
   border: none;
@@ -19,6 +19,10 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+[data-palette="crimson"] .settings-page .danger-card {
+  background: rgba(239, 35, 60, 0.05);
 }
 
 .settings-page .slider-val {
@@ -62,6 +66,20 @@
 
 .settings-page .toggle-btn:hover {
   transform: translateY(-1px);
+}
+
+.settings-page .color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: var(--clay-btn-shadow);
+}
+
+.settings-page .color-swatch.sunset {
+  background: #f25c54;
+}
+.settings-page .color-swatch.crimson {
+  background: #ef233c;
 }
 
 .settings-page .page-title-spaced {
@@ -147,4 +165,8 @@
 
 .settings-page .setting-input:focus {
   outline: 2px solid rgba(242, 92, 84, 0.3);
+}
+
+[data-palette="crimson"] .settings-page .setting-input:focus {
+  outline: 2px solid rgba(239, 35, 60, 0.3);
 }
