@@ -1,15 +1,15 @@
-name: Build and Release
+name: Release
+run-name: "ViveStream Release"
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "VERSION"
+  workflow_run:
+    workflows: ["Tests"]
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g., 0.3.0). Must match file versions."
+        description: "Tag to release (e.g., 1.3.0). Must match file versions."
         required: false
         type: string
 
@@ -20,11 +20,9 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  test:
-    uses: ./.github/workflows/test.yml
-
   release:
-    needs: test
+    name: Build and Release App
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
@@ -39,7 +37,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Verify Versions Match
         id: version_check
         shell: bash
@@ -64,7 +61,6 @@ jobs:
             echo "Manual tag verified against file versions."
           fi
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Generate Release Notes
         id: generate_notes
         shell: bash
@@ -87,31 +83,25 @@ jobs:
           git log -15 --pretty=format:"* %s (%h)" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf squashfs-tools libfuse2 binutils zstd tar
-
       - name: Install frontend dependencies
         run: bun install
-
       - name: Build and Release Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
@@ -122,7 +112,6 @@ jobs:
           releaseBody: ${{ steps.generate_notes.outputs.release_body }}
           releaseDraft: true
           prerelease: false
-
       - name: Generate Arch Linux Package (.pkg.tar.zst)
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
@@ -133,16 +122,12 @@ jobs:
             exit 1
           fi
           echo "Generating Arch package from $DEB_FILE..."
-
           mkdir arch_build
           cd arch_build
           ar x "../$DEB_FILE"
-
           tar -xf data.tar.*
           rm -f control.tar.* data.tar.* debian-binary
-
           SIZE=$(du -sb . | awk '{print $1}')
-
           cat <<EOT > .PKGINFO
           pkgname = vivestream-next-bin
           pkgbase = vivestream-next-bin
@@ -160,10 +145,8 @@ jobs:
           depend = intel-media-driver
           depend = libva-utils
           EOT
-
           ARCH_PKG_NAME="vivestream-next_${{ steps.version_check.outputs.app_version }}_x86_64.pkg.tar.zst"
           tar -c --zstd -f "../$ARCH_PKG_NAME" .
-
           gh release upload v${{ steps.version_check.outputs.app_version }} "../$ARCH_PKG_NAME" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
