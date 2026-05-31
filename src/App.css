@@ -301,7 +301,6 @@ body {
   color: var(--secondary-text);
 }
 
-
 /* Settings Structural Layout */
 .settings-title {
   margin: 0 0 5px 0;
@@ -447,7 +446,8 @@ body {
   font-size: 14px;
 }
 .app-logo .logo-glow {
-  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 0 10px #fff);
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #fff)
+    drop-shadow(0 0 10px #fff);
 }
 .setup-loading-screen {
   display: flex;
@@ -1015,4 +1015,3 @@ body {
     background-position: 28px 0;
   }
 }
-
