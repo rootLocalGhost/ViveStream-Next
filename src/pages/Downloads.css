@@ -1,14 +1,41 @@
-.downloads-page .download-input-group {
+/* CLAYMORPHISM MASTER BAR */
+.downloads-page .clay-input-group {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   background: var(--clay-bg);
-  border-radius: var(--clay-radius);
-  padding: 12px 12px 12px 24px;
+  border-radius: 32px;
+  /* Pure claymorphism: no sharp corners */
+  padding: 16px 24px;
   border: var(--app-border);
-  box-shadow: var(--clay-card-shadow);
+  box-shadow: var(--clay-inset-shadow);
   gap: 16px;
 }
-.downloads-page .download-input-group input {
+
+body[data-theme="dark"] .downloads-page .clay-input-group {
+  box-shadow: 4px 4px 0px var(--border-color);
+  border-radius: 32px;
+  /* Override dark mode sharp edges here */
+}
+
+.downloads-page .clay-input-row {
+  display: flex;
+  width: 100%;
+  gap: 16px;
+  align-items: center;
+}
+
+.downloads-page .clay-options-row {
+  display: flex;
+  width: 100%;
+  gap: 20px;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 2px dashed var(--tertiary-background);
+}
+
+.downloads-page .clay-input-row input {
   flex: 1;
   background: transparent;
   border: none;
@@ -17,239 +44,69 @@
   outline: none;
   font-family: var(--font-body);
 }
-.downloads-page .download-input-group input::placeholder {
+
+.downloads-page .clay-input-row input::placeholder {
   color: var(--secondary-text);
 }
-.downloads-page .download-input-group .ph-link {
+
+.downloads-page .clay-input-row .ph-link {
   font-size: 20px;
   color: var(--secondary-text);
 }
+
 .downloads-page .dl-action-btn {
   background: var(--primary-accent);
   color: white;
-  border-radius: calc(var(--clay-radius) - 8px);
-  width: 48px;
-  height: 48px;
+  border-radius: 50%;
+  /* Perfect circle */
+  width: 54px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: var(--app-border);
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   box-shadow: var(--clay-btn-shadow);
 }
+
 .downloads-page .dl-action-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   background: var(--primary-accent-dark);
 }
+
+.downloads-page .dl-action-btn:active:not(:disabled) {
+  transform: var(--btn-active-transform);
+  box-shadow: var(--clay-btn-active);
+}
+
 .downloads-page .dl-action-btn:disabled {
   background: var(--tertiary-background);
   color: var(--secondary-text);
   cursor: not-allowed;
-  box-shadow: none;
+  box-shadow: var(--clay-inset-shadow);
+  transform: none;
 }
+
 .downloads-page .dl-action-btn i {
-  font-size: 20px;
+  font-size: 22px;
 }
-.downloads-page .custom-select-wrapper.full-width {
-  width: 100%;
-}
-.downloads-page .tabs-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid var(--border-color);
-  position: relative;
-  margin-top: 40px;
-  margin-bottom: 24px;
-}
-body[data-theme="light"] .downloads-page .tabs-header {
-  border-color: rgba(0, 0, 0, 0.1);
-}
-.downloads-page .tabs-controls {
-  display: flex;
-  gap: 16px;
-}
-.downloads-page .tab-btn {
-  background: transparent;
-  border: none;
-  padding: 12px 32px;
-  font-weight: 600;
-  color: var(--secondary-text);
-  cursor: pointer;
-  font-size: 15px;
-  position: relative;
-  transition: color 0.2s;
-  font-family: var(--font-body);
-}
-.downloads-page .tab-btn.active {
-  color: var(--primary-accent);
-}
-.downloads-page .tab-btn.active::after {
-  content: "";
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--primary-accent);
-}
-.downloads-page .clear-history-btn {
-  position: absolute;
-  right: 0;
-  color: var(--secondary-text);
-}
-.downloads-page .empty-queue-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-top: 60px;
-  opacity: 0.5;
-  gap: 16px;
-}
-.downloads-page .empty-queue-state .empty-icon {
-  font-size: 48px;
-  color: var(--secondary-text);
-}
-.downloads-page .empty-queue-state .empty-message {
-  color: var(--secondary-text);
-  font-weight: 600;
-}
-.downloads-page .download-task-card {
-  background: var(--clay-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
-  transition: all 0.3s ease;
-  box-shadow: var(--clay-card-shadow);
-}
-.downloads-page .download-task-card.error {
-  box-shadow: 0 0 15px rgba(239, 35, 60, 0.15);
-}
-.downloads-page .download-task-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.downloads-page .task-thumbnail {
-  width: 120px;
-  aspect-ratio: 16/9;
-  object-fit: cover;
-  border-radius: 8px;
-  border: var(--app-border);
-  flex-shrink: 0;
-}
-.downloads-page .task-meta {
-  flex: 1;
-  min-width: 0;
-}
-.downloads-page .task-title {
-  margin: 0 0 4px 0;
-  color: var(--primary-text);
-  font-size: 15px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.downloads-page .task-channel {
-  margin: 0;
-  color: var(--secondary-text);
-  font-size: 13px;
-}
-.downloads-page .task-stats {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-.downloads-page .task-state {
-  font-size: 12px;
-}
-.downloads-page .task-state.pending {
-  color: var(--secondary-text);
-}
-.downloads-page .task-state.downloading {
-  color: var(--primary-accent);
-  font-weight: bold;
-}
-.downloads-page .task-state.done {
-  color: #27c93f;
-  font-weight: bold;
-}
-.downloads-page .task-state.error {
-  color: #ef233c;
-  font-weight: bold;
-}
-.downloads-page .task-progress {
-  width: 100%;
-  height: 6px;
-  background: var(--tertiary-background);
-  border-radius: 3px;
-  margin-top: 12px;
-  overflow: hidden;
-}
-.downloads-page .progress-fill {
-  height: 100%;
-  background: var(--primary-accent);
-  transition: width 0.3s ease, background 0.3s ease;
-  border-radius: 0px;
-}
-.downloads-page .progress-fill.transcoding {
-  background: repeating-linear-gradient(45deg, var(--primary-accent), var(--primary-accent) 10px, var(--primary-accent-dark) 10px, var(--primary-accent-dark) 20px);
-  background-size: 28px 28px;
-  animation: moveStripes 1s linear infinite;
-}
-.downloads-page .progress-fill.done {
-  background: #27c93f;
-}
-.downloads-page .progress-fill.error {
-  background: #ef233c;
-}
-.downloads-page .task-toggle-btn {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--primary-text);
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  transition: all 0.2s;
-}
-.downloads-page .task-toggle-btn:hover {
-  transform: translateY(-1px);
-}
-.downloads-page .task-toggle-btn.active {
-  background: var(--tertiary-background);
-}
-.downloads-page .terminal-block {
-  margin-top: 16px;
-  max-height: 150px;
-  overflow-y: auto;
-}
-.downloads-page .task-log-line {
-  margin-bottom: 4px;
-}
+
+/* CUSTOM PILL CONTROLS */
 .downloads-page .segmented-control {
   display: inline-flex;
   gap: 4px;
   padding: 6px;
-}
-body[data-theme="dark"] .downloads-page .segmented-control {
   background: var(--tertiary-background);
-  border: 2px solid var(--border-color);
-  border-radius: 0;
-  box-shadow: 4px 4px 0px var(--border-color);
-}
-body[data-theme="light"] .downloads-page .segmented-control {
-  background: var(--clay-bg);
-  border-radius: 20px;
+  border-radius: 32px;
   box-shadow: var(--clay-inset-shadow);
 }
+
+body[data-theme="light"] .downloads-page .segmented-control {
+  background: var(--clay-bg);
+}
+
 .downloads-page .segmented-btn {
   font-family: var(--font-body);
   font-size: 13px;
@@ -260,100 +117,63 @@ body[data-theme="light"] .downloads-page .segmented-control {
   background: transparent;
   color: var(--secondary-text);
   padding: 8px 24px;
-  border-radius: 0;
+  border-radius: 24px;
+  /* Pill */
 }
-body[data-theme="dark"] .downloads-page .segmented-btn {
-  background: transparent;
-  color: var(--secondary-text);
-  padding: 8px 24px;
-  border-radius: 0;
-  border: 2px solid transparent;
-}
-body[data-theme="dark"] .downloads-page .segmented-btn.active {
-  background: var(--primary-accent);
-  color: white;
-  border-color: var(--border-color);
-  box-shadow: 2px 2px 0px var(--border-color);
-}
-body[data-theme="light"] .downloads-page .segmented-btn {
-  background: transparent;
-  color: var(--secondary-text);
-  padding: 10px 28px;
-  border-radius: 14px;
-}
-body[data-theme="light"] .downloads-page .segmented-btn.active {
-  background: var(--clay-bg);
-  color: var(--primary-accent);
-  box-shadow: var(--clay-btn-shadow);
-}
+
 .downloads-page .segmented-btn.active {
   background: var(--primary-accent);
   color: white;
-  border-color: var(--border-color);
-  box-shadow: 2px 2px 0px var(--border-color);
+  box-shadow: var(--clay-btn-shadow);
 }
-.downloads-page .dl-options-grid {
+
+.downloads-page .option-item {
   display: flex;
-  gap: 20px;
-  margin-top: 30px;
-}
-.downloads-page .dl-option-card {
-  padding: 20px 24px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  justify-content: space-between;
-}
-body[data-theme="dark"] .downloads-page .dl-option-card {
-  background: var(--tertiary-background);
-  border: 2px solid var(--border-color);
-  border-radius: 0;
-  box-shadow: 4px 4px 0px var(--border-color);
-}
-body[data-theme="light"] .downloads-page .dl-option-card {
-  background: var(--clay-bg);
-  border-radius: var(--clay-radius);
-  box-shadow: var(--clay-inset-shadow);
-  border: none;
-}
-.downloads-page .dl-option-title {
-  font-size: 12px;
-  font-weight: 800;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--secondary-text);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
+
+/* CUSTOM DROPDOWN PILL */
 .downloads-page .custom-select-wrapper {
   position: relative;
   user-select: none;
+  min-width: 140px;
 }
+
 .downloads-page .custom-select-trigger {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 20px;
+  padding: 10px 16px;
   background: var(--clay-bg);
-  border-radius: calc(var(--clay-radius) - 8px);
+  border-radius: 24px;
+  /* Pill */
   cursor: pointer;
   transition: 0.2s;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--primary-text);
   box-shadow: var(--clay-btn-shadow);
   border: var(--app-border);
 }
+
 .downloads-page .custom-select-trigger:hover {
-  transform: translateY(-1px);
+  color: var(--primary-accent);
 }
+
 .downloads-page .custom-select-wrapper.open .custom-select-menu {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
 }
+
 .downloads-page .custom-select-wrapper.open .custom-select-trigger i {
   transform: rotate(180deg);
 }
+
 .downloads-page .custom-select-menu {
   position: absolute;
   top: calc(100% + 10px);
@@ -361,7 +181,7 @@ body[data-theme="light"] .downloads-page .dl-option-card {
   right: 0;
   background: var(--clay-bg);
   border: var(--app-border);
-  border-radius: calc(var(--clay-radius) - 8px);
+  border-radius: 16px;
   overflow: hidden;
   z-index: 100;
   box-shadow: var(--clay-card-shadow);
@@ -370,19 +190,304 @@ body[data-theme="light"] .downloads-page .dl-option-card {
   pointer-events: none;
   transition: all 0.2s var(--transition-smooth);
 }
+
 .downloads-page .custom-select-item {
-  padding: 12px 20px;
+  padding: 10px 16px;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--secondary-text);
-  font-weight: 500;
+  font-weight: 600;
 }
+
 .downloads-page .custom-select-item:hover {
   background: var(--glass-hover);
   color: var(--primary-accent);
 }
+
 .downloads-page .custom-select-item.selected {
   color: var(--primary-text);
   font-weight: bold;
+}
+
+/* TABS HEADER */
+.downloads-page .tabs-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid var(--tertiary-background);
+  position: relative;
+  margin-top: 40px;
+  margin-bottom: 24px;
+}
+
+body[data-theme="dark"] .downloads-page .tabs-header {
+  border-color: var(--border-color);
+}
+
+.downloads-page .tabs-controls {
+  display: flex;
+  gap: 16px;
+}
+
+.downloads-page .tab-btn {
+  background: transparent;
+  border: none;
+  padding: 12px 32px;
+  font-weight: 700;
+  color: var(--secondary-text);
+  cursor: pointer;
+  font-size: 15px;
+  position: relative;
+  transition: color 0.2s;
+  font-family: var(--font-body);
+}
+
+.downloads-page .tab-btn.active {
+  color: var(--primary-text);
+}
+
+.downloads-page .tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary-accent);
+  border-radius: 4px 4px 0 0;
+}
+
+.downloads-page .clear-history-btn {
+  position: absolute;
+  right: 0;
+  color: var(--secondary-text);
+  background: var(--clay-bg);
+  box-shadow: var(--clay-btn-shadow);
+  border-radius: 50%;
+  border: var(--app-border);
+  padding: 12px;
+}
+
+.downloads-page .clear-history-btn:hover {
+  color: #ef233c;
+  transform: translateY(-2px);
+}
+
+.downloads-page .clear-history-btn:active {
+  box-shadow: var(--clay-btn-active);
+  transform: var(--btn-active-transform);
+}
+
+/* EMPTY STATE */
+.downloads-page .empty-queue-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--clay-bg);
+  box-shadow: var(--clay-inset-shadow);
+  border-radius: 32px;
+  border: var(--app-border);
+  padding: 60px 20px;
+  margin-top: 20px;
+  gap: 16px;
+}
+
+.downloads-page .empty-queue-state .empty-icon {
+  font-size: 64px;
+  color: var(--primary-accent);
+  opacity: 0.5;
+}
+
+.downloads-page .empty-queue-state .empty-message {
+  color: var(--secondary-text);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* GRID LAYOUT FOR DOWNLOAD CARDS (MATCHING HOME) */
+.downloads-page .download-task-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+.downloads-page .download-task-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--clay-bg);
+  border: var(--app-border);
+  border-radius: 24px;
+  padding: 12px;
+  transition: all 0.3s ease;
+  box-shadow: var(--clay-card-shadow);
+}
+
+.downloads-page .download-task-card.error {
+  box-shadow:
+    inset 0 0 0 2px #ef233c,
+    var(--clay-card-shadow);
+}
+
+.downloads-page .download-task-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.downloads-page .task-thumbnail {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 16px;
+  border: var(--app-border);
+  box-shadow: var(--clay-btn-shadow);
+}
+
+.downloads-page .task-meta {
+  display: flex;
+  flex-direction: column;
+  padding: 0 4px;
+}
+
+.downloads-page .task-title {
+  margin: 0 0 4px 0;
+  color: var(--primary-text);
+  font-size: 15px;
+  font-weight: 700;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.downloads-page .task-channel {
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: 13px;
+}
+
+.downloads-page .task-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.downloads-page .task-state {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.downloads-page .task-state.pending {
+  color: var(--secondary-text);
+}
+
+.downloads-page .task-state.downloading {
+  color: var(--primary-accent);
+  font-weight: bold;
+}
+
+.downloads-page .task-state.done {
+  color: #27c93f;
+  font-weight: bold;
+}
+
+.downloads-page .task-state.error {
+  color: #ef233c;
+  font-weight: bold;
+}
+
+.downloads-page .task-progress {
+  width: 100%;
+  height: 8px;
+  background: var(--tertiary-background);
+  box-shadow: var(--clay-inset-shadow);
+  border-radius: 8px;
+  /* Pill */
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.downloads-page .progress-fill {
+  height: 100%;
+  background: var(--primary-accent);
+  transition:
+    width 0.3s ease,
+    background 0.3s ease;
+  border-radius: 8px;
+  /* Pill */
+}
+
+.downloads-page .progress-fill.transcoding {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--primary-accent),
+    var(--primary-accent) 10px,
+    var(--primary-accent-dark) 10px,
+    var(--primary-accent-dark) 20px
+  );
+  background-size: 28px 28px;
+  animation: moveStripes 1s linear infinite;
+}
+
+.downloads-page .progress-fill.done {
+  background: #27c93f;
+}
+
+.downloads-page .progress-fill.error {
+  background: #ef233c;
+}
+
+.downloads-page .task-toggle-btn {
+  background: var(--clay-bg);
+  border: var(--app-border);
+  box-shadow: var(--clay-btn-shadow);
+  color: var(--primary-text);
+  padding: 10px 16px;
+  border-radius: 24px;
+  /* Pill */
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  gap: 8px;
+  font-size: 12px;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.downloads-page .task-toggle-btn:active {
+  box-shadow: var(--clay-btn-active);
+  transform: var(--btn-active-transform);
+}
+
+.downloads-page .task-toggle-btn.active {
+  background: var(--tertiary-background);
+  box-shadow: var(--clay-inset-shadow);
+}
+
+.downloads-page .terminal-block {
+  margin-top: 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  background: #000;
+  border-radius: 16px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 11px;
+  color: #fff;
+  border: var(--app-border);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.downloads-page .task-log-line {
+  margin-bottom: 4px;
+  opacity: 0.8;
 }
