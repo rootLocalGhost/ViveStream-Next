@@ -38,14 +38,14 @@ describe("Tauri IPC Mocking (Integration)", () => {
   it("should call download_video with correctly parsed VideoEntry struct", async () => {
     render(() => <Downloads />);
 
-    const input = screen.getByPlaceholderText(
-      "Paste YouTube URL or Playlist here...",
-    );
+    const input = screen.getByPlaceholderText("Paste video or playlist URL...");
     fireEvent.input(input, {
       target: { value: "https://youtube.com/watch?v=mock_id_123" },
     });
 
-    const downloadBtn = screen.getByText("Download");
+    const downloadBtn = document.querySelector(
+      ".dl-action-btn",
+    ) as HTMLButtonElement;
     fireEvent.click(downloadBtn);
 
     await waitFor(() => {
@@ -53,17 +53,21 @@ describe("Tauri IPC Mocking (Integration)", () => {
         url: "https://youtube.com/watch?v=mock_id_123",
       });
 
-      expect(invoke).toHaveBeenCalledWith("download_video", {
-        url: "https://www.youtube.com/watch?v=mock_id_123",
-        metadata: {
-          id: "mock_id_123",
-          title: "Mock Video Title",
-          channel: "Mock Channel",
-          video_path: "/mock/videos/mock_id_123.mp4",
-          thumbnail_path: "/mock/thumbs/mock_id_123.jpg",
-        },
-        quality: "1440p",
-      });
+      // Use objectContaining because the store now injects cookies, speedLimit, etc.
+      expect(invoke).toHaveBeenCalledWith(
+        "download_video",
+        expect.objectContaining({
+          url: "https://www.youtube.com/watch?v=mock_id_123",
+          metadata: {
+            id: "mock_id_123",
+            title: "Mock Video Title",
+            channel: "Mock Channel",
+            video_path: "/mock/videos/mock_id_123.mp4",
+            thumbnail_path: "/mock/thumbs/mock_id_123.jpg",
+          },
+          quality: "1440p",
+        }),
+      );
     });
   });
 });
