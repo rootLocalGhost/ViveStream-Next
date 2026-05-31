@@ -4,6 +4,8 @@ import { ask, message } from "@tauri-apps/plugin-dialog";
 import {
   appTheme,
   toggleAppTheme,
+  appPalette,
+  toggleAppPalette,
   sidebarHoverMode,
   toggleSidebarHoverMode,
   concurrentDownloads,
@@ -132,6 +134,30 @@ export default function Settings() {
                 class={appTheme() === "dark" ? "ph-fill ph-moon" : "ph ph-moon"}
               ></i>{" "}
               Dark
+            </button>
+          </div>
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* PALETTE */}
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Color Palette</h3>
+            <p class="settings-desc">Choose a primary accent scheme.</p>
+          </div>
+          <div class="toggle-group">
+            <button
+              onClick={() => toggleAppPalette("sunset")}
+              class={`toggle-btn ${appPalette() === "sunset" ? "active" : ""}`}
+            >
+              <div class="color-swatch sunset"></div> Sunset
+            </button>
+            <button
+              onClick={() => toggleAppPalette("crimson")}
+              class={`toggle-btn ${appPalette() === "crimson" ? "active" : ""}`}
+            >
+              <div class="color-swatch crimson"></div> Crimson
             </button>
           </div>
         </div>
