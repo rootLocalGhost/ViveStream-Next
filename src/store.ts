@@ -76,6 +76,8 @@ export const updateConcurrentDownloads = (val: number) => {
   setConcurrentDownloads(val);
   if (isBrowser)
     window.localStorage.setItem("concurrentDownloads", val.toString());
+  // Trigger processing in case limit increased
+  processQueue();
 };
 
 export const [concurrentFragments, setConcurrentFragments] = createSignal(
@@ -187,6 +189,117 @@ export const clearDownloadHistory = () => {
   );
 };
 
+// Advanced concurrency pool manager
+const processQueue = () => {
+  const allTasks = tasks();
+  const activeCount = allTasks.filter((t) => t.status === "downloading").length;
+  const pendingTasks = allTasks.filter((t) => t.status === "pending");
+
+  if (activeCount >= concurrentDownloads() || pendingTasks.length === 0) {
+    setIsProcessingQueue(activeCount > 0);
+    if (activeCount === 0 && pendingTasks.length === 0) {
+      invoke<VideoEntry[]>("get_downloaded_videos")
+        .then(setHomeVideos)
+        .catch(console.error);
+    }
+    return;
+  }
+
+  setIsProcessingQueue(true);
+  const slotsAvailable = concurrentDownloads() - activeCount;
+  const tasksToStart = pendingTasks.slice(0, slotsAvailable);
+
+  tasksToStart.forEach((task) => {
+    executeDownload(task);
+  });
+};
+
+const executeDownload = async (task: DownloadTask) => {
+  updateTask(task.id, {
+    status: "downloading",
+    phase: "Initializing Engine...",
+    logs: ["Initializing engine..."],
+  });
+
+  const unlisten = await listen<string>(
+    `download-progress-${task.id}`,
+    (event) => {
+      const log = event.payload;
+      setTasks((prev) =>
+        prev.map((t) => {
+          if (t.id !== task.id) return t;
+
+          let newProgress = t.progress;
+          let newPhase = t.phase;
+
+          if (log.includes("[download]") && log.includes("%")) {
+            const match = log.match(/\[download\]\s+([\d\.]+)%/);
+            if (match) {
+              newProgress = parseFloat(match[1]);
+              newPhase = "Downloading";
+            }
+          } else if (
+            log.includes("Attempting encoder:") ||
+            log.includes("Starting FFmpeg")
+          ) {
+            newPhase = "Transcoding (Hardware)";
+            newProgress = 100;
+          } else if (log.includes("Success! Transcoded")) {
+            newPhase = "Finalizing...";
+          }
+
+          return {
+            ...t,
+            logs: [...t.logs, log],
+            progress: newProgress,
+            phase: newPhase,
+          };
+        }),
+      );
+    },
+  );
+
+  try {
+    await invoke("download_video", {
+      url: `https://www.youtube.com/watch?v=${task.id}`,
+      metadata: task.metadata,
+      quality: downloadQuality(),
+      dlType: downloadType(),
+      cookies: browserCookies(),
+      speedLimit: speedLimit(),
+      concurrentFragments: concurrentFragments(),
+      autoSubs: autoSubtitles(),
+      dlSubs: dlSubtitles(),
+      sponsorblock: removeSponsorBlock(),
+      liveFromStart: liveFromStart(),
+    });
+
+    updateTask(task.id, {
+      status: "done",
+      phase: "Complete",
+      progress: 100,
+    });
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? { ...t, logs: [...t.logs, "Download complete!"] }
+          : t,
+      ),
+    );
+  } catch (e) {
+    updateTask(task.id, { status: "error", phase: "Failed" });
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id ? { ...t, logs: [...t.logs, `ERROR: ${e}`] } : t,
+      ),
+    );
+  } finally {
+    unlisten();
+    // Move to next in queue
+    processQueue();
+  }
+};
+
 export const startDownloadQueue = async () => {
   const targetUrl = downloadUrl();
   if (!targetUrl) return;
@@ -212,97 +325,9 @@ export const startDownloadQueue = async () => {
     }));
 
     setTasks((prev) => [...prev, ...newTasks]);
-
-    for (const task of newTasks) {
-      updateTask(task.id, {
-        status: "downloading",
-        phase: "Initializing Engine...",
-        logs: ["Initializing engine..."],
-      });
-
-      const unlisten = await listen<string>(
-        `download-progress-${task.id}`,
-        (event) => {
-          const log = event.payload;
-
-          setTasks((prev) =>
-            prev.map((t) => {
-              if (t.id !== task.id) return t;
-
-              let newProgress = t.progress;
-              let newPhase = t.phase;
-
-              if (log.includes("[download]") && log.includes("%")) {
-                const match = log.match(/\[download\]\s+([\d\.]+)%/);
-                if (match) {
-                  newProgress = parseFloat(match[1]);
-                  newPhase = "Downloading";
-                }
-              } else if (
-                log.includes("Attempting encoder:") ||
-                log.includes("Starting FFmpeg")
-              ) {
-                newPhase = "Transcoding (Hardware)";
-                newProgress = 100;
-              } else if (log.includes("Success! Transcoded")) {
-                newPhase = "Finalizing...";
-              }
-
-              return {
-                ...t,
-                logs: [...t.logs, log],
-                progress: newProgress,
-                phase: newPhase,
-              };
-            }),
-          );
-        },
-      );
-
-      try {
-        await invoke("download_video", {
-          url: `https://www.youtube.com/watch?v=${task.id}`,
-          metadata: task.metadata,
-          quality: downloadQuality(),
-          dlType: downloadType(),
-          cookies: browserCookies(),
-          speedLimit: speedLimit(),
-          concurrentFragments: concurrentFragments(),
-          autoSubs: autoSubtitles(),
-          dlSubs: dlSubtitles(),
-          sponsorblock: removeSponsorBlock(),
-        });
-
-        updateTask(task.id, {
-          status: "done",
-          phase: "Complete",
-          progress: 100,
-        });
-
-        setTasks((prev) =>
-          prev.map((t) =>
-            t.id === task.id
-              ? { ...t, logs: [...t.logs, "Download complete!"] }
-              : t,
-          ),
-        );
-      } catch (e) {
-        updateTask(task.id, { status: "error", phase: "Failed" });
-        setTasks((prev) =>
-          prev.map((t) =>
-            t.id === task.id ? { ...t, logs: [...t.logs, `ERROR: ${e}`] } : t,
-          ),
-        );
-      } finally {
-        unlisten();
-      }
-    }
+    processQueue();
   } catch (e) {
     console.error("Queue Initialization Error:", e);
-  } finally {
     setIsProcessingQueue(false);
-    invoke<VideoEntry[]>("get_downloaded_videos")
-      .then(setHomeVideos)
-      .catch(console.error);
   }
 };
