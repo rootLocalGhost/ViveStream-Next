@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, onMount, onCleanup, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, message } from "@tauri-apps/plugin-dialog";
 import {
@@ -21,17 +21,42 @@ import {
   removeSponsorBlock,
   toggleRemoveSponsorBlock,
 } from "../store";
+
 import "./Settings.css";
 
 export default function Settings() {
   const [loadingDep, setLoadingDep] = createSignal(false);
   const [loadingNuclear, setLoadingNuclear] = createSignal(false);
+  const [cookiesDropdownOpen, setCookiesDropdownOpen] = createSignal(false);
+
+  let cookiesRef: HTMLDivElement | undefined;
+  const cookieOptions = [
+    "None",
+    "Chrome",
+    "Firefox",
+    "Edge",
+    "Brave",
+    "Safari",
+  ];
+
+  onMount(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (cookiesRef && !cookiesRef.contains(e.target as Node)) {
+        setCookiesDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    onCleanup(() =>
+      document.removeEventListener("mousedown", handleClickOutside),
+    );
+  });
 
   const handleWipeDependencies = async () => {
     const yes = await ask(
       "Are you sure you want to delete yt-dlp and FFmpeg? This will break downloads until you restart the app and run the setup again.\n\nYour downloaded videos will NOT be deleted.",
       { title: "Wipe Core Dependencies", kind: "warning" },
     );
+
     if (yes) {
       setLoadingDep(true);
       try {
@@ -56,6 +81,7 @@ export default function Settings() {
       "WARNING: This will permanently delete ALL core engines, your SQLite database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
       { title: "NUCLEAR WIPE", kind: "warning" },
     );
+
     if (yes) {
       setLoadingNuclear(true);
       try {
@@ -82,7 +108,7 @@ export default function Settings() {
       </h2>
 
       <div class="settings-card">
-        {/* Base Theme */}
+        {/* APPEARANCE TOGGLE */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Appearance</h3>
@@ -114,7 +140,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Color Palette */}
+        {/* PALETTE */}
         <div
           class="flex-row-between"
           classList={{ "palette-disabled": appTheme() === "dark" }}
@@ -143,7 +169,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Sidebar Expansion */}
+        {/* AUTO-EXPAND SIDEBAR */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Auto-Expand Sidebar</h3>
@@ -167,7 +193,7 @@ export default function Settings() {
       </h2>
 
       <div class="settings-card">
-        {/* Concurrent Downloads */}
+        {/* CONCURRENT DOWNLOADS */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Downloads</h3>
@@ -198,7 +224,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Concurrent Fragments */}
+        {/* CONCURRENT FRAGMENTS */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Fragments</h3>
@@ -229,7 +255,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Speed Limit */}
+        {/* SPEED LIMIT */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
@@ -248,7 +274,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Browser Cookies */}
+        {/* BROWSER COOKIES DROPDOWN */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Browser Cookies</h3>
@@ -256,23 +282,38 @@ export default function Settings() {
               Use cookies from a browser to bypass login/age restrictions.
             </p>
           </div>
-          <select
-            class="setting-select"
-            value={browserCookies()}
-            onChange={(e) => updateBrowserCookies(e.target.value)}
+          <div
+            class={`custom-select-wrapper ${cookiesDropdownOpen() ? "open" : ""}`}
+            ref={cookiesRef}
           >
-            <option value="None">None</option>
-            <option value="Chrome">Chrome</option>
-            <option value="Firefox">Firefox</option>
-            <option value="Edge">Edge</option>
-            <option value="Brave">Brave</option>
-            <option value="Safari">Safari</option>
-          </select>
+            <div
+              class="custom-select-trigger"
+              onClick={() => setCookiesDropdownOpen(!cookiesDropdownOpen())}
+            >
+              <span>{browserCookies()}</span>
+              <i class="ph ph-caret-down"></i>
+            </div>
+            <div class="custom-select-menu">
+              <For each={cookieOptions}>
+                {(cookie) => (
+                  <div
+                    class={`custom-select-item ${browserCookies() === cookie ? "selected" : ""}`}
+                    onClick={() => {
+                      updateBrowserCookies(cookie);
+                      setCookiesDropdownOpen(false);
+                    }}
+                  >
+                    {cookie}
+                  </div>
+                )}
+              </For>
+            </div>
+          </div>
         </div>
 
         <div class="full-divider"></div>
 
-        {/* Auto Subtitles */}
+        {/* AUTO SUBTITLES */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Automatic Subtitles</h3>
@@ -292,7 +333,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* SponsorBlock */}
+        {/* REMOVE SPONSOR SEGMENTS */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Remove Sponsored Segments</h3>
