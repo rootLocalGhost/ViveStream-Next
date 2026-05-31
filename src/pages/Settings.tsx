@@ -6,8 +6,6 @@ import {
   toggleAppTheme,
   sidebarHoverMode,
   toggleSidebarHoverMode,
-  appPalette,
-  toggleAppPalette,
   concurrentDownloads,
   updateConcurrentDownloads,
   concurrentFragments,
@@ -134,35 +132,6 @@ export default function Settings() {
                 class={appTheme() === "dark" ? "ph-fill ph-moon" : "ph ph-moon"}
               ></i>{" "}
               Dark
-            </button>
-          </div>
-        </div>
-
-        <div class="full-divider"></div>
-
-        {/* PALETTE */}
-        <div
-          class="flex-row-between"
-          classList={{ "palette-disabled": appTheme() === "dark" }}
-        >
-          <div>
-            <h3 class="settings-title">Color Palette</h3>
-            <p class="settings-desc">
-              Choose a primary accent scheme. (Light mode only).
-            </p>
-          </div>
-          <div class="toggle-group">
-            <button
-              onClick={() => toggleAppPalette("default")}
-              class={`toggle-btn ${appPalette() === "default" ? "active" : ""}`}
-            >
-              <div class="color-swatch standard"></div> Standard
-            </button>
-            <button
-              onClick={() => toggleAppPalette("sunset")}
-              class={`toggle-btn ${appPalette() === "sunset" ? "active" : ""}`}
-            >
-              <div class="color-swatch sunset"></div> Sunset
             </button>
           </div>
         </div>
