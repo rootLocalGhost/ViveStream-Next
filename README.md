@@ -6,7 +6,7 @@
 ![Rust](https://img.shields.io/badge/Rust-v1.8-000000?logo=rust&logoColor=white)
 ![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial-red)
 
-Lightning-fast, native YouTube downloader and local media library. Built on Tauri v2 & SolidJS for maximum performance, hardware acceleration, and zero bloat.
+Lightning-fast, native YouTube downloader and local media library. Built on Tauri v2 & SolidJS for maximum performance, hardware acceleration, and a purely tactile claymorphism interface.
 
 </div>
 
@@ -14,7 +14,7 @@ Lightning-fast, native YouTube downloader and local media library. Built on Taur
 
 - ⚙️ **Smart Hardware Transcoding**
 - 🎯 **Intelligent Quality Selection**
-- 🎨 **Immersive & Lightweight UI**
+- 🎨 **Pure Claymorphism UI (Sunset/Crimson)**
 - ⚡ **Flawless Local Playback**
 - 🗄️ **Absolute Privacy**
 
@@ -49,7 +49,7 @@ Because core engines (`yt-dlp`/`ffmpeg`) and video files are downloaded at runti
 
 ## 💻 Developer Setup
 
-To compile the application from source, you need **[Bun](https://bun.sh/)**, **[Rust & Cargo](https://rustup.rs/)**, and your OS build tools.
+To compile the application from source, you need **[Bun](https://www.google.com/search?q=https://bun.sh/)**, **[Rust & Cargo](https://www.google.com/search?q=https://rustup.rs/)**, and your OS build tools.
 _(Arch Linux users: `sudo pacman -S base-devel webkit2gtk-4.1 curl wget unzip`)_
 
 1. **Clone the repository:**
@@ -57,7 +57,6 @@ _(Arch Linux users: `sudo pacman -S base-devel webkit2gtk-4.1 curl wget unzip`)_
 ```bash
 git clone https://github.com/rootlocalghost/ViveStream-Next.git
 cd ViveStream-Next
-
 ```
 
 2. **Install dependencies:**
@@ -66,21 +65,20 @@ cd ViveStream-Next
 bun install
 # or
 bun run init
-
 ```
 
 3. **Run in Development Mode:**
 
 ```bash
 bun start
-
 ```
 
-Note: If you experience a blank/white screen on Linux Wayland (Hyprland), force XWayland rendering by running: `WEBKIT_DISABLE_DMABUF_RENDERER=1 GDK_BACKEND=x11 bun run tauri dev_` 4. **Build for Production:**
+Note: If you experience a blank/white screen on Linux Wayland (Hyprland), force XWayland rendering by running: `WEBKIT_DISABLE_DMABUF_RENDERER=1 GDK_BACKEND=x11 bun run tauri dev`
+
+4. **Build for Production:**
 
 ```bash
 bun run tauri build
-
 ```
 
 ---
@@ -98,9 +96,10 @@ Contributions are always welcome. Keep the architecture light and the dependenci
 ## ⚖️ License
 
 **PolyForm Noncommercial License 1.0.0**
-This project is free to use, modify, and build upon for personal, educational, and non-commercial purposes.
 
+This project is free to use, modify, and build upon for personal, educational, and non-commercial purposes.
 **You may not use this software for any commercial purpose.** This includes, but is not limited to: selling the software, locking features behind a paywall, incorporating it into a business product, or distributing it with advertisements.
+
 See the [`LICENSE`](./LICENSE) file for the full text.
 
 _Disclaimer: This tool is intended for personal archival of media you have the right to download. The developers are not responsible for how users utilize this software._
