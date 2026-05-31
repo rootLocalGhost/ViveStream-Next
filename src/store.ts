@@ -22,12 +22,10 @@ const getNum = (key: string, def: number) =>
 
 const initialAnimState = getBool("useAnimatedIcons", true);
 const initialHoverState = getBool("sidebarHoverMode", true);
-const initialTheme = getStr("appTheme", "light");
-const initialPalette = getStr("appPalette", "sunset");
+const initialTheme = getStr("appTheme", "dark");
 
 if (isBrowser) {
   document.documentElement.setAttribute("data-theme", initialTheme);
-  document.documentElement.setAttribute("data-palette", initialPalette);
 }
 
 export const [useAnimatedIcons, setUseAnimatedIcons] =
@@ -52,20 +50,6 @@ export const toggleAppTheme = (theme: "light" | "dark") => {
   if (isBrowser) {
     window.localStorage.setItem("appTheme", theme);
     document.documentElement.setAttribute("data-theme", theme);
-    if (theme === "dark" && appPalette() !== "default") {
-      toggleAppPalette("default");
-    } else if (theme === "light" && appPalette() === "default") {
-      toggleAppPalette("sunset");
-    }
-  }
-};
-
-export const [appPalette, setAppPalette] = createSignal(initialPalette);
-export const toggleAppPalette = (palette: string) => {
-  setAppPalette(palette);
-  if (isBrowser) {
-    window.localStorage.setItem("appPalette", palette);
-    document.documentElement.setAttribute("data-palette", palette);
   }
 };
 
@@ -76,7 +60,6 @@ export const updateConcurrentDownloads = (val: number) => {
   setConcurrentDownloads(val);
   if (isBrowser)
     window.localStorage.setItem("concurrentDownloads", val.toString());
-  // Trigger processing in case limit increased
   processQueue();
 };
 
@@ -189,7 +172,6 @@ export const clearDownloadHistory = () => {
   );
 };
 
-// Advanced concurrency pool manager
 const processQueue = () => {
   const allTasks = tasks();
   const activeCount = allTasks.filter((t) => t.status === "downloading").length;
@@ -295,7 +277,6 @@ const executeDownload = async (task: DownloadTask) => {
     );
   } finally {
     unlisten();
-    // Move to next in queue
     processQueue();
   }
 };
