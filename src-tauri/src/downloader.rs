@@ -266,6 +266,12 @@ pub async fn download_video(
     quality: String,
     dl_type: String,
     cookies: String,
+    speed_limit: String,
+    concurrent_fragments: u8,
+    auto_subs: bool,
+    dl_subs: bool,
+    sponsorblock: bool,
+    live_from_start: bool,
 ) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
@@ -313,8 +319,6 @@ pub async fn download_video(
         ffmpeg_path.to_str().unwrap().to_string(),
         "--retries".to_string(),
         "10".to_string(),
-        "--fragment-retries".to_string(),
-        "10".to_string(),
         "--newline".to_string(),
         "-f".to_string(),
         res_filter,
@@ -332,6 +336,33 @@ pub async fn download_video(
         "--write-description".to_string(),
     ];
 
+    if concurrent_fragments > 1 {
+        yt_args.push("--concurrent-fragments".to_string());
+        yt_args.push(concurrent_fragments.to_string());
+    }
+
+    if !speed_limit.is_empty() {
+        yt_args.push("--limit-rate".to_string());
+        yt_args.push(speed_limit.clone());
+    }
+
+    if auto_subs {
+        yt_args.push("--write-auto-subs".to_string());
+    }
+
+    if dl_subs {
+        yt_args.push("--write-subs".to_string());
+    }
+
+    if sponsorblock {
+        yt_args.push("--sponsorblock-remove".to_string());
+        yt_args.push("all".to_string());
+    }
+
+    if live_from_start {
+        yt_args.push("--live-from-start".to_string());
+    }
+
     if !is_audio {
         yt_args.push("--merge-output-format".to_string());
         yt_args.push("mp4".to_string());
@@ -339,7 +370,6 @@ pub async fn download_video(
         yt_args.push("mp4".to_string());
     }
 
-    // FIX: Compare the lowercase version to avoid "None" matching "none" incorrectly
     let cookies_lower = cookies.to_lowercase();
     if cookies_lower != "none" && !cookies_lower.is_empty() {
         yt_args.push("--cookies-from-browser".to_string());
