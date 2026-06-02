@@ -71,6 +71,7 @@ const AnimatedLogo = () => (
 export default function Setup() {
   const [loading, setLoading] = createSignal(false);
   const [logs, setLogs] = createSignal<string[]>([]);
+  const [downloadProgress, setDownloadProgress] = createSignal<number>(0);
 
   onMount(async () => {
     try {
@@ -103,10 +104,17 @@ export default function Setup() {
   const startSetup = async () => {
     setLoading(true);
     setLogs([]);
+    setDownloadProgress(0);
     addLog(`[SYSTEM] Initializing deployment sequence...`);
 
     const unlisten = await listen<string>("setup-progress", (event) => {
-      addLog(`> ${event.payload}`);
+      const payload = event.payload;
+      if (payload.startsWith("[PROGRESS]")) {
+        const value = parseFloat(payload.replace("[PROGRESS]", "").trim());
+        if (!isNaN(value)) setDownloadProgress(value);
+      } else {
+        addLog(`> ${payload}`);
+      }
     });
 
     try {
@@ -149,7 +157,7 @@ export default function Setup() {
                 </p>
               )}
             </For>
-            {loading() && (
+            {loading() && downloadProgress() === 0 && (
               <p class="setup-log-line processing">&gt; Working...</p>
             )}
             {logs().length === 0 && (
@@ -162,10 +170,20 @@ export default function Setup() {
           class={`setup-btn ${loading() ? "loading" : ""}`}
           onClick={startSetup}
           disabled={loading()}
+          style={
+            loading() && downloadProgress() > 0
+              ? {
+                  background: `linear-gradient(90deg, var(--primary-accent) ${downloadProgress()}%, var(--tertiary-background) ${downloadProgress()}%)`,
+                }
+              : {}
+          }
         >
           {loading() ? (
             <>
-              <i class="ph ph-spinner spinIcon"></i> DEPLOYING ENGINES
+              <i class="ph ph-spinner spinIcon"></i>
+              {downloadProgress() > 0 && downloadProgress() < 100
+                ? `DOWNLOADING... ${downloadProgress().toFixed(1)}%`
+                : "DEPLOYING ENGINES"}
             </>
           ) : (
             <>
