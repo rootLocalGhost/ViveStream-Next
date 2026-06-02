@@ -8,6 +8,7 @@ use std::io::{BufRead, BufReader, Cursor, Write};
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::time::Instant;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_dialog::DialogExt;
 
@@ -116,20 +117,48 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         fs::set_permissions(&ytdlp_path, perms).map_err(|e| e.to_string())?;
     }
 
-    emit_progress("Fetching compatible FFmpeg build...");
+    emit_progress("Fetching repacked Lite FFmpeg build...");
+
+    #[cfg(target_os = "windows")]
+    let ffmpeg_url = "https://github.com/rootlocalghost/ViveStream-Next/releases/download/latest-engines/ffmpeg-win64-lite.zip";
+    #[cfg(not(target_os = "windows"))]
+    let ffmpeg_url = "https://github.com/rootlocalghost/ViveStream-Next/releases/download/latest-engines/ffmpeg-linux64-lite.tar.xz";
+
+    let mut res = client
+        .get(ffmpeg_url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let total_size = res.content_length().unwrap_or(0);
+    let mut downloaded: u64 = 0;
+
+    #[cfg(target_os = "windows")]
+    let temp_path = bin_dir.join("ffmpeg_temp.zip");
+    #[cfg(not(target_os = "windows"))]
+    let temp_path = bin_dir.join("ffmpeg_temp.tar.xz");
+
+    let mut temp_file = File::create(&temp_path).map_err(|e| e.to_string())?;
+    let mut last_emit = Instant::now();
+
+    while let Some(chunk) = res.chunk().await.map_err(|e| e.to_string())? {
+        temp_file.write_all(&chunk).map_err(|e| e.to_string())?;
+        downloaded += chunk.len() as u64;
+
+        if total_size > 0 && last_emit.elapsed().as_millis() > 150 {
+            let percent = (downloaded as f64 / total_size as f64) * 100.0;
+            emit_progress(&format!("[PROGRESS] {:.1}", percent));
+            last_emit = Instant::now();
+        }
+    }
+
+    emit_progress(&format!("[PROGRESS] 100.0"));
+    emit_progress("Download complete. Extracting raw executables from disk...");
+
     #[cfg(target_os = "windows")]
     {
-        let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
-        let bytes = client
-            .get(ffmpeg_url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?
-            .bytes()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
+        let file = File::open(&temp_path).map_err(|e| e.to_string())?;
+        let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
@@ -147,19 +176,10 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     #[cfg(not(target_os = "windows"))]
     {
-        let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz";
-        let bytes = client
-            .get(ffmpeg_url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?
-            .bytes()
-            .await
-            .map_err(|e| e.to_string())?;
-
+        let file = File::open(&temp_path).map_err(|e| e.to_string())?;
         use tar::Archive;
         use xz2::read::XzDecoder;
-        let mut archive = Archive::new(XzDecoder::new(Cursor::new(bytes)));
+        let mut archive = Archive::new(XzDecoder::new(file));
 
         for entry in archive.entries().map_err(|e| e.to_string())? {
             let mut entry = entry.map_err(|e| e.to_string())?;
@@ -186,7 +206,8 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         }
     }
 
-    emit_progress("FFmpeg and FFprobe ready.");
+    let _ = fs::remove_file(temp_path);
+    emit_progress("FFmpeg and FFprobe extracted perfectly.");
 
     app.dialog()
         .message("Deployment complete. ViveStream will now restart to initialize engines.")
