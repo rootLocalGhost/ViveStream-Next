@@ -14,7 +14,6 @@ use tauri_plugin_dialog::DialogExt;
 pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
     return (bin_dir.join("yt-dlp.exe"), bin_dir.join("ffmpeg.exe"));
-
     #[cfg(not(target_os = "windows"))]
     return (bin_dir.join("yt-dlp"), bin_dir.join("ffmpeg"));
 }
@@ -24,9 +23,14 @@ pub async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String>
     let bin_dir = get_bin_dir(&app)?;
     let (ytdlp, ffmpeg) = get_binary_paths(&bin_dir);
 
+    #[cfg(target_os = "windows")]
+    let ffprobe = bin_dir.join("ffprobe.exe");
+    #[cfg(not(target_os = "windows"))]
+    let ffprobe = bin_dir.join("ffprobe");
+
     Ok(BinaryCheckStatus {
         ytdlp_exists: ytdlp.exists(),
-        ffmpeg_exists: ffmpeg.exists(),
+        ffmpeg_exists: ffmpeg.exists() && ffprobe.exists(),
         bin_folder: bin_dir,
     })
 }
@@ -49,13 +53,11 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     let ytdlp_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe";
-
     #[cfg(not(target_os = "windows"))]
     let ytdlp_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp";
 
     emit_progress("Fetching latest yt-dlp Nightly from GitHub...");
-
     let bytes = client
         .get(ytdlp_url)
         .send()
@@ -66,10 +68,8 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     emit_progress("Validating yt-dlp SHA256 checksum...");
-
     let sums_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
-
     let sums_text = client
         .get(sums_url)
         .send()
@@ -100,7 +100,6 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     emit_progress("yt-dlp checksum verified. Proceeding with write.");
-
     let ytdlp_path = bin_dir.join(target_bin_name);
     File::create(&ytdlp_path)
         .map_err(|e| e.to_string())?
@@ -118,7 +117,6 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     emit_progress("Fetching compatible FFmpeg build...");
-
     #[cfg(target_os = "windows")]
     {
         let ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
@@ -135,11 +133,14 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
-            if file.name().ends_with("ffmpeg.exe") && file.is_file() {
-                let mut outfile =
-                    File::create(bin_dir.join("ffmpeg.exe")).map_err(|e| e.to_string())?;
-                std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
-                break;
+            if file.is_file() {
+                let name = file.name();
+                if name.ends_with("ffmpeg.exe") || name.ends_with("ffprobe.exe") {
+                    let file_name = std::path::Path::new(name).file_name().unwrap();
+                    let mut outfile =
+                        File::create(bin_dir.join(file_name)).map_err(|e| e.to_string())?;
+                    std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
+                }
             }
         }
     }
@@ -158,34 +159,34 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
         use tar::Archive;
         use xz2::read::XzDecoder;
-
         let mut archive = Archive::new(XzDecoder::new(Cursor::new(bytes)));
 
         for entry in archive.entries().map_err(|e| e.to_string())? {
             let mut entry = entry.map_err(|e| e.to_string())?;
-            if entry
-                .path()
-                .map_err(|e| e.to_string())?
-                .file_name()
-                .map_or(false, |name| name == "ffmpeg")
-                && entry.header().entry_type().is_file()
-            {
-                let outpath = bin_dir.join("ffmpeg");
-                entry.unpack(&outpath).map_err(|e| e.to_string())?;
-
-                use std::os::unix::fs::PermissionsExt;
-                let mut perms = fs::metadata(&outpath)
+            if entry.header().entry_type().is_file() {
+                if let Some(name) = entry
+                    .path()
                     .map_err(|e| e.to_string())?
-                    .permissions();
-                perms.set_mode(0o755);
-                fs::set_permissions(&outpath, perms).map_err(|e| e.to_string())?;
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                {
+                    if name == "ffmpeg" || name == "ffprobe" {
+                        let outpath = bin_dir.join(name);
+                        entry.unpack(&outpath).map_err(|e| e.to_string())?;
 
-                break;
+                        use std::os::unix::fs::PermissionsExt;
+                        let mut perms = fs::metadata(&outpath)
+                            .map_err(|e| e.to_string())?
+                            .permissions();
+                        perms.set_mode(0o755);
+                        fs::set_permissions(&outpath, perms).map_err(|e| e.to_string())?;
+                    }
+                }
             }
         }
     }
 
-    emit_progress("FFmpeg ready.");
+    emit_progress("FFmpeg and FFprobe ready.");
 
     app.dialog()
         .message("Deployment complete. ViveStream will now restart to initialize engines.")
@@ -201,7 +202,6 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 pub async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<VideoEntry>, String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
-
     let (ytdlp_path, _) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() {
@@ -340,25 +340,20 @@ pub async fn download_video(
         yt_args.push("--concurrent-fragments".to_string());
         yt_args.push(concurrent_fragments.to_string());
     }
-
     if !speed_limit.is_empty() {
         yt_args.push("--limit-rate".to_string());
         yt_args.push(speed_limit.clone());
     }
-
     if auto_subs {
         yt_args.push("--write-auto-subs".to_string());
     }
-
     if dl_subs {
         yt_args.push("--write-subs".to_string());
     }
-
     if sponsorblock {
         yt_args.push("--sponsorblock-remove".to_string());
         yt_args.push("all".to_string());
     }
-
     if live_from_start {
         yt_args.push("--live-from-start".to_string());
     }
@@ -385,10 +380,26 @@ pub async fn download_video(
     let mut child = yt_cmd
         .args(&yt_args)
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| e.to_string())?;
 
-    let reader = BufReader::new(child.stdout.take().unwrap());
+    let stderr = child.stderr.take().unwrap();
+    let stdout = child.stdout.take().unwrap();
+
+    let app_clone = app.clone();
+    let prog_clone = progress_event.clone();
+
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stderr);
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                let _ = app_clone.emit(&prog_clone, format!("ERR: {}", line));
+            }
+        }
+    });
+
+    let reader = BufReader::new(stdout);
     for line in reader.lines() {
         if let Ok(line) = line {
             let _ = app.emit(&progress_event, line);
@@ -396,7 +407,7 @@ pub async fn download_video(
     }
 
     if !child.wait().map_err(|e| e.to_string())?.success() {
-        return Err("yt-dlp download failed.".into());
+        return Err("yt-dlp download failed. Check logs for details.".into());
     }
 
     let raw_thumb = thumb_dir.join(format!("raw_{}.jpg", metadata.id));
@@ -409,6 +420,7 @@ pub async fn download_video(
 
     let raw_desc = vid_dir.join(format!("raw_{}.description", metadata.id));
     let final_desc = desc_dir.join(format!("{}.txt", metadata.id));
+
     if raw_desc.exists() {
         let _ = fs::rename(&raw_desc, &final_desc);
     } else {
