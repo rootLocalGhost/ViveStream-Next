@@ -2,11 +2,12 @@ import { lazy, Component, createSignal, onMount, Show } from "solid-js";
 import { Router, Route, A } from "@solidjs/router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
+
 import "@phosphor-icons/web/regular";
 import "@phosphor-icons/web/fill";
 import "./App.css";
 
-import { sidebarHoverMode } from "./store";
+import { sidebarHoverMode, forceSetup } from "./store";
 
 const Home = lazy(() => import("./pages/Home"));
 const Downloads = lazy(() => import("./pages/Downloads"));
@@ -52,6 +53,7 @@ const AppLogo = () => (
 
 const ImmersiveTitleBar = () => {
   const win = getCurrentWindow();
+
   return (
     <div class="immersive-titlebar-wrapper">
       <div data-tauri-drag-region class="drag-region"></div>
@@ -91,12 +93,14 @@ const ImmersiveTitleBar = () => {
 
 const AppLifecycle: Component<{ children?: any }> = (props) => {
   const [needsSetup, setNeedsSetup] = createSignal<boolean | null>(null);
+
   onMount(async () => {
     try {
       const status = await invoke<{
         ytdlp_exists: boolean;
         ffmpeg_exists: boolean;
       }>("check_binaries");
+
       if (status.ytdlp_exists && status.ffmpeg_exists) setNeedsSetup(false);
       else setNeedsSetup(true);
     } catch (e) {
@@ -116,7 +120,10 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
           </div>
         }
       >
-        <Show when={needsSetup() === false} fallback={<Setup />}>
+        <Show
+          when={needsSetup() === false && !forceSetup()}
+          fallback={<Setup />}
+        >
           {props.children}
         </Show>
       </Show>
@@ -144,6 +151,7 @@ const NavItem = (props: {
 const AppLayout: Component<{ children?: any }> = (props) => {
   const [isPinned, setIsPinned] = createSignal(false);
   const [isHovered, setIsHovered] = createSignal(false);
+
   const isExpanded = () => isPinned() || isHovered();
 
   return (
@@ -161,6 +169,7 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           <AppLogo />
           <span class="brand-name">ViveStream</span>
         </div>
+
         <div class="nav-links top-links">
           <NavItem
             href="/"
@@ -182,6 +191,7 @@ const AppLayout: Component<{ children?: any }> = (props) => {
             animClass="anim-shake"
           />
         </div>
+
         <div class="nav-links bottom-links">
           <NavItem
             href="/downloads"
@@ -197,6 +207,7 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           />
         </div>
       </nav>
+
       <main class="main-content">{props.children}</main>
     </div>
   );
