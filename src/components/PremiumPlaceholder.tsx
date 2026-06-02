@@ -1,4 +1,5 @@
 import { Component } from "solid-js";
+import "./PremiumPlaceholder.css";
 
 const PremiumPlaceholder: Component<{
   title: string;
