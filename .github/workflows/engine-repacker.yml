@@ -1,0 +1,36 @@
+name: Repack Core Engines
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+
+jobs:
+  repack-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download, Strip, and Repack (Windows)
+        run: |
+          wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip -O win.zip
+          unzip -j win.zip "*/bin/ffmpeg.exe" "*/bin/ffprobe.exe" -d win-out
+          cd win-out
+          zip -9 ../ffmpeg-win64-lite.zip ffmpeg.exe ffprobe.exe
+          cd ..
+
+      - name: Download, Strip, and Repack (Linux)
+        run: |
+          wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz -O lin.tar.xz
+          tar -xJf lin.tar.xz --wildcards "*/bin/ffmpeg" "*/bin/ffprobe"
+          mv ffmpeg-master-latest-linux64-gpl/bin/* ./
+          tar -cJf ffmpeg-linux64-lite.tar.xz ffmpeg ffprobe
+
+      - name: Publish Repacked Engines
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-engines
+          name: "Optimized Core Engines (Lite)"
+          files: |
+            ffmpeg-win64-lite.zip
+            ffmpeg-linux64-lite.tar.xz
