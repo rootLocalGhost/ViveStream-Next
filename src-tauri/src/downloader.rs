@@ -120,9 +120,9 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     emit_progress("Fetching repacked Lite FFmpeg build...");
 
     #[cfg(target_os = "windows")]
-    let ffmpeg_url = "https://github.com/rootlocalghost/ViveStream-Next/releases/download/latest-engines/ffmpeg-win64-lite.zip";
+    let ffmpeg_url = "https://github.com/rootlocalghost/ViveStream-Next-Engines/releases/latest/download/ffmpeg-win64-lite.zip";
     #[cfg(not(target_os = "windows"))]
-    let ffmpeg_url = "https://github.com/rootlocalghost/ViveStream-Next/releases/download/latest-engines/ffmpeg-linux64-lite.tar.xz";
+    let ffmpeg_url = "https://github.com/rootlocalghost/ViveStream-Next-Engines/releases/latest/download/ffmpeg-linux64-lite.tar.xz";
 
     let mut res = client
         .get(ffmpeg_url)
