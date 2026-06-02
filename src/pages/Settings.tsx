@@ -20,6 +20,7 @@ import {
   toggleAutoSubtitles,
   removeSponsorBlock,
   toggleRemoveSponsorBlock,
+  setForceSetup,
 } from "../store";
 
 import "./Settings.css";
@@ -30,6 +31,7 @@ export default function Settings() {
   const [cookiesDropdownOpen, setCookiesDropdownOpen] = createSignal(false);
 
   let cookiesRef: HTMLDivElement | undefined;
+
   const cookieOptions = [
     "None",
     "Chrome",
@@ -56,7 +58,6 @@ export default function Settings() {
       "Are you sure you want to delete yt-dlp and FFmpeg? This will break downloads until you restart the app and run the setup again.\n\nYour downloaded videos will NOT be deleted.",
       { title: "Wipe Core Dependencies", kind: "warning" },
     );
-
     if (yes) {
       setLoadingDep(true);
       try {
@@ -81,7 +82,6 @@ export default function Settings() {
       "WARNING: This will permanently delete ALL core engines, your SQLite database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
       { title: "NUCLEAR WIPE", kind: "warning" },
     );
-
     if (yes) {
       setLoadingNuclear(true);
       try {
@@ -108,7 +108,7 @@ export default function Settings() {
       </h2>
 
       <div class="settings-card">
-        {/* APPEARANCE TOGGLE */}
+        {/* Theme Toggle */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Appearance</h3>
@@ -140,7 +140,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* PALETTE */}
+        {/* Palette Toggle */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Color Palette</h3>
@@ -164,7 +164,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* AUTO-EXPAND SIDEBAR */}
+        {/* Hover Mode Toggle */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Auto-Expand Sidebar</h3>
@@ -186,9 +186,8 @@ export default function Settings() {
       <h2 class="page-title page-title-spaced">
         <i class="ph-fill ph-sliders"></i> Engine Preferences
       </h2>
-
       <div class="settings-card">
-        {/* CONCURRENT DOWNLOADS */}
+        {/* Concurrent Downloads Slider */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Downloads</h3>
@@ -219,7 +218,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* CONCURRENT FRAGMENTS */}
+        {/* Concurrent Fragments Slider */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Fragments</h3>
@@ -250,7 +249,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* SPEED LIMIT */}
+        {/* Speed Limit Input */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
@@ -269,7 +268,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* BROWSER COOKIES DROPDOWN */}
+        {/* Browser Cookies */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Browser Cookies</h3>
@@ -308,7 +307,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* AUTO SUBTITLES */}
+        {/* Subtitles Toggle */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Automatic Subtitles</h3>
@@ -328,7 +327,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* REMOVE SPONSOR SEGMENTS */}
+        {/* SponsorBlock Toggle */}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Remove Sponsored Segments</h3>
@@ -350,8 +349,25 @@ export default function Settings() {
       <h2 class="page-title page-title-spaced page-title-danger">
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
-
       <div class="danger-card">
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Force Setup Screen</h3>
+            <p class="settings-desc">
+              Launch the deployment screen to force an engine update or test
+              setup rendering without deleting existing files.
+            </p>
+          </div>
+          <button
+            onClick={() => setForceSetup(true)}
+            class="command-btn secondary"
+          >
+            Launch Setup
+          </button>
+        </div>
+
+        <div class="full-divider danger-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Wipe Core Engines</h3>
