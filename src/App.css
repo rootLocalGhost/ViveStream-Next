@@ -232,14 +232,14 @@ body {
   box-shadow: var(--clay-btn-shadow);
 }
 
-input:checked+.slider {
+input:checked + .slider {
   background-color: var(--primary-accent);
   box-shadow:
     inset 4px 4px 8px rgba(0, 0, 0, 0.2),
     inset -4px -4px 8px rgba(255, 255, 255, 0.1);
 }
 
-input:checked+.slider:before {
+input:checked + .slider:before {
   transform: translateX(24px);
   background-color: white;
 }
@@ -494,7 +494,8 @@ input:checked+.slider:before {
 
 /* Layout Elements */
 .app-logo .logo-glow {
-  filter: drop-shadow(0 0 2px var(--primary-accent)) drop-shadow(0 0 6px var(--primary-accent));
+  filter: drop-shadow(0 0 2px var(--primary-accent))
+    drop-shadow(0 0 6px var(--primary-accent));
 }
 
 .setup-loading-screen {
