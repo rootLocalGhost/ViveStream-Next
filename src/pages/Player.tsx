@@ -11,13 +11,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { VideoEntry } from "../store";
 import "./Player.css";
-import "./Player.css";
 
 const formatTime = (timeInSeconds: number) => {
   if (isNaN(timeInSeconds)) return "0:00";
   const h = Math.floor(timeInSeconds / 3600);
   const m = Math.floor((timeInSeconds % 3600) / 60);
   const s = Math.floor(timeInSeconds % 60);
+
   if (h > 0)
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m}:${s.toString().padStart(2, "0")}`;
@@ -30,6 +30,7 @@ export default function Player() {
   const [queue, setQueue] = createSignal<VideoEntry[]>([]);
   const [description, setDescription] = createSignal<string>("");
   const [descExpanded, setDescExpanded] = createSignal(false);
+
   const [theaterMode, setTheaterMode] = createSignal(false);
   const [isFullscreen, setIsFullscreen] = createSignal(false);
   const [showControls, setShowControls] = createSignal(true);
@@ -42,8 +43,18 @@ export default function Player() {
   const [isSeeking, setIsSeeking] = createSignal(false);
   const [isFavorite, setIsFavorite] = createSignal(false);
 
+  // New features state
+  const [showSettingsMenu, setShowSettingsMenu] = createSignal(false);
+  const [showCCMenu, setShowCCMenu] = createSignal(false);
+  const [playbackRate, setPlaybackRate] = createSignal(1.0);
+  const [isLooping, setIsLooping] = createSignal(false);
+  const [subtitlesEnabled, setSubtitlesEnabled] = createSignal(false);
+
   let videoRef: HTMLVideoElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
+  let settingsMenuRef: HTMLDivElement | undefined;
+  let ccMenuRef: HTMLDivElement | undefined;
+
   let controlsTimeout: number;
   let unlistenPlay: UnlistenFn;
   let unlistenPause: UnlistenFn;
@@ -52,15 +63,20 @@ export default function Player() {
 
   const loadVideoData = async (targetId?: string) => {
     if (!targetId) return;
+
     try {
       const db = await invoke<VideoEntry[]>("get_downloaded_videos");
       const currentIndex = db.findIndex((v) => v.id === targetId);
+
       if (currentIndex !== -1) {
         setVideo(db[currentIndex]);
         setDescExpanded(false);
-        const favStatus = await invoke<boolean>("check_favorite", {
+        setSubtitlesEnabled(false);
+
+        const favStatus = await invoke<bool>("check_favorite", {
           id: targetId,
         });
+
         setIsFavorite(favStatus);
 
         try {
@@ -82,9 +98,11 @@ export default function Player() {
             nextVideos.push(db[(currentIndex + i) % db.length]);
           }
         }
+
         const uniqueQueue = Array.from(
           new Set(nextVideos.map((a) => a.id)),
         ).map((id) => nextVideos.find((a) => a.id === id)!);
+
         setQueue(uniqueQueue.filter((v) => v.id !== targetId));
       }
     } catch (e) {
@@ -171,6 +189,11 @@ export default function Player() {
   };
 
   const handleVideoEnd = () => {
+    if (isLooping() && videoRef) {
+      videoRef.currentTime = 0;
+      handlePlay();
+      return;
+    }
     const nextVideo = queue()[0];
     if (nextVideo) navigate(`/player/${nextVideo.id}`);
   };
@@ -179,33 +202,84 @@ export default function Player() {
     setShowControls(true);
     clearTimeout(controlsTimeout);
     if (isPlaying()) {
-      controlsTimeout = window.setTimeout(() => setShowControls(false), 2500);
+      controlsTimeout = window.setTimeout(() => {
+        if (!showSettingsMenu() && !showCCMenu()) {
+          setShowControls(false);
+        }
+      }, 2500);
     }
+  };
+
+  const togglePiP = async () => {
+    if (videoRef) {
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else {
+          await videoRef.requestPictureInPicture();
+        }
+      } catch (err) {
+        console.error("PiP failed", err);
+      }
+    }
+  };
+
+  const toggleCC = () => {
+    if (videoRef && videoRef.textTracks.length > 0) {
+      const state = !subtitlesEnabled();
+      setSubtitlesEnabled(state);
+      for (let i = 0; i < videoRef.textTracks.length; i++) {
+        videoRef.textTracks[i].mode = state ? "showing" : "hidden";
+      }
+    }
+    setShowCCMenu(false);
+  };
+
+  const changeSpeed = (rate: number) => {
+    if (videoRef) {
+      videoRef.playbackRate = rate;
+      setPlaybackRate(rate);
+    }
+    setShowSettingsMenu(false);
   };
 
   onMount(async () => {
     await loadVideoData(params.id);
+
     unlistenPlay = await listen("media-play", () => handlePlay());
     unlistenPause = await listen("media-pause", () => handlePause());
     unlistenNext = await listen("media-next", () => handleVideoEnd());
     unlistenPrev = await listen("media-prev", () => {
       if (videoRef) videoRef.currentTime = 0;
     });
+
     document.addEventListener("fullscreenchange", () => {
       setIsFullscreen(!!document.fullscreenElement);
     });
-  });
 
-  onCleanup(() => {
-    if (unlistenPlay) unlistenPlay();
-    if (unlistenPause) unlistenPause();
-    if (unlistenNext) unlistenNext();
-    if (unlistenPrev) unlistenPrev();
+    const handleClickOutside = (e: MouseEvent) => {
+      if (settingsMenuRef && !settingsMenuRef.contains(e.target as Node)) {
+        setShowSettingsMenu(false);
+      }
+      if (ccMenuRef && !ccMenuRef.contains(e.target as Node)) {
+        setShowCCMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+
+    onCleanup(() => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      if (unlistenPlay) unlistenPlay();
+      if (unlistenPause) unlistenPause();
+      if (unlistenNext) unlistenNext();
+      if (unlistenPrev) unlistenPrev();
+    });
   });
 
   createEffect(() => {
     loadVideoData(params.id);
   });
+
   createEffect(() => {
     if (video() && videoRef) {
       invoke("update_media_metadata", {
@@ -213,12 +287,14 @@ export default function Player() {
         artist: video()!.channel,
       });
       videoRef.currentTime = 0;
+      videoRef.playbackRate = playbackRate();
       handlePlay();
     }
   });
 
   const seekProgress = () =>
     duration() > 0 ? (currentTime() / duration()) * 100 : 0;
+
   const volProgress = () => (isMuted() ? 0 : volume() * 100);
 
   return (
@@ -238,7 +314,12 @@ export default function Player() {
             class="player-video-wrapper"
             ref={playerContainerRef}
             onMouseMove={handleMouseMove}
-            onMouseLeave={() => isPlaying() && setShowControls(false)}
+            onMouseLeave={() =>
+              isPlaying() &&
+              !showSettingsMenu() &&
+              !showCCMenu() &&
+              setShowControls(false)
+            }
           >
             <video
               class="player-video-element"
@@ -257,9 +338,20 @@ export default function Player() {
               onTimeUpdate={(e) => {
                 if (!isSeeking()) setCurrentTime(e.currentTarget.currentTime);
               }}
-              onClick={togglePlay}
+              onClick={() => {
+                setShowSettingsMenu(false);
+                setShowCCMenu(false);
+                togglePlay();
+              }}
               src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
-            />
+            >
+              <track
+                kind="captions"
+                src={`http://127.0.0.1:1422/Videos/${video()!.id}.vtt`}
+                default={subtitlesEnabled()}
+              />
+            </video>
+
             <div
               class={
                 showControls() || !isPlaying()
@@ -319,11 +411,7 @@ export default function Player() {
                         step="0.05"
                         value={isMuted() ? 0 : volume()}
                         onInput={handleVolumeChange}
-                        style={
-                          {
-                            "--progress": `${volProgress()}%`,
-                          } as any
-                        }
+                        style={{ "--progress": `${volProgress()}%` } as any}
                       />
                     </div>
                   </div>
@@ -333,13 +421,104 @@ export default function Player() {
                     {formatTime(duration())}
                   </span>
                 </div>
-                <div class="flex-row-gap gap-4">
-                  <button class="control-btn" title="Subtitles/CC">
+
+                <div class="flex-row-gap gap-4 relative">
+                  {/* CC Menu */}
+                  <div
+                    class={`player-popup-menu ${showCCMenu() ? "visible" : ""}`}
+                    ref={ccMenuRef}
+                  >
+                    <div class="player-popup-header">
+                      <i class="ph-fill ph-closed-captioning"></i> Subtitles
+                    </div>
+                    <button
+                      class={`player-popup-item ${subtitlesEnabled() ? "selected" : ""}`}
+                      onClick={toggleCC}
+                    >
+                      <span>English (Auto)</span>
+                      <Show when={subtitlesEnabled()}>
+                        <i class="ph-fill ph-check-circle"></i>
+                      </Show>
+                    </button>
+                    <button
+                      class={`player-popup-item ${!subtitlesEnabled() ? "selected" : ""}`}
+                      onClick={toggleCC}
+                    >
+                      <span>Off</span>
+                      <Show when={!subtitlesEnabled()}>
+                        <i class="ph-fill ph-check-circle"></i>
+                      </Show>
+                    </button>
+                  </div>
+
+                  {/* Settings Menu */}
+                  <div
+                    class={`player-popup-menu ${showSettingsMenu() ? "visible" : ""}`}
+                    ref={settingsMenuRef}
+                  >
+                    <div class="player-popup-header">
+                      <i class="ph-fill ph-gauge"></i> Speed
+                    </div>
+                    {[0.5, 1.0, 1.5, 2.0].map((rate) => (
+                      <button
+                        class={`player-popup-item ${playbackRate() === rate ? "selected" : ""}`}
+                        onClick={() => changeSpeed(rate)}
+                      >
+                        <span>{rate === 1.0 ? "Normal" : `${rate}x`}</span>
+                        <Show when={playbackRate() === rate}>
+                          <i class="ph-fill ph-check-circle"></i>
+                        </Show>
+                      </button>
+                    ))}
+                    <div class="player-popup-header" style="margin-top: 8px;">
+                      <i class="ph-fill ph-nut"></i> Options
+                    </div>
+                    <button
+                      class={`player-popup-item ${isLooping() ? "selected" : ""}`}
+                      onClick={() => {
+                        setIsLooping(!isLooping());
+                        setShowSettingsMenu(false);
+                      }}
+                    >
+                      <span>Loop Video</span>
+                      <i
+                        class={`ph-fill ph-toggle-${isLooping() ? "right" : "left"}`}
+                      ></i>
+                    </button>
+                    <button
+                      class="player-popup-item"
+                      onClick={() => {
+                        togglePiP();
+                        setShowSettingsMenu(false);
+                      }}
+                    >
+                      <span>Picture in Picture</span>
+                      <i class="ph-fill ph-picture-in-picture"></i>
+                    </button>
+                  </div>
+
+                  <button
+                    class={`control-btn ${subtitlesEnabled() ? "active" : ""}`}
+                    title="Subtitles/CC"
+                    onClick={() => {
+                      setShowCCMenu(!showCCMenu());
+                      setShowSettingsMenu(false);
+                    }}
+                  >
                     <i class="ph-fill ph-closed-captioning"></i>
                   </button>
-                  <button class="control-btn" title="Settings">
+
+                  <button
+                    class="control-btn"
+                    title="Settings"
+                    onClick={() => {
+                      setShowSettingsMenu(!showSettingsMenu());
+                      setShowCCMenu(false);
+                    }}
+                  >
                     <i class="ph-fill ph-gear"></i>
                   </button>
+
                   <button
                     class="control-btn"
                     onClick={() => setTheaterMode(!theaterMode())}
@@ -351,6 +530,7 @@ export default function Player() {
                       }
                     ></i>
                   </button>
+
                   <button
                     class="control-btn"
                     onClick={toggleFullscreen}
@@ -364,6 +544,7 @@ export default function Player() {
               </div>
             </div>
           </div>
+
           <div class="player-meta-block">
             <h1 class="player-title">{video()!.title}</h1>
             <div class="flex-row-between player-meta-row">
@@ -385,6 +566,7 @@ export default function Player() {
                   </h3>
                 </div>
               </div>
+
               <button
                 class={`clay-btn player-favorite-status ${isFavorite() ? "active" : ""}`}
                 onClick={toggleFavoriteStatus}
@@ -424,6 +606,7 @@ export default function Player() {
           </div>
         </Show>
       </div>
+
       <div class="player-sidebar">
         <h3 class="settings-title">Up next</h3>
         <For each={queue()}>
