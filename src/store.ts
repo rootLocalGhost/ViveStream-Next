@@ -1,3 +1,4 @@
+// File: src/store.ts
 import { createSignal } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -49,7 +50,6 @@ export const toggleSidebarHoverMode = (val: boolean) => {
 };
 
 export const [appTheme, setAppTheme] = createSignal(initialTheme);
-
 export const toggleAppTheme = (theme: "light" | "dark") => {
   setAppTheme(theme);
   if (isBrowser) {
@@ -59,7 +59,6 @@ export const toggleAppTheme = (theme: "light" | "dark") => {
 };
 
 export const [appPalette, setAppPalette] = createSignal(initialPalette);
-
 export const toggleAppPalette = (palette: string) => {
   setAppPalette(palette);
   if (isBrowser) {
@@ -71,7 +70,6 @@ export const toggleAppPalette = (palette: string) => {
 export const [concurrentDownloads, setConcurrentDownloads] = createSignal(
   getNum("concurrentDownloads", 3),
 );
-
 export const updateConcurrentDownloads = (val: number) => {
   setConcurrentDownloads(val);
   if (isBrowser)
@@ -82,7 +80,6 @@ export const updateConcurrentDownloads = (val: number) => {
 export const [concurrentFragments, setConcurrentFragments] = createSignal(
   getNum("concurrentFragments", 1),
 );
-
 export const updateConcurrentFragments = (val: number) => {
   setConcurrentFragments(val);
   if (isBrowser)
@@ -92,7 +89,6 @@ export const updateConcurrentFragments = (val: number) => {
 export const [speedLimit, setSpeedLimit] = createSignal(
   getStr("speedLimit", ""),
 );
-
 export const updateSpeedLimit = (val: string) => {
   setSpeedLimit(val);
   if (isBrowser) window.localStorage.setItem("speedLimit", val);
@@ -101,7 +97,6 @@ export const updateSpeedLimit = (val: string) => {
 export const [browserCookies, setBrowserCookies] = createSignal(
   getStr("browserCookies", "None"),
 );
-
 export const updateBrowserCookies = (val: string) => {
   setBrowserCookies(val);
   if (isBrowser) window.localStorage.setItem("browserCookies", val);
@@ -110,7 +105,6 @@ export const updateBrowserCookies = (val: string) => {
 export const [autoSubtitles, setAutoSubtitles] = createSignal(
   getBool("autoSubtitles", false),
 );
-
 export const toggleAutoSubtitles = (val: boolean) => {
   setAutoSubtitles(val);
   if (isBrowser) window.localStorage.setItem("autoSubtitles", val.toString());
@@ -119,7 +113,6 @@ export const toggleAutoSubtitles = (val: boolean) => {
 export const [removeSponsorBlock, setRemoveSponsorBlock] = createSignal(
   getBool("removeSponsorBlock", false),
 );
-
 export const toggleRemoveSponsorBlock = (val: boolean) => {
   setRemoveSponsorBlock(val);
   if (isBrowser)
@@ -129,16 +122,14 @@ export const toggleRemoveSponsorBlock = (val: boolean) => {
 export const [downloadType, setDownloadType] = createSignal(
   getStr("downloadType", "Video"),
 );
-
 export const updateDownloadType = (val: string) => {
   setDownloadType(val);
   if (isBrowser) window.localStorage.setItem("downloadType", val);
 };
 
 export const [dlSubtitles, setDlSubtitles] = createSignal(
-  getBool("dlSubtitles", false),
+  getBool("dlSubtitles", true),
 );
-
 export const toggleDlSubtitles = (val: boolean) => {
   setDlSubtitles(val);
   if (isBrowser) window.localStorage.setItem("dlSubtitles", val.toString());
@@ -147,13 +138,11 @@ export const toggleDlSubtitles = (val: boolean) => {
 export const [liveFromStart, setLiveFromStart] = createSignal(
   getBool("liveFromStart", false),
 );
-
 export const toggleLiveFromStart = (val: boolean) => {
   setLiveFromStart(val);
   if (isBrowser) window.localStorage.setItem("liveFromStart", val.toString());
 };
 
-// GLOBAL APP STATE
 export const [forceSetup, setForceSetup] = createSignal(false);
 
 export interface VideoEntry {
@@ -181,7 +170,6 @@ export const [downloadUrl, setDownloadUrl] = createSignal("");
 export const [downloadQuality, setDownloadQuality] = createSignal(
   getStr("downloadQuality", "1440p"),
 );
-
 export const updateDownloadQuality = (val: string) => {
   setDownloadQuality(val);
   if (isBrowser) window.localStorage.setItem("downloadQuality", val);
@@ -236,25 +224,29 @@ const executeDownload = async (task: DownloadTask) => {
     `download-progress-${task.id}`,
     (event) => {
       const log = event.payload;
+
       setTasks((prev) =>
         prev.map((t) => {
           if (t.id !== task.id) return t;
+
           let newProgress = t.progress;
           let newPhase = t.phase;
 
-          if (log.includes("[download]") && log.includes("%")) {
-            const match = log.match(/\[download\]\s+([\d\.]+)%/);
+          const cleanLog = log.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "");
+
+          if (cleanLog.includes("[download]") && cleanLog.includes("%")) {
+            const match = cleanLog.match(/\[download\][^0-9]*([\d\.]+)%/);
             if (match) {
               newProgress = parseFloat(match[1]);
               newPhase = "Downloading";
             }
           } else if (
-            log.includes("Attempting encoder:") ||
-            log.includes("Starting FFmpeg")
+            cleanLog.includes("Attempting encoder:") ||
+            cleanLog.includes("Starting FFmpeg")
           ) {
             newPhase = "Transcoding (Hardware)";
             newProgress = 100;
-          } else if (log.includes("Success! Transcoded")) {
+          } else if (cleanLog.includes("Success! Transcoded")) {
             newPhase = "Finalizing...";
           }
 
@@ -289,6 +281,7 @@ const executeDownload = async (task: DownloadTask) => {
       phase: "Complete",
       progress: 100,
     });
+
     setTasks((prev) =>
       prev.map((t) =>
         t.id === task.id
