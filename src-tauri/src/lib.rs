@@ -1,3 +1,4 @@
+// File: src-tauri/src/lib.rs
 mod db;
 mod downloader;
 mod media_controls;
@@ -22,6 +23,7 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .setup(|app| {
             let app_handle = app.handle().clone();
+
             if let Err(e) = init_db(&app_handle) {
                 eprintln!("Database initialization error: {}", e);
             }
@@ -33,7 +35,16 @@ pub fn run() {
                 tauri::async_runtime::spawn(async move {
                     let cors = warp::cors()
                         .allow_any_origin()
-                        .allow_methods(vec!["GET", "HEAD"]);
+                        .allow_headers(vec![
+                            "Accept",
+                            "Access-Control-Request-Headers",
+                            "Access-Control-Request-Method",
+                            "Content-Type",
+                            "Origin",
+                            "Range",
+                        ])
+                        .allow_methods(vec!["GET", "HEAD", "OPTIONS"]);
+
                     let routes = warp::fs::dir(base_dir).with(cors);
                     warp::serve(routes).run(([127, 0, 0, 1], 1422)).await;
                 });
@@ -92,12 +103,15 @@ pub fn run() {
                         _ => {}
                     })
                     .unwrap();
+
                 let _ = controls.set_metadata(MediaMetadata {
                     title: Some("ViveStream Idle"),
                     ..Default::default()
                 });
+
                 app.manage(Mutex::new(controls));
             }
+
             Ok(())
         })
         .plugin(tauri_plugin_fs::init())
