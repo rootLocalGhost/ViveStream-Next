@@ -1,3 +1,4 @@
+// File: src/pages/Settings.tsx
 import { createSignal, onMount, onCleanup, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, message } from "@tauri-apps/plugin-dialog";
@@ -22,7 +23,6 @@ import {
   toggleRemoveSponsorBlock,
   setForceSetup,
 } from "../store";
-
 import "./Settings.css";
 
 export default function Settings() {
@@ -31,7 +31,6 @@ export default function Settings() {
   const [cookiesDropdownOpen, setCookiesDropdownOpen] = createSignal(false);
 
   let cookiesRef: HTMLDivElement | undefined;
-
   const cookieOptions = [
     "None",
     "Chrome",
@@ -58,6 +57,7 @@ export default function Settings() {
       "Are you sure you want to delete yt-dlp and FFmpeg? This will break downloads until you restart the app and run the setup again.\n\nYour downloaded videos will NOT be deleted.",
       { title: "Wipe Core Dependencies", kind: "warning" },
     );
+
     if (yes) {
       setLoadingDep(true);
       try {
@@ -82,6 +82,7 @@ export default function Settings() {
       "WARNING: This will permanently delete ALL core engines, your SQLite database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
       { title: "NUCLEAR WIPE", kind: "warning" },
     );
+
     if (yes) {
       setLoadingNuclear(true);
       try {
@@ -108,7 +109,7 @@ export default function Settings() {
       </h2>
 
       <div class="settings-card">
-        {/* Theme Toggle */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Appearance</h3>
@@ -140,7 +141,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Palette Toggle */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Color Palette</h3>
@@ -164,7 +165,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Hover Mode Toggle */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Auto-Expand Sidebar</h3>
@@ -186,8 +187,9 @@ export default function Settings() {
       <h2 class="page-title page-title-spaced">
         <i class="ph-fill ph-sliders"></i> Engine Preferences
       </h2>
+
       <div class="settings-card">
-        {/* Concurrent Downloads Slider */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Downloads</h3>
@@ -200,7 +202,7 @@ export default function Settings() {
               type="range"
               class="setting-slider"
               min="1"
-              max="10"
+              max="5"
               step="1"
               value={concurrentDownloads()}
               onInput={(e) =>
@@ -208,7 +210,7 @@ export default function Settings() {
               }
               style={
                 {
-                  "--progress": `${((concurrentDownloads() - 1) / 9) * 100}%`,
+                  "--progress": `${((concurrentDownloads() - 1) / 4) * 100}%`,
                 } as any
               }
             />
@@ -218,7 +220,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Concurrent Fragments Slider */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Fragments</h3>
@@ -231,7 +233,7 @@ export default function Settings() {
               type="range"
               class="setting-slider"
               min="1"
-              max="10"
+              max="5"
               step="1"
               value={concurrentFragments()}
               onInput={(e) =>
@@ -239,7 +241,7 @@ export default function Settings() {
               }
               style={
                 {
-                  "--progress": `${((concurrentFragments() - 1) / 9) * 100}%`,
+                  "--progress": `${((concurrentFragments() - 1) / 4) * 100}%`,
                 } as any
               }
             />
@@ -249,7 +251,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Speed Limit Input */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
@@ -268,7 +270,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Browser Cookies */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Browser Cookies</h3>
@@ -307,7 +309,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* Subtitles Toggle */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Automatic Subtitles</h3>
@@ -327,7 +329,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {/* SponsorBlock Toggle */}
+        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Remove Sponsored Segments</h3>
@@ -349,6 +351,7 @@ export default function Settings() {
       <h2 class="page-title page-title-spaced page-title-danger">
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
+
       <div class="danger-card">
         <div class="flex-row-between">
           <div>
@@ -365,7 +368,6 @@ export default function Settings() {
             Launch Setup
           </button>
         </div>
-
         <div class="full-divider danger-divider"></div>
 
         <div class="flex-row-between">
