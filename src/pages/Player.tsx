@@ -1,3 +1,4 @@
+// File: src/pages/Player.tsx
 import {
   createSignal,
   onMount,
@@ -17,7 +18,6 @@ const formatTime = (timeInSeconds: number) => {
   const h = Math.floor(timeInSeconds / 3600);
   const m = Math.floor((timeInSeconds % 3600) / 60);
   const s = Math.floor(timeInSeconds % 60);
-
   if (h > 0)
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m}:${s.toString().padStart(2, "0")}`;
@@ -30,7 +30,6 @@ export default function Player() {
   const [queue, setQueue] = createSignal<VideoEntry[]>([]);
   const [description, setDescription] = createSignal<string>("");
   const [descExpanded, setDescExpanded] = createSignal(false);
-
   const [theaterMode, setTheaterMode] = createSignal(false);
   const [isFullscreen, setIsFullscreen] = createSignal(false);
   const [showControls, setShowControls] = createSignal(true);
@@ -42,20 +41,23 @@ export default function Player() {
   const [duration, setDuration] = createSignal(0);
   const [isSeeking, setIsSeeking] = createSignal(false);
   const [isFavorite, setIsFavorite] = createSignal(false);
-
-  // New features state
   const [showSettingsMenu, setShowSettingsMenu] = createSignal(false);
   const [showCCMenu, setShowCCMenu] = createSignal(false);
   const [playbackRate, setPlaybackRate] = createSignal(1.0);
-  const [isLooping, setIsLooping] = createSignal(false);
+  const [autoplay, setAutoplay] = createSignal(true);
+  const [hasSubtitles, setHasSubtitles] = createSignal(false);
   const [subtitlesEnabled, setSubtitlesEnabled] = createSignal(false);
+  const [subColor, setSubColor] = createSignal("#ffffff");
+  const [subBg, setSubBg] = createSignal("rgba(0,0,0,0.8)");
+  const [subSize, setSubSize] = createSignal("18px");
+  const [subPos, setSubPos] = createSignal("-20px");
 
   let videoRef: HTMLVideoElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
   let settingsMenuRef: HTMLDivElement | undefined;
   let ccMenuRef: HTMLDivElement | undefined;
-
   let controlsTimeout: number;
+
   let unlistenPlay: UnlistenFn;
   let unlistenPause: UnlistenFn;
   let unlistenNext: UnlistenFn;
@@ -63,7 +65,6 @@ export default function Player() {
 
   const loadVideoData = async (targetId?: string) => {
     if (!targetId) return;
-
     try {
       const db = await invoke<VideoEntry[]>("get_downloaded_videos");
       const currentIndex = db.findIndex((v) => v.id === targetId);
@@ -73,10 +74,9 @@ export default function Player() {
         setDescExpanded(false);
         setSubtitlesEnabled(false);
 
-        const favStatus = await invoke<bool>("check_favorite", {
+        const favStatus = await invoke<boolean>("check_favorite", {
           id: targetId,
         });
-
         setIsFavorite(favStatus);
 
         try {
@@ -92,18 +92,25 @@ export default function Player() {
           setDescription("No description available.");
         }
 
-        const nextVideos: VideoEntry[] = [];
-        for (let i = 1; i <= 15; i++) {
-          if (db[(currentIndex + i) % db.length]) {
-            nextVideos.push(db[(currentIndex + i) % db.length]);
+        try {
+          const subRes = await fetch(
+            `http://127.0.0.1:1422/Videos/${targetId}.vtt`,
+          );
+          if (subRes.ok) {
+            const text = await subRes.text();
+            setHasSubtitles(text.trim().length > 15);
+          } else {
+            setHasSubtitles(false);
           }
+        } catch {
+          setHasSubtitles(false);
         }
 
-        const uniqueQueue = Array.from(
-          new Set(nextVideos.map((a) => a.id)),
-        ).map((id) => nextVideos.find((a) => a.id === id)!);
-
-        setQueue(uniqueQueue.filter((v) => v.id !== targetId));
+        const queueList = [
+          ...db.slice(currentIndex + 1),
+          ...db.slice(0, currentIndex),
+        ];
+        setQueue(queueList);
       }
     } catch (e) {
       console.error("Could not load video library", e);
@@ -145,6 +152,16 @@ export default function Player() {
   };
 
   const togglePlay = () => (isPlaying() ? handlePause() : handlePlay());
+
+  const playNext = () => {
+    const nextVideo = queue()[0];
+    if (nextVideo) navigate(`/player/${nextVideo.id}`);
+  };
+
+  const playPrev = () => {
+    const prevVideo = queue()[queue().length - 1];
+    if (prevVideo) navigate(`/player/${prevVideo.id}`);
+  };
 
   const toggleMute = () => {
     if (videoRef) {
@@ -189,13 +206,12 @@ export default function Player() {
   };
 
   const handleVideoEnd = () => {
-    if (isLooping() && videoRef) {
+    if (!autoplay() && videoRef) {
       videoRef.currentTime = 0;
       handlePlay();
       return;
     }
-    const nextVideo = queue()[0];
-    if (nextVideo) navigate(`/player/${nextVideo.id}`);
+    playNext();
   };
 
   const handleMouseMove = () => {
@@ -232,7 +248,6 @@ export default function Player() {
         videoRef.textTracks[i].mode = state ? "showing" : "hidden";
       }
     }
-    setShowCCMenu(false);
   };
 
   const changeSpeed = (rate: number) => {
@@ -245,13 +260,10 @@ export default function Player() {
 
   onMount(async () => {
     await loadVideoData(params.id);
-
     unlistenPlay = await listen("media-play", () => handlePlay());
     unlistenPause = await listen("media-pause", () => handlePause());
-    unlistenNext = await listen("media-next", () => handleVideoEnd());
-    unlistenPrev = await listen("media-prev", () => {
-      if (videoRef) videoRef.currentTime = 0;
-    });
+    unlistenNext = await listen("media-next", () => playNext());
+    unlistenPrev = await listen("media-prev", () => playPrev());
 
     document.addEventListener("fullscreenchange", () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -294,7 +306,6 @@ export default function Player() {
 
   const seekProgress = () =>
     duration() > 0 ? (currentTime() / duration()) * 100 : 0;
-
   const volProgress = () => (isMuted() ? 0 : volume() * 100);
 
   return (
@@ -325,6 +336,7 @@ export default function Player() {
               class="player-video-element"
               ref={videoRef}
               preload="auto"
+              crossorigin="anonymous"
               onEnded={handleVideoEnd}
               onPlay={() => {
                 invoke("update_playback_status", { playing: true });
@@ -344,6 +356,14 @@ export default function Player() {
                 togglePlay();
               }}
               src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
+              style={
+                {
+                  "--sub-color": subColor(),
+                  "--sub-bg": subBg(),
+                  "--sub-size": subSize(),
+                  "--sub-pos": subPos(),
+                } as any
+              }
             >
               <track
                 kind="captions"
@@ -371,8 +391,16 @@ export default function Player() {
                 onMouseUp={() => setIsSeeking(false)}
                 style={{ "--progress": `${seekProgress()}%` } as any}
               />
+
               <div class="flex-row-between player-controls-bar">
                 <div class="flex-row-gap gap-4">
+                  <button
+                    class="control-btn"
+                    onClick={playPrev}
+                    title="Previous"
+                  >
+                    <i class="ph-fill ph-skip-back"></i>
+                  </button>
                   <button
                     class="control-btn"
                     onClick={togglePlay}
@@ -382,6 +410,10 @@ export default function Player() {
                       class={`ph-fill ph-${isPlaying() ? "pause" : "play"}`}
                     ></i>
                   </button>
+                  <button class="control-btn" onClick={playNext} title="Next">
+                    <i class="ph-fill ph-skip-forward"></i>
+                  </button>
+
                   <div
                     class="volume-control-group"
                     onMouseEnter={() => setIsVolumeHovered(true)}
@@ -415,6 +447,7 @@ export default function Player() {
                       />
                     </div>
                   </div>
+
                   <span class="player-timecode">
                     {formatTime(currentTime())}{" "}
                     <span class="player-timecode-separator">/</span>{" "}
@@ -423,13 +456,24 @@ export default function Player() {
                 </div>
 
                 <div class="flex-row-gap gap-4 relative">
-                  {/* CC Menu */}
+                  <button
+                    class={`control-btn ${autoplay() ? "active" : ""}`}
+                    onClick={() => setAutoplay(!autoplay())}
+                    title={
+                      autoplay() ? "Autoplay On" : "Autoplay Off (Loop Video)"
+                    }
+                  >
+                    <i
+                      class={`ph-fill ph-${autoplay() ? "play-circle" : "repeat"}`}
+                    ></i>
+                  </button>
+
                   <div
                     class={`player-popup-menu ${showCCMenu() ? "visible" : ""}`}
                     ref={ccMenuRef}
                   >
                     <div class="player-popup-header">
-                      <i class="ph-fill ph-closed-captioning"></i> Subtitles
+                      <i class="ph-fill ph-closed-captioning"></i> Visibility
                     </div>
                     <button
                       class={`player-popup-item ${subtitlesEnabled() ? "selected" : ""}`}
@@ -449,9 +493,54 @@ export default function Player() {
                         <i class="ph-fill ph-check-circle"></i>
                       </Show>
                     </button>
+
+                    <div class="player-popup-header" style="margin-top: 8px;">
+                      <i class="ph-fill ph-palette"></i> Customize
+                    </div>
+                    <div class="subtitle-customization-row">
+                      <label>Color</label>
+                      <input
+                        type="color"
+                        value={subColor()}
+                        onInput={(e) => setSubColor(e.target.value)}
+                      />
+                    </div>
+                    <div class="subtitle-customization-row">
+                      <label>Background</label>
+                      <select
+                        value={subBg()}
+                        onChange={(e) => setSubBg(e.target.value)}
+                      >
+                        <option value="rgba(0,0,0,0.8)">Dark</option>
+                        <option value="transparent">Transparent</option>
+                        <option value="rgba(255,255,255,0.8)">Light</option>
+                      </select>
+                    </div>
+                    <div class="subtitle-customization-row">
+                      <label>Size</label>
+                      <select
+                        value={subSize()}
+                        onChange={(e) => setSubSize(e.target.value)}
+                      >
+                        <option value="14px">Small</option>
+                        <option value="18px">Medium</option>
+                        <option value="24px">Large</option>
+                        <option value="32px">Extra Large</option>
+                      </select>
+                    </div>
+                    <div class="subtitle-customization-row">
+                      <label>Position</label>
+                      <select
+                        value={subPos()}
+                        onChange={(e) => setSubPos(e.target.value)}
+                      >
+                        <option value="-20px">Bottom</option>
+                        <option value="-35vh">Middle</option>
+                        <option value="-75vh">Top</option>
+                      </select>
+                    </div>
                   </div>
 
-                  {/* Settings Menu */}
                   <div
                     class={`player-popup-menu ${showSettingsMenu() ? "visible" : ""}`}
                     ref={settingsMenuRef}
@@ -474,18 +563,6 @@ export default function Player() {
                       <i class="ph-fill ph-nut"></i> Options
                     </div>
                     <button
-                      class={`player-popup-item ${isLooping() ? "selected" : ""}`}
-                      onClick={() => {
-                        setIsLooping(!isLooping());
-                        setShowSettingsMenu(false);
-                      }}
-                    >
-                      <span>Loop Video</span>
-                      <i
-                        class={`ph-fill ph-toggle-${isLooping() ? "right" : "left"}`}
-                      ></i>
-                    </button>
-                    <button
                       class="player-popup-item"
                       onClick={() => {
                         togglePiP();
@@ -499,13 +576,35 @@ export default function Player() {
 
                   <button
                     class={`control-btn ${subtitlesEnabled() ? "active" : ""}`}
-                    title="Subtitles/CC"
+                    title={
+                      hasSubtitles() ? "Subtitles/CC" : "No Subtitles Available"
+                    }
                     onClick={() => {
-                      setShowCCMenu(!showCCMenu());
-                      setShowSettingsMenu(false);
+                      if (hasSubtitles()) {
+                        setShowCCMenu(!showCCMenu());
+                        setShowSettingsMenu(false);
+                      }
                     }}
+                    style={
+                      !hasSubtitles()
+                        ? { opacity: 0.3, cursor: "not-allowed" }
+                        : {}
+                    }
                   >
                     <i class="ph-fill ph-closed-captioning"></i>
+                    <Show when={hasSubtitles() && !subtitlesEnabled()}>
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "6px",
+                          right: "6px",
+                          width: "6px",
+                          height: "6px",
+                          background: "var(--primary-accent)",
+                          borderRadius: "50%",
+                        }}
+                      ></div>
+                    </Show>
                   </button>
 
                   <button
@@ -566,7 +665,6 @@ export default function Player() {
                   </h3>
                 </div>
               </div>
-
               <button
                 class={`clay-btn player-favorite-status ${isFavorite() ? "active" : ""}`}
                 onClick={toggleFavoriteStatus}
@@ -590,7 +688,6 @@ export default function Player() {
                 <span>Local Hardware Library</span>
               </div>
               <div>{description()}</div>
-
               <Show when={descExpanded()}>
                 <div
                   class="desc-toggle"
