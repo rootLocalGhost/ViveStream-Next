@@ -23,14 +23,11 @@ pub async fn wipe_dependencies(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
-    let bin_dir = get_bin_dir(&app)?;
-    if bin_dir.exists() {
-        let _ = fs::remove_dir_all(&bin_dir);
-    }
+pub async fn clean_database_and_media(app: AppHandle) -> Result<(), String> {
     if let Ok(conn) = get_db_connection(&app) {
         let _ = conn.execute_batch("DELETE FROM Playlist_Videos; DELETE FROM Playlists; DELETE FROM Videos; DELETE FROM Artists;");
     }
+
     let base_dir = get_base_dir(&app)?;
     if base_dir.exists() {
         let _ = fs::remove_dir_all(base_dir.join("Videos"));
@@ -38,5 +35,27 @@ pub async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
         let _ = fs::remove_dir_all(base_dir.join("Descriptions"));
         let _ = fs::remove_dir_all(base_dir.join("Avatars"));
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
+    let bin_dir = get_bin_dir(&app)?;
+    if bin_dir.exists() {
+        let _ = fs::remove_dir_all(&bin_dir);
+    }
+
+    if let Ok(conn) = get_db_connection(&app) {
+        let _ = conn.execute_batch("DELETE FROM Playlist_Videos; DELETE FROM Playlists; DELETE FROM Videos; DELETE FROM Artists;");
+    }
+
+    let base_dir = get_base_dir(&app)?;
+    if base_dir.exists() {
+        let _ = fs::remove_dir_all(base_dir.join("Videos"));
+        let _ = fs::remove_dir_all(base_dir.join("Thumbnails"));
+        let _ = fs::remove_dir_all(base_dir.join("Descriptions"));
+        let _ = fs::remove_dir_all(base_dir.join("Avatars"));
+    }
+
     Ok(())
 }
