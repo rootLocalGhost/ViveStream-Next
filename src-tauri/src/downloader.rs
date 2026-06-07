@@ -1,3 +1,4 @@
+// File: src-tauri/src/downloader.rs
 use crate::db::get_db_connection;
 use crate::models::{BinaryCheckStatus, VideoEntry};
 use crate::system::{get_base_dir, get_bin_dir};
@@ -10,7 +11,6 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Instant;
 use tauri::{AppHandle, Emitter};
-use tauri_plugin_dialog::DialogExt;
 
 pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
@@ -220,14 +220,13 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     let _ = fs::remove_file(temp_path);
-    emit_progress("FFmpeg and FFprobe extracted perfectly.");
 
-    app.dialog()
-        .message("Deployment complete. ViveStream will now restart to initialize engines.")
-        .kind(tauri_plugin_dialog::MessageDialogKind::Info)
-        .show(move |_| {
-            app.restart();
-        });
+    emit_progress("[RESTART]");
+
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(4));
+        app.restart();
+    });
 
     Ok(())
 }
@@ -505,14 +504,14 @@ pub async fn download_video(
         let encoders = if cfg!(target_os = "windows") {
             vec![
                 (
-                    "Intel QSV (AV1 - ARC Optimised)",
+                    "Intel QSV (H.264 - ARC Optimised)",
                     vec![
                         "-init_hw_device",
                         "qsv=hw",
                         "-filter_hw_device",
                         "hw",
                         "-c:v",
-                        "av1_qsv",
+                        "h264_qsv",
                         "-preset",
                         "fast",
                         "-b:v",
@@ -520,8 +519,8 @@ pub async fn download_video(
                     ],
                 ),
                 (
-                    "NVIDIA NVENC (AV1)",
-                    vec!["-c:v", "av1_nvenc", "-preset", "p4", "-b:v", "5M"],
+                    "NVIDIA NVENC (H.264)",
+                    vec!["-c:v", "h264_nvenc", "-preset", "p4", "-b:v", "5M"],
                 ),
                 (
                     "CPU (libx264)",
@@ -531,27 +530,27 @@ pub async fn download_video(
         } else {
             vec![
                 (
-                    "VAAPI (AV1 - Linux/Intel/AMD)",
+                    "VAAPI (H.264 - Linux/Intel/AMD)",
                     vec![
                         "-vaapi_device",
                         "/dev/dri/renderD128",
                         "-vf",
                         "format=nv12,hwupload",
                         "-c:v",
-                        "av1_vaapi",
+                        "h264_vaapi",
                         "-b:v",
                         "5M",
                     ],
                 ),
                 (
-                    "Intel QSV (AV1 - Linux fallback)",
+                    "Intel QSV (H.264 - Linux fallback)",
                     vec![
                         "-init_hw_device",
                         "qsv=hw",
                         "-filter_hw_device",
                         "hw",
                         "-c:v",
-                        "av1_qsv",
+                        "h264_qsv",
                         "-preset",
                         "fast",
                         "-b:v",
@@ -559,8 +558,8 @@ pub async fn download_video(
                     ],
                 ),
                 (
-                    "NVIDIA NVENC (AV1)",
-                    vec!["-c:v", "av1_nvenc", "-preset", "p4", "-b:v", "5M"],
+                    "NVIDIA NVENC (H.264)",
+                    vec!["-c:v", "h264_nvenc", "-preset", "p4", "-b:v", "5M"],
                 ),
                 (
                     "CPU (libx264)",
