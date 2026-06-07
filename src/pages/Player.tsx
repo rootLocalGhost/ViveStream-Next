@@ -58,10 +58,10 @@ export default function Player() {
   let ccMenuRef: HTMLDivElement | undefined;
   let controlsTimeout: number;
 
-  let unlistenPlay: UnlistenFn;
-  let unlistenPause: UnlistenFn;
-  let unlistenNext: UnlistenFn;
-  let unlistenPrev: UnlistenFn;
+  let unlistenPlay: UnlistenFn | undefined;
+  let unlistenPause: UnlistenFn | undefined;
+  let unlistenNext: UnlistenFn | undefined;
+  let unlistenPrev: UnlistenFn | undefined;
 
   const loadVideoData = async (targetId?: string) => {
     if (!targetId) return;
@@ -159,6 +159,10 @@ export default function Player() {
   };
 
   const playPrev = () => {
+    if (videoRef && videoRef.currentTime > 3) {
+      videoRef.currentTime = 0;
+      return;
+    }
     const prevVideo = queue()[queue().length - 1];
     if (prevVideo) navigate(`/player/${prevVideo.id}`);
   };
@@ -258,17 +262,8 @@ export default function Player() {
     setShowSettingsMenu(false);
   };
 
-  onMount(async () => {
-    await loadVideoData(params.id);
-    unlistenPlay = await listen("media-play", () => handlePlay());
-    unlistenPause = await listen("media-pause", () => handlePause());
-    unlistenNext = await listen("media-next", () => playNext());
-    unlistenPrev = await listen("media-prev", () => playPrev());
-
-    document.addEventListener("fullscreenchange", () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    });
-
+  onMount(() => {
+    // Pure synchronous event listeners and cleanups
     const handleClickOutside = (e: MouseEvent) => {
       if (settingsMenuRef && !settingsMenuRef.contains(e.target as Node)) {
         setShowSettingsMenu(false);
@@ -279,8 +274,20 @@ export default function Player() {
     };
     document.addEventListener("mousedown", handleClickOutside);
 
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    // Setup Tauri listeners synchronously with promises
+    listen("media-play", () => handlePlay()).then((f) => (unlistenPlay = f));
+    listen("media-pause", () => handlePause()).then((f) => (unlistenPause = f));
+    listen("media-next", () => playNext()).then((f) => (unlistenNext = f));
+    listen("media-prev", () => playPrev()).then((f) => (unlistenPrev = f));
+
     onCleanup(() => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
       if (unlistenPlay) unlistenPlay();
       if (unlistenPause) unlistenPause();
       if (unlistenNext) unlistenNext();
@@ -294,11 +301,12 @@ export default function Player() {
 
   createEffect(() => {
     if (video() && videoRef) {
+      // Force the video engine to reload when the source changes
+      videoRef.load();
       invoke("update_media_metadata", {
         title: video()!.title,
         artist: video()!.channel,
       });
-      videoRef.currentTime = 0;
       videoRef.playbackRate = playbackRate();
       handlePlay();
     }
@@ -601,7 +609,7 @@ export default function Player() {
                           width: "6px",
                           height: "6px",
                           background: "var(--primary-accent)",
-                          borderRadius: "50%",
+                          borderadius: "50%",
                         }}
                       ></div>
                     </Show>
