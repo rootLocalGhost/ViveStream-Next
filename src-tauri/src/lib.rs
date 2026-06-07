@@ -135,6 +135,7 @@ pub fn run() {
             remove_video_from_playlist,
             get_playlist_videos,
             wipe_dependencies,
+            clean_database_and_media,
             nuclear_wipe,
             update_media_metadata,
             update_playback_status
