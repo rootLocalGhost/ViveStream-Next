@@ -31,9 +31,58 @@ if (isBrowser) {
   document.documentElement.setAttribute("data-palette", initialPalette);
 }
 
+// --- Notification System State ---
+export interface Toast {
+  id: string;
+  message: string;
+  type: "info" | "error" | "success";
+}
+
+export const [toasts, setToasts] = createSignal<Toast[]>([]);
+
+export const addToast = (
+  message: string,
+  type: "info" | "error" | "success" = "info",
+) => {
+  const id = Math.random().toString(36).substring(2, 9);
+  setToasts((prev) => [...prev, { id, message, type }]);
+  setTimeout(() => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, 4500);
+};
+
+export interface DialogState {
+  title: string;
+  message: string;
+  type: "info" | "warning" | "error";
+  resolve: (value: boolean) => void;
+}
+
+export const [dialogState, setDialogState] = createSignal<DialogState | null>(
+  null,
+);
+
+export const showConfirmDialog = (
+  message: string,
+  title: string,
+  type: "info" | "warning" | "error" = "info",
+): Promise<boolean> => {
+  return new Promise((resolve) => {
+    setDialogState({ title, message, type, resolve });
+  });
+};
+
+export const closeDialog = (result: boolean) => {
+  const state = dialogState();
+  if (state) {
+    state.resolve(result);
+    setDialogState(null);
+  }
+};
+// ---------------------------------
+
 export const [useAnimatedIcons, setUseAnimatedIcons] =
   createSignal(initialAnimState);
-
 export const toggleAnimatedIcons = (val: boolean) => {
   setUseAnimatedIcons(val);
   if (isBrowser)
@@ -42,7 +91,6 @@ export const toggleAnimatedIcons = (val: boolean) => {
 
 export const [sidebarHoverMode, setSidebarHoverMode] =
   createSignal(initialHoverState);
-
 export const toggleSidebarHoverMode = (val: boolean) => {
   setSidebarHoverMode(val);
   if (isBrowser)
@@ -166,7 +214,6 @@ export interface DownloadTask {
 }
 
 export const [downloadUrl, setDownloadUrl] = createSignal("");
-
 export const [downloadQuality, setDownloadQuality] = createSignal(
   getStr("downloadQuality", "1440p"),
 );
@@ -231,7 +278,6 @@ const executeDownload = async (task: DownloadTask) => {
 
           let newProgress = t.progress;
           let newPhase = t.phase;
-
           const cleanLog = log.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "");
 
           if (cleanLog.includes("[download]") && cleanLog.includes("%")) {
@@ -313,7 +359,6 @@ export const startDownloadQueue = async () => {
     const metadataList = await invoke<VideoEntry[]>("get_video_metadata", {
       url: targetUrl,
     });
-
     const newTasks: DownloadTask[] = metadataList.map((meta) => ({
       id: meta.id,
       title: meta.title,
@@ -330,6 +375,7 @@ export const startDownloadQueue = async () => {
     processQueue();
   } catch (e) {
     console.error("Queue Initialization Error:", e);
+    addToast(`Failed to initialize download: ${e}`, "error");
     setIsProcessingQueue(false);
   }
 };
