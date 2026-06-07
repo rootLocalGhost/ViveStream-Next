@@ -1,7 +1,5 @@
-// File: src/pages/Settings.tsx
 import { createSignal, onMount, onCleanup, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
-import { ask, message } from "@tauri-apps/plugin-dialog";
 import {
   appTheme,
   toggleAppTheme,
@@ -22,12 +20,16 @@ import {
   removeSponsorBlock,
   toggleRemoveSponsorBlock,
   setForceSetup,
+  showConfirmDialog,
+  addToast,
 } from "../store";
 import "./Settings.css";
 
 export default function Settings() {
   const [loadingDep, setLoadingDep] = createSignal(false);
+  const [loadingClean, setLoadingClean] = createSignal(false);
   const [loadingNuclear, setLoadingNuclear] = createSignal(false);
+  const [loadingUpdate, setLoadingUpdate] = createSignal(false);
   const [cookiesDropdownOpen, setCookiesDropdownOpen] = createSignal(false);
 
   let cookiesRef: HTMLDivElement | undefined;
@@ -52,50 +54,81 @@ export default function Settings() {
     );
   });
 
+  const handleUpdateBinaries = async () => {
+    setLoadingUpdate(true);
+    try {
+      await invoke("update_binaries");
+      addToast(
+        "Core engines (yt-dlp and FFmpeg) have been successfully updated to the latest versions.",
+        "success",
+      );
+    } catch (e) {
+      addToast(`Update failed: ${e}`, "error");
+    } finally {
+      setLoadingUpdate(false);
+    }
+  };
+
   const handleWipeDependencies = async () => {
-    const yes = await ask(
+    const yes = await showConfirmDialog(
       "Are you sure you want to delete yt-dlp and FFmpeg? This will break downloads until you restart the app and run the setup again.\n\nYour downloaded videos will NOT be deleted.",
-      { title: "Wipe Core Dependencies", kind: "warning" },
+      "Wipe Core Dependencies",
+      "warning",
     );
 
     if (yes) {
       setLoadingDep(true);
       try {
         await invoke("wipe_dependencies");
-        await message(
+        addToast(
           "Dependencies wiped successfully. Restart ViveStream to trigger setup.",
-          { title: "Success", kind: "info" },
+          "info",
         );
       } catch (e) {
-        await message(`Failed to wipe dependencies: ${e}`, {
-          title: "Error",
-          kind: "error",
-        });
+        addToast(`Failed to wipe dependencies: ${e}`, "error");
       } finally {
         setLoadingDep(false);
       }
     }
   };
 
+  const handleCleanDatabase = async () => {
+    const yes = await showConfirmDialog(
+      "WARNING: This will permanently delete your SQLite database and all downloaded videos/media.\n\nYour core engines (yt-dlp/ffmpeg) will be kept. Are you sure?",
+      "Clean Database & Media",
+      "warning",
+    );
+
+    if (yes) {
+      setLoadingClean(true);
+      try {
+        await invoke("clean_database_and_media");
+        addToast("Database and media have been successfully cleaned.", "info");
+      } catch (e) {
+        addToast(`Clean failed: ${e}`, "error");
+      } finally {
+        setLoadingClean(false);
+      }
+    }
+  };
+
   const handleNuclearWipe = async () => {
-    const yes = await ask(
+    const yes = await showConfirmDialog(
       "WARNING: This will permanently delete ALL core engines, your SQLite database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
-      { title: "NUCLEAR WIPE", kind: "warning" },
+      "NUCLEAR WIPE",
+      "error",
     );
 
     if (yes) {
       setLoadingNuclear(true);
       try {
         await invoke("nuclear_wipe");
-        await message(
+        addToast(
           "Nuclear wipe complete. All app data and videos have been destroyed. You can now safely uninstall the application from your OS.",
-          { title: "Wipe Complete", kind: "info" },
+          "info",
         );
       } catch (e) {
-        await message(`Nuclear wipe failed or was partially blocked: ${e}`, {
-          title: "Error",
-          kind: "error",
-        });
+        addToast(`Nuclear wipe failed or was partially blocked: ${e}`, "error");
       } finally {
         setLoadingNuclear(false);
       }
@@ -109,7 +142,6 @@ export default function Settings() {
       </h2>
 
       <div class="settings-card">
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Appearance</h3>
@@ -141,7 +173,6 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Color Palette</h3>
@@ -165,7 +196,6 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Auto-Expand Sidebar</h3>
@@ -189,7 +219,6 @@ export default function Settings() {
       </h2>
 
       <div class="settings-card">
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Downloads</h3>
@@ -220,7 +249,6 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Fragments</h3>
@@ -251,7 +279,6 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
@@ -270,7 +297,6 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Browser Cookies</h3>
@@ -309,7 +335,6 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Automatic Subtitles</h3>
@@ -329,7 +354,6 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        {}
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Remove Sponsored Segments</h3>
@@ -357,8 +381,8 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Force Setup Screen</h3>
             <p class="settings-desc">
-              Launch the deployment screen to force an engine update or test
-              setup rendering without deleting existing files.
+              Launch the deployment screen to test setup rendering without
+              deleting existing files.
             </p>
           </div>
           <button
@@ -368,23 +392,82 @@ export default function Settings() {
             Launch Setup
           </button>
         </div>
+
+        <div class="full-divider danger-divider"></div>
+
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Update Core Engines</h3>
+            <p class="settings-desc">
+              Checks for, downloads, and overrides your current copies of
+              `yt-dlp` and `ffmpeg` with their latest stable releases.
+            </p>
+          </div>
+          <button
+            onClick={handleUpdateBinaries}
+            disabled={
+              loadingUpdate() ||
+              loadingDep() ||
+              loadingClean() ||
+              loadingNuclear()
+            }
+            class="command-btn secondary"
+          >
+            <i
+              class={`ph-fill ${loadingUpdate() ? "ph-spinner spinIcon" : "ph-arrow-clockwise"}`}
+            ></i>
+            {loadingUpdate() ? "Updating..." : "Update Engines"}
+          </button>
+        </div>
+
         <div class="full-divider danger-divider"></div>
 
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Wipe Core Engines</h3>
             <p class="settings-desc">
-              Deletes `yt-dlp` and `ffmpeg` from your hidden app data. Use this
-              to force a clean re-download of the core engines.{" "}
+              Deletes `yt-dlp` and `ffmpeg` from your hidden app data.{" "}
               <strong>Does not delete videos.</strong>
             </p>
           </div>
           <button
             onClick={handleWipeDependencies}
-            disabled={loadingDep() || loadingNuclear()}
+            disabled={
+              loadingDep() ||
+              loadingUpdate() ||
+              loadingClean() ||
+              loadingNuclear()
+            }
             class="command-btn secondary"
           >
             {loadingDep() ? "Wiping..." : "Wipe Engines"}
+          </button>
+        </div>
+
+        <div class="full-divider danger-divider"></div>
+
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title danger">Clean Database & Media</h3>
+            <p class="settings-desc">
+              Deletes all downloaded videos, audio, and clears the SQLite
+              database. <strong>Keeps core engines intact.</strong>
+            </p>
+          </div>
+          <button
+            onClick={handleCleanDatabase}
+            disabled={
+              loadingClean() ||
+              loadingUpdate() ||
+              loadingDep() ||
+              loadingNuclear()
+            }
+            class="command-btn danger"
+          >
+            <i
+              class={`ph-fill ${loadingClean() ? "ph-spinner spinIcon" : "ph-trash"}`}
+            ></i>
+            {loadingClean() ? "Cleaning..." : "Clean Data"}
           </button>
         </div>
 
@@ -397,17 +480,21 @@ export default function Settings() {
             </h3>
             <p class="settings-desc">
               Permanently destroys the SQLite database, all core engines, and{" "}
-              <strong>ALL gigabytes of downloaded video/audio</strong>. Run this
-              before uninstalling the OS app.
+              <strong>ALL gigabytes of downloaded video/audio</strong>.
             </p>
           </div>
           <button
             onClick={handleNuclearWipe}
-            disabled={loadingNuclear() || loadingDep()}
+            disabled={
+              loadingNuclear() ||
+              loadingUpdate() ||
+              loadingClean() ||
+              loadingDep()
+            }
             class="command-btn danger"
           >
             <i
-              class={`ph-fill ${loadingNuclear() ? "ph-spinner spinIcon" : "ph-trash"}`}
+              class={`ph-fill ${loadingNuclear() ? "ph-spinner spinIcon" : "ph-warning-circle"}`}
             ></i>
             {loadingNuclear() ? "Destroying..." : "Delete Media & Database"}
           </button>
