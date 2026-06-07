@@ -30,9 +30,10 @@ export default function Settings() {
   const [loadingClean, setLoadingClean] = createSignal(false);
   const [loadingNuclear, setLoadingNuclear] = createSignal(false);
   const [loadingUpdate, setLoadingUpdate] = createSignal(false);
+  const [loadingReindex, setLoadingReindex] = createSignal(false);
   const [cookiesDropdownOpen, setCookiesDropdownOpen] = createSignal(false);
-
   let cookiesRef: HTMLDivElement | undefined;
+
   const cookieOptions = [
     "None",
     "Chrome",
@@ -69,13 +70,24 @@ export default function Settings() {
     }
   };
 
+  const handleReindexLibrary = async () => {
+    setLoadingReindex(true);
+    try {
+      const result = await invoke<string>("reindex_library");
+      addToast(result, "success");
+    } catch (e) {
+      addToast(`Re-indexing task failed: ${e}`, "error");
+    } finally {
+      setLoadingReindex(false);
+    }
+  };
+
   const handleWipeDependencies = async () => {
     const yes = await showConfirmDialog(
       "Are you sure you want to delete yt-dlp and FFmpeg? This will break downloads until you restart the app and run the setup again.\n\nYour downloaded videos will NOT be deleted.",
       "Wipe Core Dependencies",
       "warning",
     );
-
     if (yes) {
       setLoadingDep(true);
       try {
@@ -98,7 +110,6 @@ export default function Settings() {
       "Clean Database & Media",
       "warning",
     );
-
     if (yes) {
       setLoadingClean(true);
       try {
@@ -118,7 +129,6 @@ export default function Settings() {
       "NUCLEAR WIPE",
       "error",
     );
-
     if (yes) {
       setLoadingNuclear(true);
       try {
@@ -140,7 +150,6 @@ export default function Settings() {
       <h2 class="page-title">
         <i class="ph-fill ph-gear"></i> Settings
       </h2>
-
       <div class="settings-card">
         <div class="flex-row-between">
           <div>
@@ -170,9 +179,7 @@ export default function Settings() {
             </button>
           </div>
         </div>
-
         <div class="full-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Color Palette</h3>
@@ -193,9 +200,7 @@ export default function Settings() {
             </button>
           </div>
         </div>
-
         <div class="full-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Auto-Expand Sidebar</h3>
@@ -217,7 +222,6 @@ export default function Settings() {
       <h2 class="page-title page-title-spaced">
         <i class="ph-fill ph-sliders"></i> Engine Preferences
       </h2>
-
       <div class="settings-card">
         <div class="flex-row-between">
           <div>
@@ -246,9 +250,7 @@ export default function Settings() {
             <span class="slider-val">{concurrentDownloads()}</span>
           </div>
         </div>
-
         <div class="full-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Fragments</h3>
@@ -276,9 +278,7 @@ export default function Settings() {
             <span class="slider-val">{concurrentFragments()}</span>
           </div>
         </div>
-
         <div class="full-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
@@ -294,9 +294,7 @@ export default function Settings() {
             onInput={(e) => updateSpeedLimit(e.target.value)}
           />
         </div>
-
         <div class="full-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Browser Cookies</h3>
@@ -332,9 +330,7 @@ export default function Settings() {
             </div>
           </div>
         </div>
-
         <div class="full-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Automatic Subtitles</h3>
@@ -351,9 +347,7 @@ export default function Settings() {
             <span class="slider"></span>
           </label>
         </div>
-
         <div class="full-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Remove Sponsored Segments</h3>
@@ -370,12 +364,37 @@ export default function Settings() {
             <span class="slider"></span>
           </label>
         </div>
+        <div class="full-divider"></div>
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Re-index Local Storage</h3>
+            <p class="settings-desc">
+              Scans your video directory to re-align metadata profiles and clean
+              orphan database links.
+            </p>
+          </div>
+          <button
+            onClick={handleReindexLibrary}
+            disabled={
+              loadingReindex() ||
+              loadingUpdate() ||
+              loadingDep() ||
+              loadingClean() ||
+              loadingNuclear()
+            }
+            class="command-btn secondary"
+          >
+            <i
+              class={`ph-fill ${loadingReindex() ? "ph-spinner spinIcon" : "ph-database"}`}
+            ></i>
+            {loadingReindex() ? "Re-indexing..." : "Re-index Library"}
+          </button>
+        </div>
       </div>
 
       <h2 class="page-title page-title-spaced page-title-danger">
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
-
       <div class="danger-card">
         <div class="flex-row-between">
           <div>
@@ -392,9 +411,7 @@ export default function Settings() {
             Launch Setup
           </button>
         </div>
-
         <div class="full-divider danger-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Update Core Engines</h3>
@@ -409,7 +426,8 @@ export default function Settings() {
               loadingUpdate() ||
               loadingDep() ||
               loadingClean() ||
-              loadingNuclear()
+              loadingNuclear() ||
+              loadingReindex()
             }
             class="command-btn secondary"
           >
@@ -419,9 +437,7 @@ export default function Settings() {
             {loadingUpdate() ? "Updating..." : "Update Engines"}
           </button>
         </div>
-
         <div class="full-divider danger-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Wipe Core Engines</h3>
@@ -436,16 +452,15 @@ export default function Settings() {
               loadingDep() ||
               loadingUpdate() ||
               loadingClean() ||
-              loadingNuclear()
+              loadingNuclear() ||
+              loadingReindex()
             }
             class="command-btn secondary"
           >
             {loadingDep() ? "Wiping..." : "Wipe Engines"}
           </button>
         </div>
-
         <div class="full-divider danger-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title danger">Clean Database & Media</h3>
@@ -460,7 +475,8 @@ export default function Settings() {
               loadingClean() ||
               loadingUpdate() ||
               loadingDep() ||
-              loadingNuclear()
+              loadingNuclear() ||
+              loadingReindex()
             }
             class="command-btn danger"
           >
@@ -470,9 +486,7 @@ export default function Settings() {
             {loadingClean() ? "Cleaning..." : "Clean Data"}
           </button>
         </div>
-
         <div class="full-divider danger-divider"></div>
-
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title danger">
@@ -489,7 +503,8 @@ export default function Settings() {
               loadingNuclear() ||
               loadingUpdate() ||
               loadingClean() ||
-              loadingDep()
+              loadingDep() ||
+              loadingReindex()
             }
             class="command-btn danger"
           >
