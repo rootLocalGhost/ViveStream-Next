@@ -1,4 +1,3 @@
-// File: src-tauri/src/downloader.rs
 use crate::db::get_db_connection;
 use crate::models::{BinaryCheckStatus, VideoEntry};
 use crate::system::{get_base_dir, get_bin_dir};
@@ -23,6 +22,7 @@ pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
 pub async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String> {
     let bin_dir = get_bin_dir(&app)?;
     let (ytdlp, ffmpeg) = get_binary_paths(&bin_dir);
+
     #[cfg(target_os = "windows")]
     let ffprobe = bin_dir.join("ffprobe.exe");
     #[cfg(not(target_os = "windows"))]
@@ -43,6 +43,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         .redirect(reqwest::redirect::Policy::limited(10))
+        .timeout(std::time::Duration::from_secs(30))
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -68,6 +69,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     emit_progress("Validating yt-dlp SHA256 checksum...");
+
     let sums_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
     let sums_text = client
@@ -84,6 +86,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     } else {
         "yt-dlp"
     };
+
     let expected_hash = sums_text
         .lines()
         .find(|line| line.ends_with(target_bin_name))
@@ -99,6 +102,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     emit_progress("yt-dlp checksum verified. Proceeding with write.");
+
     let ytdlp_path = bin_dir.join(target_bin_name);
     File::create(&ytdlp_path)
         .map_err(|e| e.to_string())?
@@ -127,8 +131,8 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
     let total_size = res.content_length().unwrap_or(0);
-    let mut downloaded: u64 = 0;
 
+    let mut downloaded: u64 = 0;
     #[cfg(target_os = "windows")]
     let temp_path = bin_dir.join("ffmpeg_temp.zip");
     #[cfg(not(target_os = "windows"))]
@@ -155,17 +159,29 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     if let Ok(hash_resp) = expected_ffmpeg_hash_res {
         if hash_resp.status().is_success() {
-            let expected_hash = hash_resp
-                .text()
-                .await
-                .unwrap_or_default()
-                .trim()
+            let full_text = hash_resp.text().await.unwrap_or_default();
+            let expected_hash = full_text
+                .split_whitespace()
+                .next()
+                .ok_or("Empty or invalid SHA256 file format from server")?
                 .to_string();
+
             if !expected_hash.is_empty() && expected_hash != actual_ffmpeg_hash {
                 let _ = fs::remove_file(&temp_path);
                 return Err(format!("SECURITY FAULT: FFmpeg checksum mismatch!"));
             }
+        } else {
+            let _ = fs::remove_file(&temp_path);
+            return Err(format!(
+                "SECURITY FAULT: Failed to fetch hash, server returned HTTP {}",
+                hash_resp.status()
+            ));
         }
+    } else {
+        let _ = fs::remove_file(&temp_path);
+        return Err(format!(
+            "SECURITY FAULT: Network error fetching FFmpeg hash."
+        ));
     }
 
     emit_progress(&format!("[PROGRESS] 100.0"));
@@ -175,6 +191,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     {
         let file = File::open(&temp_path).map_err(|e| e.to_string())?;
         let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
+
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
             if file.is_file() {
@@ -195,6 +212,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         use tar::Archive;
         use xz2::read::XzDecoder;
         let mut archive = Archive::new(XzDecoder::new(file));
+
         for entry in archive.entries().map_err(|e| e.to_string())? {
             let mut entry = entry.map_err(|e| e.to_string())?;
             if entry.header().entry_type().is_file() {
@@ -220,7 +238,6 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     let _ = fs::remove_file(temp_path);
-
     emit_progress("[RESTART]");
 
     std::thread::spawn(move || {
@@ -326,11 +343,12 @@ pub async fn download_video(
 
     let temp_path = vid_dir.join(format!("raw_{}.mp4", metadata.id));
     let final_path = metadata.video_path.clone();
-
     let progress_event = format!("download-progress-{}", metadata.id);
+
     let _ = app.emit(&progress_event, "Step 1: Downloading stream...");
 
     let is_audio = dl_type == "Audio";
+
     let res_filter = if is_audio {
         "bestaudio[ext=m4a]/bestaudio".to_string()
     } else {
@@ -381,7 +399,6 @@ pub async fn download_video(
     if auto_subs {
         yt_args.push("--write-auto-subs".to_string());
     }
-
     if dl_subs {
         yt_args.push("--write-subs".to_string());
     }
@@ -433,7 +450,6 @@ pub async fn download_video(
 
     let app_clone = app.clone();
     let prog_clone = progress_event.clone();
-
     std::thread::spawn(move || {
         let reader = BufReader::new(stderr);
         for line in reader.lines() {
@@ -456,7 +472,6 @@ pub async fn download_video(
 
     let final_sub_path = vid_dir.join(format!("{}.vtt", metadata.id));
     let mut sub_found = false;
-
     if let Ok(entries) = fs::read_dir(&vid_dir) {
         for entry in entries.flatten() {
             let file_name = entry.file_name().into_string().unwrap_or_default();
@@ -468,7 +483,6 @@ pub async fn download_video(
             }
         }
     }
-
     if !sub_found && !final_sub_path.exists() {
         let _ = fs::write(&final_sub_path, "WEBVTT\n\n");
     }
@@ -504,6 +518,21 @@ pub async fn download_video(
         let encoders = if cfg!(target_os = "windows") {
             vec![
                 (
+                    "Intel QSV (AV1 - ARC Optimised)",
+                    vec![
+                        "-init_hw_device",
+                        "qsv=hw",
+                        "-filter_hw_device",
+                        "hw",
+                        "-c:v",
+                        "av1_qsv",
+                        "-preset",
+                        "fast",
+                        "-b:v",
+                        "5M",
+                    ],
+                ),
+                (
                     "Intel QSV (H.264 - ARC Optimised)",
                     vec![
                         "-init_hw_device",
@@ -530,27 +559,14 @@ pub async fn download_video(
         } else {
             vec![
                 (
-                    "VAAPI (H.264 - Linux/Intel/AMD)",
-                    vec![
-                        "-vaapi_device",
-                        "/dev/dri/renderD128",
-                        "-vf",
-                        "format=nv12,hwupload",
-                        "-c:v",
-                        "h264_vaapi",
-                        "-b:v",
-                        "5M",
-                    ],
-                ),
-                (
-                    "Intel QSV (H.264 - Linux fallback)",
+                    "Intel QSV (AV1 - Linux ARC)",
                     vec![
                         "-init_hw_device",
                         "qsv=hw",
                         "-filter_hw_device",
                         "hw",
                         "-c:v",
-                        "h264_qsv",
+                        "av1_qsv",
                         "-preset",
                         "fast",
                         "-b:v",
@@ -558,8 +574,17 @@ pub async fn download_video(
                     ],
                 ),
                 (
-                    "NVIDIA NVENC (H.264)",
-                    vec!["-c:v", "h264_nvenc", "-preset", "p4", "-b:v", "5M"],
+                    "VAAPI (H.264 - Auto-node)",
+                    vec![
+                        "-hwaccel",
+                        "vaapi",
+                        "-hwaccel_output_format",
+                        "vaapi",
+                        "-c:v",
+                        "h264_vaapi",
+                        "-b:v",
+                        "5M",
+                    ],
                 ),
                 (
                     "CPU (libx264)",
@@ -602,7 +627,6 @@ pub async fn download_video(
                 );
             }
         }
-
         let _ = fs::remove_file(&temp_path);
     }
 
@@ -612,7 +636,6 @@ pub async fn download_video(
 
     let mut conn = get_db_connection(&app)?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
-
     tx.execute(
         "INSERT OR IGNORE INTO Artists (name, avatar_path) VALUES (?1, ?2)",
         [&metadata.channel, &format!("{}.jpg", metadata.channel)],

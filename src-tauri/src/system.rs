@@ -17,7 +17,12 @@ pub fn get_bin_dir(app: &AppHandle) -> Result<PathBuf, String> {
 pub async fn wipe_dependencies(app: AppHandle) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     if bin_dir.exists() {
-        fs::remove_dir_all(&bin_dir).map_err(|e| format!("Failed to delete binaries: {}", e))?;
+        let _ = fs::remove_file(bin_dir.join("yt-dlp"));
+        let _ = fs::remove_file(bin_dir.join("yt-dlp.exe"));
+        let _ = fs::remove_file(bin_dir.join("ffmpeg"));
+        let _ = fs::remove_file(bin_dir.join("ffmpeg.exe"));
+        let _ = fs::remove_file(bin_dir.join("ffprobe"));
+        let _ = fs::remove_file(bin_dir.join("ffprobe.exe"));
     }
     Ok(())
 }
@@ -27,7 +32,6 @@ pub async fn clean_database_and_media(app: AppHandle) -> Result<(), String> {
     if let Ok(conn) = get_db_connection(&app) {
         let _ = conn.execute_batch("DELETE FROM Playlist_Videos; DELETE FROM Playlists; DELETE FROM Videos; DELETE FROM Artists;");
     }
-
     let base_dir = get_base_dir(&app)?;
     if base_dir.exists() {
         let _ = fs::remove_dir_all(base_dir.join("Videos"));
@@ -42,13 +46,16 @@ pub async fn clean_database_and_media(app: AppHandle) -> Result<(), String> {
 pub async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     if bin_dir.exists() {
-        let _ = fs::remove_dir_all(&bin_dir);
+        let _ = fs::remove_file(bin_dir.join("yt-dlp"));
+        let _ = fs::remove_file(bin_dir.join("yt-dlp.exe"));
+        let _ = fs::remove_file(bin_dir.join("ffmpeg"));
+        let _ = fs::remove_file(bin_dir.join("ffmpeg.exe"));
+        let _ = fs::remove_file(bin_dir.join("ffprobe"));
+        let _ = fs::remove_file(bin_dir.join("ffprobe.exe"));
     }
-
     if let Ok(conn) = get_db_connection(&app) {
         let _ = conn.execute_batch("DELETE FROM Playlist_Videos; DELETE FROM Playlists; DELETE FROM Videos; DELETE FROM Artists;");
     }
-
     let base_dir = get_base_dir(&app)?;
     if base_dir.exists() {
         let _ = fs::remove_dir_all(base_dir.join("Videos"));
@@ -56,6 +63,5 @@ pub async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
         let _ = fs::remove_dir_all(base_dir.join("Descriptions"));
         let _ = fs::remove_dir_all(base_dir.join("Avatars"));
     }
-
     Ok(())
 }

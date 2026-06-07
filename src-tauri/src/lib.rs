@@ -1,4 +1,3 @@
-// File: src-tauri/src/lib.rs
 mod db;
 mod downloader;
 mod media_controls;
@@ -15,7 +14,6 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager,
 };
-use warp::Filter;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -23,31 +21,8 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .setup(|app| {
             let app_handle = app.handle().clone();
-
             if let Err(e) = init_db(&app_handle) {
                 eprintln!("Database initialization error: {}", e);
-            }
-
-            let base_dir = get_base_dir(&app_handle).unwrap_or_default();
-            let port_free = std::net::TcpListener::bind("127.0.0.1:1422").is_ok();
-
-            if port_free {
-                tauri::async_runtime::spawn(async move {
-                    let cors = warp::cors()
-                        .allow_any_origin()
-                        .allow_headers(vec![
-                            "Accept",
-                            "Access-Control-Request-Headers",
-                            "Access-Control-Request-Method",
-                            "Content-Type",
-                            "Origin",
-                            "Range",
-                        ])
-                        .allow_methods(vec!["GET", "HEAD", "OPTIONS"]);
-
-                    let routes = warp::fs::dir(base_dir).with(cors);
-                    warp::serve(routes).run(([127, 0, 0, 1], 1422)).await;
-                });
             }
 
             if let Some(icon) = app.default_window_icon() {
