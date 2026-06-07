@@ -15,6 +15,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write        # Required for OIDC token generation (Artifact Attestations)
+  attestations: write    # Required to write the attestation to GitHub
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -31,12 +33,15 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+
     runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Verify Versions Match
         id: version_check
         shell: bash
@@ -44,23 +49,28 @@ jobs:
           VERSION=$(cat VERSION | tr -d '\n\r ')
           PKG_VERSION=$(jq -r .version package.json)
           TAURI_VERSION=$(jq -r .version src-tauri/tauri.conf.json)
+          
           echo "VERSION file: $VERSION"
           echo "package.json: $PKG_VERSION"
           echo "tauri.conf.json: $TAURI_VERSION"
+          
           if [ "$VERSION" != "$PKG_VERSION" ] || [ "$VERSION" != "$TAURI_VERSION" ]; then
             echo "::error::Internal version mismatch detected! Check VERSION, package.json, and tauri.conf.json."
             exit 1
           fi
+
           INPUT_TAG="${{ github.event.inputs.tag }}"
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "$INPUT_TAG" ]; then
-            CLEAN_INPUT_TAG=${INPUT_TAG#v}
+            CLEAN_INPUT_TAG="${INPUT_TAG#v}"
             if [ "$CLEAN_INPUT_TAG" != "$VERSION" ]; then
               echo "::error::Manual trigger tag (v$CLEAN_INPUT_TAG) does not match internal file versions (v$VERSION). Build aborted."
               exit 1
             fi
             echo "Manual tag verified against file versions."
           fi
+          
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Generate Release Notes
         id: generate_notes
         shell: bash
@@ -83,25 +93,31 @@ jobs:
           git log -15 --pretty=format:"* %s (%h)" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf squashfs-tools libfuse2 binutils zstd tar
+
       - name: Install frontend dependencies
         run: bun install
+
       - name: Build and Release Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
@@ -112,6 +128,7 @@ jobs:
           releaseBody: ${{ steps.generate_notes.outputs.release_body }}
           releaseDraft: true
           prerelease: false
+
       - name: Generate Arch Linux Package (.pkg.tar.zst)
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
@@ -121,13 +138,16 @@ jobs:
             echo "::error::.deb package not found. Cannot generate Arch package."
             exit 1
           fi
+          
           echo "Generating Arch package from $DEB_FILE..."
           mkdir arch_build
           cd arch_build
           ar x "../$DEB_FILE"
           tar -xf data.tar.*
           rm -f control.tar.* data.tar.* debian-binary
+          
           SIZE=$(du -sb . | awk '{print $1}')
+          
           cat <<EOT > .PKGINFO
           pkgname = vivestream-next-bin
           pkgbase = vivestream-next-bin
@@ -145,8 +165,24 @@ jobs:
           depend = intel-media-driver
           depend = libva-utils
           EOT
+          
           ARCH_PKG_NAME="vivestream-next_${{ steps.version_check.outputs.app_version }}_x86_64.pkg.tar.zst"
           tar -c --zstd -f "../$ARCH_PKG_NAME" .
+          
           gh release upload v${{ steps.version_check.outputs.app_version }} "../$ARCH_PKG_NAME" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attest Build Provenance (Linux)
+        if: matrix.os == 'ubuntu-22.04'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            *.pkg.tar.zst
+
+      - name: Attest Build Provenance (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'src-tauri/target/release/bundle/nsis/*.exe'
