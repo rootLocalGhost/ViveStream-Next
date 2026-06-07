@@ -80,7 +80,6 @@ export default function Setup() {
         ffmpeg_exists: boolean;
         bin_folder: string;
       }>("check_binaries");
-
       if (!status.ytdlp_exists || !status.ffmpeg_exists) {
         addLog(`ViveStream v0.3.0 // Environment Check`);
         if (!status.ytdlp_exists)
@@ -109,6 +108,13 @@ export default function Setup() {
 
     const unlisten = await listen<string>("setup-progress", (event) => {
       const payload = event.payload;
+
+      if (payload === "[RESTART]") {
+        addLog("> Deployment successful. Core engines integrated.");
+        addLog("> System rebooting in 3 seconds to initialize engines...");
+        return;
+      }
+
       if (payload.startsWith("[PROGRESS]")) {
         const value = parseFloat(payload.replace("[PROGRESS]", "").trim());
         if (!isNaN(value)) setDownloadProgress(value);
@@ -140,7 +146,6 @@ export default function Setup() {
             account.
           </p>
         </div>
-
         <div class="setup-terminal-wrapper">
           <div class="terminal-header">
             <div class="term-dot r"></div>
@@ -165,7 +170,6 @@ export default function Setup() {
             )}
           </div>
         </div>
-
         <button
           class={`setup-btn ${loading() ? "loading" : ""}`}
           onClick={startSetup}
