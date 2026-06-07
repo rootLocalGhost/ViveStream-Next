@@ -112,6 +112,7 @@ pub fn run() {
             wipe_dependencies,
             clean_database_and_media,
             nuclear_wipe,
+            reindex_library,
             update_media_metadata,
             update_playback_status
         ])
