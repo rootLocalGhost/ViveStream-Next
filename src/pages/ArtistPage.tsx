@@ -1,5 +1,5 @@
 import { createSignal, onMount, For } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { useParams, useNavigate } from "@solidjs/router";
 import { VideoEntry } from "../store";
 import "./ArtistPage.css";
@@ -24,7 +24,9 @@ export default function ArtistPage() {
     <div class="page-wrapper artist-page">
       <div class="clay-card flex-row-gap artist-hero-card">
         <img
-          src={`http://127.0.0.1:1422/Avatars/${params.name}.jpg`}
+          src={
+            videos().length > 0 ? convertFileSrc(videos()[0].avatar_path) : ""
+          }
           onError={(e) => {
             e.currentTarget.src = "";
             e.currentTarget.className = "ph-fill ph-user avatar-large";
@@ -38,7 +40,6 @@ export default function ArtistPage() {
           </span>
         </div>
       </div>
-
       <div class="grid">
         <For each={videos()}>
           {(video) => (
@@ -47,7 +48,7 @@ export default function ArtistPage() {
               onClick={() => navigate(`/player/${video.id}`)}
             >
               <img
-                src={`http://127.0.0.1:1422/Thumbnails/${video.id}.jpg`}
+                src={convertFileSrc(video.thumbnail_path)}
                 alt={video.title}
                 class="video-thumbnail"
               />
