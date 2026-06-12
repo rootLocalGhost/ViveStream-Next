@@ -1,4 +1,3 @@
-// File: src/store.ts
 import { createSignal } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -31,15 +30,12 @@ if (isBrowser) {
   document.documentElement.setAttribute("data-palette", initialPalette);
 }
 
-// --- Notification System State ---
 export interface Toast {
   id: string;
   message: string;
   type: "info" | "error" | "success";
 }
-
 export const [toasts, setToasts] = createSignal<Toast[]>([]);
-
 export const addToast = (
   message: string,
   type: "info" | "error" | "success" = "info",
@@ -57,11 +53,9 @@ export interface DialogState {
   type: "info" | "warning" | "error";
   resolve: (value: boolean) => void;
 }
-
 export const [dialogState, setDialogState] = createSignal<DialogState | null>(
   null,
 );
-
 export const showConfirmDialog = (
   message: string,
   title: string,
@@ -71,7 +65,6 @@ export const showConfirmDialog = (
     setDialogState({ title, message, type, resolve });
   });
 };
-
 export const closeDialog = (result: boolean) => {
   const state = dialogState();
   if (state) {
@@ -79,7 +72,6 @@ export const closeDialog = (result: boolean) => {
     setDialogState(null);
   }
 };
-// ---------------------------------
 
 export const [useAnimatedIcons, setUseAnimatedIcons] =
   createSignal(initialAnimState);
@@ -199,6 +191,9 @@ export interface VideoEntry {
   channel: string;
   video_path: string;
   thumbnail_path: string;
+  avatar_path: string;
+  subtitle_path: string;
+  desc_path: string;
 }
 
 export interface DownloadTask {
@@ -214,6 +209,7 @@ export interface DownloadTask {
 }
 
 export const [downloadUrl, setDownloadUrl] = createSignal("");
+
 export const [downloadQuality, setDownloadQuality] = createSignal(
   getStr("downloadQuality", "1440p"),
 );
@@ -271,7 +267,6 @@ const executeDownload = async (task: DownloadTask) => {
     `download-progress-${task.id}`,
     (event) => {
       const log = event.payload;
-
       setTasks((prev) =>
         prev.map((t) => {
           if (t.id !== task.id) return t;
@@ -359,6 +354,7 @@ export const startDownloadQueue = async () => {
     const metadataList = await invoke<VideoEntry[]>("get_video_metadata", {
       url: targetUrl,
     });
+
     const newTasks: DownloadTask[] = metadataList.map((meta) => ({
       id: meta.id,
       title: meta.title,
