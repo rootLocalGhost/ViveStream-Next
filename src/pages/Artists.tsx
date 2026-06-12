@@ -1,11 +1,12 @@
 import { createSignal, onMount, For } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
 import "./Artists.css";
 
 interface ArtistEntry {
   name: string;
+  avatar_path: string;
 }
 
 export default function Artists() {
@@ -42,7 +43,7 @@ export default function Artists() {
                 onClick={() => navigate(`/artist/${artist.name}`)}
               >
                 <img
-                  src={`http://127.0.0.1:1422/Avatars/${artist.name}.jpg`}
+                  src={convertFileSrc(artist.avatar_path)}
                   onError={(e) => {
                     e.currentTarget.src = "";
                     e.currentTarget.className = "ph-fill ph-user avatar-large";
