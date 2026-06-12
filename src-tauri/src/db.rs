@@ -1,6 +1,6 @@
 use crate::models::{ArtistEntry, Playlist, VideoEntry};
+use crate::system::get_base_dir;
 use rusqlite::Connection;
-use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
 
@@ -50,22 +50,51 @@ pub fn init_db(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+fn map_video_row(
+    row: &rusqlite::Row,
+    base_dir: &std::path::Path,
+) -> Result<VideoEntry, rusqlite::Error> {
+    let id: String = row.get(0)?;
+    let channel: String = row.get(2)?;
+    let video_path: String = row.get(3)?;
+
+    let subtitle_path = std::path::PathBuf::from(&video_path)
+        .with_extension("vtt")
+        .to_string_lossy()
+        .into_owned();
+
+    let avatar_path = base_dir
+        .join("Avatars")
+        .join(format!("{}.jpg", channel))
+        .to_string_lossy()
+        .into_owned();
+    let desc_path = base_dir
+        .join("Descriptions")
+        .join(format!("{}.txt", id))
+        .to_string_lossy()
+        .into_owned();
+
+    Ok(VideoEntry {
+        id,
+        title: row.get(1)?,
+        channel,
+        video_path,
+        thumbnail_path: row.get(4)?,
+        avatar_path,
+        subtitle_path,
+        desc_path,
+    })
+}
+
 #[tauri::command]
 pub fn get_downloaded_videos(app: AppHandle) -> Result<Vec<VideoEntry>, String> {
     let conn = get_db_connection(&app)?;
+    let base_dir = get_base_dir(&app)?;
     let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos ORDER BY added_at DESC").map_err(|e| e.to_string())?;
-    let iter = stmt
-        .query_map([], |row| {
-            Ok(VideoEntry {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                channel: row.get(2)?,
-                video_path: PathBuf::from(row.get::<_, String>(3)?),
-                thumbnail_path: PathBuf::from(row.get::<_, String>(4)?),
-            })
-        })
-        .map_err(|e| e.to_string())?;
 
+    let iter = stmt
+        .query_map([], |row| map_video_row(row, &base_dir))
+        .map_err(|e| e.to_string())?;
     let mut videos = Vec::new();
     for video in iter {
         videos.push(video.map_err(|e| e.to_string())?);
@@ -98,17 +127,11 @@ pub fn toggle_favorite(app: AppHandle, id: String, is_favorite: bool) -> Result<
 #[tauri::command]
 pub fn get_favorites(app: AppHandle) -> Result<Vec<VideoEntry>, String> {
     let conn = get_db_connection(&app)?;
+    let base_dir = get_base_dir(&app)?;
     let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos WHERE is_favorite = 1 ORDER BY added_at DESC").map_err(|e| e.to_string())?;
+
     let iter = stmt
-        .query_map([], |row| {
-            Ok(VideoEntry {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                channel: row.get(2)?,
-                video_path: PathBuf::from(row.get::<_, String>(3)?),
-                thumbnail_path: PathBuf::from(row.get::<_, String>(4)?),
-            })
-        })
+        .query_map([], |row| map_video_row(row, &base_dir))
         .map_err(|e| e.to_string())?;
     let mut videos = Vec::new();
     for video in iter {
@@ -120,12 +143,23 @@ pub fn get_favorites(app: AppHandle) -> Result<Vec<VideoEntry>, String> {
 #[tauri::command]
 pub fn get_artists(app: AppHandle) -> Result<Vec<ArtistEntry>, String> {
     let conn = get_db_connection(&app)?;
+    let base_dir = get_base_dir(&app)?;
     let mut stmt = conn
         .prepare("SELECT name FROM Artists ORDER BY name ASC")
         .map_err(|e| e.to_string())?;
+
     let iter = stmt
-        .query_map([], |row| Ok(ArtistEntry { name: row.get(0)? }))
+        .query_map([], |row| {
+            let name: String = row.get(0)?;
+            let avatar_path = base_dir
+                .join("Avatars")
+                .join(format!("{}.jpg", name))
+                .to_string_lossy()
+                .into_owned();
+            Ok(ArtistEntry { name, avatar_path })
+        })
         .map_err(|e| e.to_string())?;
+
     let mut artists = Vec::new();
     for a in iter {
         artists.push(a.map_err(|e| e.to_string())?);
@@ -136,17 +170,11 @@ pub fn get_artists(app: AppHandle) -> Result<Vec<ArtistEntry>, String> {
 #[tauri::command]
 pub fn get_videos_by_artist(app: AppHandle, name: String) -> Result<Vec<VideoEntry>, String> {
     let conn = get_db_connection(&app)?;
+    let base_dir = get_base_dir(&app)?;
     let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos WHERE channel_name = ?1 ORDER BY added_at DESC").map_err(|e| e.to_string())?;
+
     let iter = stmt
-        .query_map(rusqlite::params![name], |row| {
-            Ok(VideoEntry {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                channel: row.get(2)?,
-                video_path: PathBuf::from(row.get::<_, String>(3)?),
-                thumbnail_path: PathBuf::from(row.get::<_, String>(4)?),
-            })
-        })
+        .query_map(rusqlite::params![name], |row| map_video_row(row, &base_dir))
         .map_err(|e| e.to_string())?;
     let mut videos = Vec::new();
     for video in iter {
@@ -245,22 +273,18 @@ pub fn remove_video_from_playlist(
 #[tauri::command]
 pub fn get_playlist_videos(app: AppHandle, playlist_id: String) -> Result<Vec<VideoEntry>, String> {
     let conn = get_db_connection(&app)?;
+    let base_dir = get_base_dir(&app)?;
     let mut stmt = conn
         .prepare(
             "SELECT v.id, v.title, v.channel_name, v.video_path, v.thumbnail_path 
-         FROM Videos v INNER JOIN Playlist_Videos pv ON v.id = pv.video_id 
-         WHERE pv.playlist_id = ?1 ORDER BY pv.sort_order ASC",
+             FROM Videos v INNER JOIN Playlist_Videos pv ON v.id = pv.video_id 
+             WHERE pv.playlist_id = ?1 ORDER BY pv.sort_order ASC",
         )
         .map_err(|e| e.to_string())?;
+
     let iter = stmt
         .query_map(rusqlite::params![playlist_id], |row| {
-            Ok(VideoEntry {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                channel: row.get(2)?,
-                video_path: PathBuf::from(row.get::<_, String>(3)?),
-                thumbnail_path: PathBuf::from(row.get::<_, String>(4)?),
-            })
+            map_video_row(row, &base_dir)
         })
         .map_err(|e| e.to_string())?;
     let mut videos = Vec::new();
