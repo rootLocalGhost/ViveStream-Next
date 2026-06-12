@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import { VideoEntry } from "../store";
 import "./Playlists.css";
@@ -156,7 +156,7 @@ export default function Playlists() {
                 >
                   <div class="relative-action">
                     <img
-                      src={`http://127.0.0.1:1422/Thumbnails/${video.id}.jpg`}
+                      src={convertFileSrc(video.thumbnail_path)}
                       alt={video.title}
                       class="video-thumbnail"
                     />
