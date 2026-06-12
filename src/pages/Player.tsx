@@ -336,11 +336,11 @@ export default function Player() {
               setShowControls(false)
             }
           >
+            {/* CROSSORIGIN ATTRIBUTE REMOVED HERE */}
             <video
               class="player-video-element"
               ref={videoRef}
               preload="auto"
-              crossorigin="anonymous"
               onEnded={handleVideoEnd}
               onPlay={() => {
                 invoke("update_playback_status", { playing: true });
