@@ -43,7 +43,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         .redirect(reqwest::redirect::Policy::limited(10))
-        .timeout(std::time::Duration::from_secs(30))
+        .connect_timeout(std::time::Duration::from_secs(15)) // FIXED: Removed overall timeout to prevent stream drop
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -59,27 +59,35 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp";
 
     emit_progress("Fetching latest yt-dlp Nightly from GitHub...");
-    let bytes = client
+    let ytdlp_res = client
         .get(ytdlp_url)
         .send()
         .await
-        .map_err(|e| e.to_string())?
-        .bytes()
-        .await
         .map_err(|e| e.to_string())?;
+
+    if !ytdlp_res.status().is_success() {
+        return Err(format!(
+            "Failed to fetch yt-dlp: HTTP {}",
+            ytdlp_res.status()
+        ));
+    }
+
+    let bytes = ytdlp_res.bytes().await.map_err(|e| e.to_string())?;
 
     emit_progress("Validating yt-dlp SHA256 checksum...");
 
     let sums_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
-    let sums_text = client
+    let sums_res = client
         .get(sums_url)
         .send()
         .await
-        .map_err(|e| e.to_string())?
-        .text()
-        .await
         .map_err(|e| e.to_string())?;
+
+    if !sums_res.status().is_success() {
+        return Err(format!("Failed to fetch hash: HTTP {}", sums_res.status()));
+    }
+    let sums_text = sums_res.text().await.unwrap_or_default();
 
     let target_bin_name = if cfg!(target_os = "windows") {
         "yt-dlp.exe"
@@ -130,6 +138,11 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .send()
         .await
         .map_err(|e| e.to_string())?;
+
+    if !res.status().is_success() {
+        return Err(format!("Failed to fetch FFmpeg: HTTP {}", res.status()));
+    }
+
     let total_size = res.content_length().unwrap_or(0);
 
     let mut downloaded: u64 = 0;
@@ -260,6 +273,8 @@ pub async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<Video
 
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
+    let av_dir = base_dir.join("Avatars");
+    let desc_dir = base_dir.join("Descriptions");
 
     let mut cmd = Command::new(&ytdlp_path);
     #[cfg(target_os = "windows")]
@@ -291,12 +306,32 @@ pub async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<Video
     for line in out_str.lines() {
         let parts: Vec<&str> = line.splitn(3, '|').collect();
         if parts.len() == 3 {
+            let id = parts[0].to_string();
+            let channel = parts[1].to_string();
             entries.push(VideoEntry {
-                id: parts[0].to_string(),
-                channel: parts[1].to_string(),
+                id: id.clone(),
                 title: parts[2].to_string(),
-                video_path: vid_dir.join(format!("{}.mp4", parts[0])),
-                thumbnail_path: thumb_dir.join(format!("{}.jpg", parts[0])),
+                channel: channel.clone(),
+                video_path: vid_dir
+                    .join(format!("{}.mp4", id))
+                    .to_string_lossy()
+                    .into_owned(),
+                thumbnail_path: thumb_dir
+                    .join(format!("{}.jpg", id))
+                    .to_string_lossy()
+                    .into_owned(),
+                avatar_path: av_dir
+                    .join(format!("{}.jpg", channel))
+                    .to_string_lossy()
+                    .into_owned(),
+                subtitle_path: vid_dir
+                    .join(format!("{}.vtt", id))
+                    .to_string_lossy()
+                    .into_owned(),
+                desc_path: desc_dir
+                    .join(format!("{}.txt", id))
+                    .to_string_lossy()
+                    .into_owned(),
             });
         }
     }
@@ -342,7 +377,7 @@ pub async fn download_video(
     fs::create_dir_all(&av_dir).unwrap();
 
     let temp_path = vid_dir.join(format!("raw_{}.mp4", metadata.id));
-    let final_path = metadata.video_path.clone();
+    let final_path = std::path::PathBuf::from(&metadata.video_path);
     let progress_event = format!("download-progress-{}", metadata.id);
 
     let _ = app.emit(&progress_event, "Step 1: Downloading stream...");
@@ -643,7 +678,7 @@ pub async fn download_video(
     .map_err(|e| e.to_string())?;
 
     tx.execute("INSERT INTO Videos (id, title, channel_name, video_path, thumbnail_path, is_favorite) VALUES (?1, ?2, ?3, ?4, ?5, 0) ON CONFLICT(id) DO UPDATE SET title = excluded.title, channel_name = excluded.channel_name, video_path = excluded.video_path, thumbnail_path = excluded.thumbnail_path",
-        (&metadata.id, &metadata.title, &metadata.channel, metadata.video_path.to_str().unwrap(), metadata.thumbnail_path.to_str().unwrap())).map_err(|e| e.to_string())?;
+        (&metadata.id, &metadata.title, &metadata.channel, &metadata.video_path, &metadata.thumbnail_path)).map_err(|e| e.to_string())?;
 
     tx.commit().map_err(|e| e.to_string())?;
 
