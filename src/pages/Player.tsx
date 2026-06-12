@@ -1,4 +1,3 @@
-// File: src/pages/Player.tsx
 import {
   createSignal,
   onMount,
@@ -8,7 +7,7 @@ import {
   Show,
 } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { VideoEntry } from "../store";
 import "./Player.css";
@@ -70,7 +69,8 @@ export default function Player() {
       const currentIndex = db.findIndex((v) => v.id === targetId);
 
       if (currentIndex !== -1) {
-        setVideo(db[currentIndex]);
+        const activeVideo = db[currentIndex];
+        setVideo(activeVideo);
         setDescExpanded(false);
         setSubtitlesEnabled(false);
 
@@ -80,9 +80,7 @@ export default function Player() {
         setIsFavorite(favStatus);
 
         try {
-          const descRes = await fetch(
-            `http://127.0.0.1:1422/Descriptions/${targetId}.txt`,
-          );
+          const descRes = await fetch(convertFileSrc(activeVideo.desc_path));
           if (descRes.ok) {
             setDescription(await descRes.text());
           } else {
@@ -93,9 +91,7 @@ export default function Player() {
         }
 
         try {
-          const subRes = await fetch(
-            `http://127.0.0.1:1422/Videos/${targetId}.vtt`,
-          );
+          const subRes = await fetch(convertFileSrc(activeVideo.subtitle_path));
           if (subRes.ok) {
             const text = await subRes.text();
             setHasSubtitles(text.trim().length > 15);
@@ -221,6 +217,7 @@ export default function Player() {
   const handleMouseMove = () => {
     setShowControls(true);
     clearTimeout(controlsTimeout);
+
     if (isPlaying()) {
       controlsTimeout = window.setTimeout(() => {
         if (!showSettingsMenu() && !showCCMenu()) {
@@ -263,7 +260,6 @@ export default function Player() {
   };
 
   onMount(() => {
-    // Pure synchronous event listeners and cleanups
     const handleClickOutside = (e: MouseEvent) => {
       if (settingsMenuRef && !settingsMenuRef.contains(e.target as Node)) {
         setShowSettingsMenu(false);
@@ -272,14 +268,15 @@ export default function Player() {
         setShowCCMenu(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
 
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
+
     document.addEventListener("fullscreenchange", handleFullscreenChange);
 
-    // Setup Tauri listeners synchronously with promises
     listen("media-play", () => handlePlay()).then((f) => (unlistenPlay = f));
     listen("media-pause", () => handlePause()).then((f) => (unlistenPause = f));
     listen("media-next", () => playNext()).then((f) => (unlistenNext = f));
@@ -301,7 +298,6 @@ export default function Player() {
 
   createEffect(() => {
     if (video() && videoRef) {
-      // Force the video engine to reload when the source changes
       videoRef.load();
       invoke("update_media_metadata", {
         title: video()!.title,
@@ -363,7 +359,7 @@ export default function Player() {
                 setShowCCMenu(false);
                 togglePlay();
               }}
-              src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
+              src={convertFileSrc(video()!.video_path)}
               style={
                 {
                   "--sub-color": subColor(),
@@ -375,7 +371,7 @@ export default function Player() {
             >
               <track
                 kind="captions"
-                src={`http://127.0.0.1:1422/Videos/${video()!.id}.vtt`}
+                src={convertFileSrc(video()!.subtitle_path)}
                 default={subtitlesEnabled()}
               />
             </video>
@@ -421,7 +417,6 @@ export default function Player() {
                   <button class="control-btn" onClick={playNext} title="Next">
                     <i class="ph-fill ph-skip-forward"></i>
                   </button>
-
                   <div
                     class="volume-control-group"
                     onMouseEnter={() => setIsVolumeHovered(true)}
@@ -455,7 +450,6 @@ export default function Player() {
                       />
                     </div>
                   </div>
-
                   <span class="player-timecode">
                     {formatTime(currentTime())}{" "}
                     <span class="player-timecode-separator">/</span>{" "}
@@ -609,7 +603,7 @@ export default function Player() {
                           width: "6px",
                           height: "6px",
                           background: "var(--primary-accent)",
-                          borderadius: "50%",
+                          "border-radius": "50%",
                         }}
                       ></div>
                     </Show>
@@ -657,7 +651,7 @@ export default function Player() {
             <div class="flex-row-between player-meta-row">
               <div class="flex-row-gap">
                 <img
-                  src={`http://127.0.0.1:1422/Avatars/${video()!.channel}.jpg`}
+                  src={convertFileSrc(video()!.avatar_path)}
                   onError={(e) => {
                     e.currentTarget.src = "";
                     e.currentTarget.className = "ph-fill ph-user avatar-small";
@@ -696,6 +690,7 @@ export default function Player() {
                 <span>Local Hardware Library</span>
               </div>
               <div>{description()}</div>
+
               <Show when={descExpanded()}>
                 <div
                   class="desc-toggle"
@@ -722,7 +717,7 @@ export default function Player() {
             >
               <div class="queue-thumbnail-wrapper">
                 <img
-                  src={`http://127.0.0.1:1422/Thumbnails/${qVideo.id}.jpg`}
+                  src={convertFileSrc(qVideo.thumbnail_path)}
                   class="queue-thumbnail"
                 />
               </div>
