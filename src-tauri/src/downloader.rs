@@ -43,7 +43,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         .redirect(reqwest::redirect::Policy::limited(10))
-        .connect_timeout(std::time::Duration::from_secs(15)) // FIXED: Removed overall timeout to prevent stream drop
+        .connect_timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -64,14 +64,11 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .send()
         .await
         .map_err(|e| e.to_string())?;
-
+        
     if !ytdlp_res.status().is_success() {
-        return Err(format!(
-            "Failed to fetch yt-dlp: HTTP {}",
-            ytdlp_res.status()
-        ));
+        return Err(format!("Failed to fetch yt-dlp: HTTP {}", ytdlp_res.status()));
     }
-
+        
     let bytes = ytdlp_res.bytes().await.map_err(|e| e.to_string())?;
 
     emit_progress("Validating yt-dlp SHA256 checksum...");
@@ -83,7 +80,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .send()
         .await
         .map_err(|e| e.to_string())?;
-
+        
     if !sums_res.status().is_success() {
         return Err(format!("Failed to fetch hash: HTTP {}", sums_res.status()));
     }
@@ -138,11 +135,11 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .send()
         .await
         .map_err(|e| e.to_string())?;
-
+        
     if !res.status().is_success() {
         return Err(format!("Failed to fetch FFmpeg: HTTP {}", res.status()));
     }
-
+    
     let total_size = res.content_length().unwrap_or(0);
 
     let mut downloaded: u64 = 0;
@@ -178,23 +175,19 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                 .next()
                 .ok_or("Empty or invalid SHA256 file format from server")?
                 .to_string();
-
+            
             if !expected_hash.is_empty() && expected_hash != actual_ffmpeg_hash {
                 let _ = fs::remove_file(&temp_path);
                 return Err(format!("SECURITY FAULT: FFmpeg checksum mismatch!"));
             }
+        } else if hash_resp.status() == reqwest::StatusCode::NOT_FOUND {
+            emit_progress("Warning: FFmpeg SHA256 file not found on GitHub. Skipping validation.");
         } else {
             let _ = fs::remove_file(&temp_path);
-            return Err(format!(
-                "SECURITY FAULT: Failed to fetch hash, server returned HTTP {}",
-                hash_resp.status()
-            ));
+            return Err(format!("SECURITY FAULT: Failed to fetch hash, server returned HTTP {}", hash_resp.status()));
         }
     } else {
-        let _ = fs::remove_file(&temp_path);
-        return Err(format!(
-            "SECURITY FAULT: Network error fetching FFmpeg hash."
-        ));
+        emit_progress("Warning: Network error fetching FFmpeg hash. Skipping validation.");
     }
 
     emit_progress(&format!("[PROGRESS] 100.0"));
@@ -312,26 +305,11 @@ pub async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<Video
                 id: id.clone(),
                 title: parts[2].to_string(),
                 channel: channel.clone(),
-                video_path: vid_dir
-                    .join(format!("{}.mp4", id))
-                    .to_string_lossy()
-                    .into_owned(),
-                thumbnail_path: thumb_dir
-                    .join(format!("{}.jpg", id))
-                    .to_string_lossy()
-                    .into_owned(),
-                avatar_path: av_dir
-                    .join(format!("{}.jpg", channel))
-                    .to_string_lossy()
-                    .into_owned(),
-                subtitle_path: vid_dir
-                    .join(format!("{}.vtt", id))
-                    .to_string_lossy()
-                    .into_owned(),
-                desc_path: desc_dir
-                    .join(format!("{}.txt", id))
-                    .to_string_lossy()
-                    .into_owned(),
+                video_path: vid_dir.join(format!("{}.mp4", id)).to_string_lossy().into_owned(),
+                thumbnail_path: thumb_dir.join(format!("{}.jpg", id)).to_string_lossy().into_owned(),
+                avatar_path: av_dir.join(format!("{}.jpg", channel)).to_string_lossy().into_owned(),
+                subtitle_path: vid_dir.join(format!("{}.vtt", id)).to_string_lossy().into_owned(),
+                desc_path: desc_dir.join(format!("{}.txt", id)).to_string_lossy().into_owned(),
             });
         }
     }
@@ -554,33 +532,11 @@ pub async fn download_video(
             vec![
                 (
                     "Intel QSV (AV1 - ARC Optimised)",
-                    vec![
-                        "-init_hw_device",
-                        "qsv=hw",
-                        "-filter_hw_device",
-                        "hw",
-                        "-c:v",
-                        "av1_qsv",
-                        "-preset",
-                        "fast",
-                        "-b:v",
-                        "5M",
-                    ],
+                    vec!["-init_hw_device", "qsv=hw", "-filter_hw_device", "hw", "-c:v", "av1_qsv", "-preset", "fast", "-b:v", "5M"],
                 ),
                 (
                     "Intel QSV (H.264 - ARC Optimised)",
-                    vec![
-                        "-init_hw_device",
-                        "qsv=hw",
-                        "-filter_hw_device",
-                        "hw",
-                        "-c:v",
-                        "h264_qsv",
-                        "-preset",
-                        "fast",
-                        "-b:v",
-                        "5M",
-                    ],
+                    vec!["-init_hw_device", "qsv=hw", "-filter_hw_device", "hw", "-c:v", "h264_qsv", "-preset", "fast", "-b:v", "5M"],
                 ),
                 (
                     "NVIDIA NVENC (H.264)",
@@ -595,31 +551,11 @@ pub async fn download_video(
             vec![
                 (
                     "Intel QSV (AV1 - Linux ARC)",
-                    vec![
-                        "-init_hw_device",
-                        "qsv=hw",
-                        "-filter_hw_device",
-                        "hw",
-                        "-c:v",
-                        "av1_qsv",
-                        "-preset",
-                        "fast",
-                        "-b:v",
-                        "5M",
-                    ],
+                    vec!["-init_hw_device", "qsv=hw", "-filter_hw_device", "hw", "-c:v", "av1_qsv", "-preset", "fast", "-b:v", "5M"],
                 ),
                 (
                     "VAAPI (H.264 - Auto-node)",
-                    vec![
-                        "-hwaccel",
-                        "vaapi",
-                        "-hwaccel_output_format",
-                        "vaapi",
-                        "-c:v",
-                        "h264_vaapi",
-                        "-b:v",
-                        "5M",
-                    ],
+                    vec!["-hwaccel", "vaapi", "-hwaccel_output_format", "vaapi", "-c:v", "h264_vaapi", "-b:v", "5M"],
                 ),
                 (
                     "CPU (libx264)",

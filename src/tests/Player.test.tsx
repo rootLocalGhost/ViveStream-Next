@@ -2,7 +2,6 @@ import { render, screen, waitFor } from "@solidjs/testing-library";
 import Player from "../pages/Player";
 import { vi } from "vitest";
 
-// Mock Tauri Core IPC
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd) => {
     if (cmd === "get_downloaded_videos") {
@@ -13,19 +12,24 @@ vi.mock("@tauri-apps/api/core", () => ({
           channel: "Test Channel",
           video_path: "/mock/video.mp4",
           thumbnail_path: "/mock/thumb.jpg",
+          avatar_path: "/mock/avatar.jpg",
+          subtitle_path: "/mock/sub.vtt",
+          desc_path: "/mock/desc.txt",
         },
       ]);
     }
+    if (cmd === "check_favorite") {
+      return Promise.resolve(false);
+    }
     return Promise.resolve();
   }),
+  convertFileSrc: vi.fn((path) => `asset://${path}`),
 }));
 
-// Mock Tauri Event Listeners (OS Media Keys)
 vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn(() => Promise.resolve(() => {})),
 }));
 
-// Mock SolidJS Router (Prevents <A> and 'use' invariant errors)
 vi.mock("@solidjs/router", () => ({
   useParams: () => ({ id: "video123" }),
   useNavigate: () => vi.fn(),
@@ -34,6 +38,14 @@ vi.mock("@solidjs/router", () => ({
 beforeAll(() => {
   HTMLVideoElement.prototype.play = vi.fn().mockReturnValue(Promise.resolve());
   HTMLVideoElement.prototype.pause = vi.fn();
+
+  // Mock fetch for the descriptions and subtitles call
+  global.fetch = vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      text: () => Promise.resolve("Mock fetched data"),
+    }),
+  ) as any;
 });
 
 describe("Player Component", () => {
@@ -51,9 +63,6 @@ describe("Player Component", () => {
 
     const videoElement = document.querySelector("video");
     expect(videoElement).toBeInTheDocument();
-    expect(videoElement).toHaveAttribute(
-      "src",
-      "http://127.0.0.1:1422/Videos/video123.mp4",
-    );
+    expect(videoElement).toHaveAttribute("src", "asset:///mock/video.mp4");
   });
 });
