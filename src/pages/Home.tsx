@@ -1,5 +1,5 @@
 import { onMount, For } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
 import "./Home.css";
@@ -34,13 +34,13 @@ export default function Home() {
                 onClick={() => navigate(`/player/${video.id}`)}
               >
                 <img
-                  src={`http://127.0.0.1:1422/Thumbnails/${video.id}.jpg`}
+                  src={convertFileSrc(video.thumbnail_path)}
                   alt={video.title}
                   class="video-thumbnail"
                 />
                 <div class="video-info">
                   <img
-                    src={`http://127.0.0.1:1422/Avatars/${video.channel}.jpg`}
+                    src={convertFileSrc(video.avatar_path)}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
