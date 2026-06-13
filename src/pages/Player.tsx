@@ -7,7 +7,7 @@ import {
   Show,
 } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { VideoEntry } from "../store";
 import "./Player.css";
@@ -43,24 +43,18 @@ export default function Player() {
   const [showSettingsMenu, setShowSettingsMenu] = createSignal(false);
   const [showCCMenu, setShowCCMenu] = createSignal(false);
   const [playbackRate, setPlaybackRate] = createSignal(1.0);
-  const [autoplay, setAutoplay] = createSignal(true);
-  const [hasSubtitles, setHasSubtitles] = createSignal(false);
+  const [isLooping, setIsLooping] = createSignal(false);
   const [subtitlesEnabled, setSubtitlesEnabled] = createSignal(false);
-  const [subColor, setSubColor] = createSignal("#ffffff");
-  const [subBg, setSubBg] = createSignal("rgba(0,0,0,0.8)");
-  const [subSize, setSubSize] = createSignal("18px");
-  const [subPos, setSubPos] = createSignal("-20px");
 
   let videoRef: HTMLVideoElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
   let settingsMenuRef: HTMLDivElement | undefined;
   let ccMenuRef: HTMLDivElement | undefined;
   let controlsTimeout: number;
-
-  let unlistenPlay: UnlistenFn | undefined;
-  let unlistenPause: UnlistenFn | undefined;
-  let unlistenNext: UnlistenFn | undefined;
-  let unlistenPrev: UnlistenFn | undefined;
+  let unlistenPlay: UnlistenFn;
+  let unlistenPause: UnlistenFn;
+  let unlistenNext: UnlistenFn;
+  let unlistenPrev: UnlistenFn;
 
   const loadVideoData = async (targetId?: string) => {
     if (!targetId) return;
@@ -69,8 +63,7 @@ export default function Player() {
       const currentIndex = db.findIndex((v) => v.id === targetId);
 
       if (currentIndex !== -1) {
-        const activeVideo = db[currentIndex];
-        setVideo(activeVideo);
+        setVideo(db[currentIndex]);
         setDescExpanded(false);
         setSubtitlesEnabled(false);
 
@@ -80,7 +73,9 @@ export default function Player() {
         setIsFavorite(favStatus);
 
         try {
-          const descRes = await fetch(convertFileSrc(activeVideo.desc_path));
+          const descRes = await fetch(
+            `http://127.0.0.1:1422/Descriptions/${targetId}.txt`,
+          );
           if (descRes.ok) {
             setDescription(await descRes.text());
           } else {
@@ -90,23 +85,18 @@ export default function Player() {
           setDescription("No description available.");
         }
 
-        try {
-          const subRes = await fetch(convertFileSrc(activeVideo.subtitle_path));
-          if (subRes.ok) {
-            const text = await subRes.text();
-            setHasSubtitles(text.trim().length > 15);
-          } else {
-            setHasSubtitles(false);
+        const nextVideos: VideoEntry[] = [];
+        for (let i = 1; i <= 15; i++) {
+          if (db[(currentIndex + i) % db.length]) {
+            nextVideos.push(db[(currentIndex + i) % db.length]);
           }
-        } catch {
-          setHasSubtitles(false);
         }
 
-        const queueList = [
-          ...db.slice(currentIndex + 1),
-          ...db.slice(0, currentIndex),
-        ];
-        setQueue(queueList);
+        const uniqueQueue = Array.from(
+          new Set(nextVideos.map((a) => a.id)),
+        ).map((id) => nextVideos.find((a) => a.id === id)!);
+
+        setQueue(uniqueQueue.filter((v) => v.id !== targetId));
       }
     } catch (e) {
       console.error("Could not load video library", e);
@@ -148,20 +138,6 @@ export default function Player() {
   };
 
   const togglePlay = () => (isPlaying() ? handlePause() : handlePlay());
-
-  const playNext = () => {
-    const nextVideo = queue()[0];
-    if (nextVideo) navigate(`/player/${nextVideo.id}`);
-  };
-
-  const playPrev = () => {
-    if (videoRef && videoRef.currentTime > 3) {
-      videoRef.currentTime = 0;
-      return;
-    }
-    const prevVideo = queue()[queue().length - 1];
-    if (prevVideo) navigate(`/player/${prevVideo.id}`);
-  };
 
   const toggleMute = () => {
     if (videoRef) {
@@ -206,18 +182,42 @@ export default function Player() {
   };
 
   const handleVideoEnd = () => {
-    if (!autoplay() && videoRef) {
+    if (isLooping() && videoRef) {
       videoRef.currentTime = 0;
       handlePlay();
       return;
     }
-    playNext();
+    const nextVideo = queue()[0];
+    if (nextVideo) navigate(`/player/${nextVideo.id}`);
+  };
+
+  const handleFullscreenChange = () => {
+    setIsFullscreen(!!document.fullscreenElement);
+  };
+
+  const playPrev = async () => {
+    if (!video()) return;
+    try {
+      const db = await invoke<VideoEntry[]>("get_downloaded_videos");
+      const currentIndex = db.findIndex((v) => v.id === video()!.id);
+      if (currentIndex > 0) {
+        navigate(`/player/${db[currentIndex - 1].id}`);
+      } else if (db.length > 0) {
+        navigate(`/player/${db[db.length - 1].id}`);
+      }
+    } catch (e) {
+      console.error("Failed to navigate to previous video:", e);
+    }
+  };
+
+  const playNext = () => {
+    const nextVideo = queue()[0];
+    if (nextVideo) navigate(`/player/${nextVideo.id}`);
   };
 
   const handleMouseMove = () => {
     setShowControls(true);
     clearTimeout(controlsTimeout);
-
     if (isPlaying()) {
       controlsTimeout = window.setTimeout(() => {
         if (!showSettingsMenu() && !showCCMenu()) {
@@ -249,6 +249,7 @@ export default function Player() {
         videoRef.textTracks[i].mode = state ? "showing" : "hidden";
       }
     }
+    setShowCCMenu(false);
   };
 
   const changeSpeed = (rate: number) => {
@@ -259,7 +260,16 @@ export default function Player() {
     setShowSettingsMenu(false);
   };
 
-  onMount(() => {
+  onMount(async () => {
+    await loadVideoData(params.id);
+    unlistenPlay = await listen("media-play", () => handlePlay());
+    unlistenPause = await listen("media-pause", () => handlePause());
+    unlistenNext = await listen("media-next", () => handleVideoEnd());
+    unlistenPrev = await listen("media-prev", () => {
+      if (videoRef) videoRef.currentTime = 0;
+    });
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
     const handleClickOutside = (e: MouseEvent) => {
       if (settingsMenuRef && !settingsMenuRef.contains(e.target as Node)) {
         setShowSettingsMenu(false);
@@ -268,19 +278,7 @@ export default function Player() {
         setShowCCMenu(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-
-    listen("media-play", () => handlePlay()).then((f) => (unlistenPlay = f));
-    listen("media-pause", () => handlePause()).then((f) => (unlistenPause = f));
-    listen("media-next", () => playNext()).then((f) => (unlistenNext = f));
-    listen("media-prev", () => playPrev()).then((f) => (unlistenPrev = f));
 
     onCleanup(() => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -298,11 +296,13 @@ export default function Player() {
 
   createEffect(() => {
     if (video() && videoRef) {
-      videoRef.load();
       invoke("update_media_metadata", {
         title: video()!.title,
         artist: video()!.channel,
       });
+      videoRef.currentTime = 0;
+      videoRef.volume = volume();
+      videoRef.muted = isMuted();
       videoRef.playbackRate = playbackRate();
       handlePlay();
     }
@@ -336,7 +336,6 @@ export default function Player() {
               setShowControls(false)
             }
           >
-            {/* CROSSORIGIN ATTRIBUTE REMOVED HERE */}
             <video
               class="player-video-element"
               ref={videoRef}
@@ -359,19 +358,11 @@ export default function Player() {
                 setShowCCMenu(false);
                 togglePlay();
               }}
-              src={convertFileSrc(video()!.video_path)}
-              style={
-                {
-                  "--sub-color": subColor(),
-                  "--sub-bg": subBg(),
-                  "--sub-size": subSize(),
-                  "--sub-pos": subPos(),
-                } as any
-              }
+              src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
             >
               <track
                 kind="captions"
-                src={convertFileSrc(video()!.subtitle_path)}
+                src={`http://127.0.0.1:1422/Videos/${video()!.id}.vtt`}
                 default={subtitlesEnabled()}
               />
             </video>
@@ -417,6 +408,7 @@ export default function Player() {
                   <button class="control-btn" onClick={playNext} title="Next">
                     <i class="ph-fill ph-skip-forward"></i>
                   </button>
+
                   <div
                     class="volume-control-group"
                     onMouseEnter={() => setIsVolumeHovered(true)}
@@ -450,6 +442,7 @@ export default function Player() {
                       />
                     </div>
                   </div>
+
                   <span class="player-timecode">
                     {formatTime(currentTime())}{" "}
                     <span class="player-timecode-separator">/</span>{" "}
@@ -458,24 +451,12 @@ export default function Player() {
                 </div>
 
                 <div class="flex-row-gap gap-4 relative">
-                  <button
-                    class={`control-btn ${autoplay() ? "active" : ""}`}
-                    onClick={() => setAutoplay(!autoplay())}
-                    title={
-                      autoplay() ? "Autoplay On" : "Autoplay Off (Loop Video)"
-                    }
-                  >
-                    <i
-                      class={`ph-fill ph-${autoplay() ? "play-circle" : "repeat"}`}
-                    ></i>
-                  </button>
-
                   <div
                     class={`player-popup-menu ${showCCMenu() ? "visible" : ""}`}
                     ref={ccMenuRef}
                   >
                     <div class="player-popup-header">
-                      <i class="ph-fill ph-closed-captioning"></i> Visibility
+                      <i class="ph-fill ph-closed-captioning"></i> Subtitles
                     </div>
                     <button
                       class={`player-popup-item ${subtitlesEnabled() ? "selected" : ""}`}
@@ -495,52 +476,6 @@ export default function Player() {
                         <i class="ph-fill ph-check-circle"></i>
                       </Show>
                     </button>
-
-                    <div class="player-popup-header" style="margin-top: 8px;">
-                      <i class="ph-fill ph-palette"></i> Customize
-                    </div>
-                    <div class="subtitle-customization-row">
-                      <label>Color</label>
-                      <input
-                        type="color"
-                        value={subColor()}
-                        onInput={(e) => setSubColor(e.target.value)}
-                      />
-                    </div>
-                    <div class="subtitle-customization-row">
-                      <label>Background</label>
-                      <select
-                        value={subBg()}
-                        onChange={(e) => setSubBg(e.target.value)}
-                      >
-                        <option value="rgba(0,0,0,0.8)">Dark</option>
-                        <option value="transparent">Transparent</option>
-                        <option value="rgba(255,255,255,0.8)">Light</option>
-                      </select>
-                    </div>
-                    <div class="subtitle-customization-row">
-                      <label>Size</label>
-                      <select
-                        value={subSize()}
-                        onChange={(e) => setSubSize(e.target.value)}
-                      >
-                        <option value="14px">Small</option>
-                        <option value="18px">Medium</option>
-                        <option value="24px">Large</option>
-                        <option value="32px">Extra Large</option>
-                      </select>
-                    </div>
-                    <div class="subtitle-customization-row">
-                      <label>Position</label>
-                      <select
-                        value={subPos()}
-                        onChange={(e) => setSubPos(e.target.value)}
-                      >
-                        <option value="-20px">Bottom</option>
-                        <option value="-35vh">Middle</option>
-                        <option value="-75vh">Top</option>
-                      </select>
-                    </div>
                   </div>
 
                   <div
@@ -561,9 +496,22 @@ export default function Player() {
                         </Show>
                       </button>
                     ))}
+
                     <div class="player-popup-header" style="margin-top: 8px;">
                       <i class="ph-fill ph-nut"></i> Options
                     </div>
+                    <button
+                      class={`player-popup-item ${isLooping() ? "selected" : ""}`}
+                      onClick={() => {
+                        setIsLooping(!isLooping());
+                        setShowSettingsMenu(false);
+                      }}
+                    >
+                      <span>Loop Video</span>
+                      <i
+                        class={`ph-fill ph-toggle-${isLooping() ? "right" : "left"}`}
+                      ></i>
+                    </button>
                     <button
                       class="player-popup-item"
                       onClick={() => {
@@ -578,35 +526,13 @@ export default function Player() {
 
                   <button
                     class={`control-btn ${subtitlesEnabled() ? "active" : ""}`}
-                    title={
-                      hasSubtitles() ? "Subtitles/CC" : "No Subtitles Available"
-                    }
+                    title="Subtitles/CC"
                     onClick={() => {
-                      if (hasSubtitles()) {
-                        setShowCCMenu(!showCCMenu());
-                        setShowSettingsMenu(false);
-                      }
+                      setShowCCMenu(!showCCMenu());
+                      setShowSettingsMenu(false);
                     }}
-                    style={
-                      !hasSubtitles()
-                        ? { opacity: 0.3, cursor: "not-allowed" }
-                        : {}
-                    }
                   >
                     <i class="ph-fill ph-closed-captioning"></i>
-                    <Show when={hasSubtitles() && !subtitlesEnabled()}>
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "6px",
-                          right: "6px",
-                          width: "6px",
-                          height: "6px",
-                          background: "var(--primary-accent)",
-                          "border-radius": "50%",
-                        }}
-                      ></div>
-                    </Show>
                   </button>
 
                   <button
@@ -651,7 +577,7 @@ export default function Player() {
             <div class="flex-row-between player-meta-row">
               <div class="flex-row-gap">
                 <img
-                  src={convertFileSrc(video()!.avatar_path)}
+                  src={`http://127.0.0.1:1422/Avatars/${video()!.channel}.jpg`}
                   onError={(e) => {
                     e.currentTarget.src = "";
                     e.currentTarget.className = "ph-fill ph-user avatar-small";
@@ -667,6 +593,7 @@ export default function Player() {
                   </h3>
                 </div>
               </div>
+
               <button
                 class={`clay-btn player-favorite-status ${isFavorite() ? "active" : ""}`}
                 onClick={toggleFavoriteStatus}
@@ -690,7 +617,6 @@ export default function Player() {
                 <span>Local Hardware Library</span>
               </div>
               <div>{description()}</div>
-
               <Show when={descExpanded()}>
                 <div
                   class="desc-toggle"
@@ -717,7 +643,7 @@ export default function Player() {
             >
               <div class="queue-thumbnail-wrapper">
                 <img
-                  src={convertFileSrc(qVideo.thumbnail_path)}
+                  src={`http://127.0.0.1:1422/Thumbnails/${qVideo.id}.jpg`}
                   class="queue-thumbnail"
                 />
               </div>

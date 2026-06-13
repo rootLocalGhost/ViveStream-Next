@@ -7,9 +7,11 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
-    server: {
-      deps: {
-        inline: [/solid-js/],
+    deps: {
+      optimizer: {
+        web: {
+          include: ["solid-js"],
+        },
       },
     },
   },

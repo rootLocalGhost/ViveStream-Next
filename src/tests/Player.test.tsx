@@ -38,8 +38,7 @@ vi.mock("@solidjs/router", () => ({
 beforeAll(() => {
   HTMLVideoElement.prototype.play = vi.fn().mockReturnValue(Promise.resolve());
   HTMLVideoElement.prototype.pause = vi.fn();
-
-  // Mock fetch for the descriptions and subtitles call
+  HTMLVideoElement.prototype.load = vi.fn();
   global.fetch = vi.fn(() =>
     Promise.resolve({
       ok: true,
@@ -63,6 +62,10 @@ describe("Player Component", () => {
 
     const videoElement = document.querySelector("video");
     expect(videoElement).toBeInTheDocument();
-    expect(videoElement).toHaveAttribute("src", "asset:///mock/video.mp4");
+
+    expect(videoElement).toHaveAttribute(
+      "src",
+      "http://127.0.0.1:1422/Videos/video123.mp4",
+    );
   });
 });

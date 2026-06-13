@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::{get_binary_paths, VideoEntry};
+    use crate::downloader::get_binary_paths;
+    use crate::models::VideoEntry;
     use std::path::PathBuf;
 
     #[test]
@@ -27,8 +28,11 @@ mod tests {
             id: "123".to_string(),
             title: "Test Video".to_string(),
             channel: "Test Channel".to_string(),
-            video_path: PathBuf::from("/videos/123.mp4"),
-            thumbnail_path: PathBuf::from("/thumbs/123.jpg"),
+            video_path: "/videos/123.mp4".to_string(),
+            thumbnail_path: "/thumbs/123.jpg".to_string(),
+            avatar_path: "/avatars/Test Channel.jpg".to_string(),
+            subtitle_path: "/videos/123.vtt".to_string(),
+            desc_path: "/descriptions/123.txt".to_string(),
         };
 
         let json = serde_json::to_string(&entry).unwrap();

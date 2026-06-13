@@ -2,7 +2,11 @@ mod db;
 mod downloader;
 mod media_controls;
 mod models;
+mod server;
 mod system;
+
+#[cfg(test)]
+mod tests; // Added tests module
 
 use db::*;
 use downloader::*;
@@ -21,9 +25,17 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .setup(|app| {
             let app_handle = app.handle().clone();
+
             if let Err(e) = init_db(&app_handle) {
                 eprintln!("Database initialization error: {}", e);
             }
+
+            let server_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Ok(base_dir) = crate::system::get_base_dir(&server_handle) {
+                    crate::server::start_server(base_dir).await;
+                }
+            });
 
             if let Some(icon) = app.default_window_icon() {
                 let handle = app.handle().clone();
@@ -83,10 +95,8 @@ pub fn run() {
                     title: Some("ViveStream Idle"),
                     ..Default::default()
                 });
-
                 app.manage(Mutex::new(controls));
             }
-
             Ok(())
         })
         .plugin(tauri_plugin_fs::init())

@@ -1,24 +1,29 @@
-import { createSignal } from "solid-js";
+import { createSignal, createRoot } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 const isBrowser =
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
-const getBool = (key: string, def: boolean) =>
-  isBrowser && window.localStorage.getItem(key) !== null
-    ? window.localStorage.getItem(key) === "true"
-    : def;
+const getBool = (key: string, def: boolean) => {
+  if (!isBrowser) return def;
+  const val = window.localStorage.getItem(key);
+  return val === null || val === undefined ? def : val === "true";
+};
 
-const getStr = (key: string, def: string) =>
-  isBrowser && window.localStorage.getItem(key) !== null
-    ? window.localStorage.getItem(key)!
-    : def;
+const getStr = (key: string, def: string) => {
+  if (!isBrowser) return def;
+  const val = window.localStorage.getItem(key);
+  return val === null || val === undefined ? def : val;
+};
 
-const getNum = (key: string, def: number) =>
-  isBrowser && window.localStorage.getItem(key) !== null
-    ? parseInt(window.localStorage.getItem(key)!, 10)
-    : def;
+const getNum = (key: string, def: number) => {
+  if (!isBrowser) return def;
+  const val = window.localStorage.getItem(key);
+  if (val === null || val === undefined) return def;
+  const parsed = parseInt(val, 10);
+  return isNaN(parsed) ? def : parsed;
+};
 
 const initialAnimState = getBool("useAnimatedIcons", true);
 const initialHoverState = getBool("sidebarHoverMode", true);
@@ -35,17 +40,6 @@ export interface Toast {
   message: string;
   type: "info" | "error" | "success";
 }
-export const [toasts, setToasts] = createSignal<Toast[]>([]);
-export const addToast = (
-  message: string,
-  type: "info" | "error" | "success" = "info",
-) => {
-  const id = Math.random().toString(36).substring(2, 9);
-  setToasts((prev) => [...prev, { id, message, type }]);
-  setTimeout(() => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, 4500);
-};
 
 export interface DialogState {
   title: string;
@@ -53,137 +47,6 @@ export interface DialogState {
   type: "info" | "warning" | "error";
   resolve: (value: boolean) => void;
 }
-export const [dialogState, setDialogState] = createSignal<DialogState | null>(
-  null,
-);
-export const showConfirmDialog = (
-  message: string,
-  title: string,
-  type: "info" | "warning" | "error" = "info",
-): Promise<boolean> => {
-  return new Promise((resolve) => {
-    setDialogState({ title, message, type, resolve });
-  });
-};
-export const closeDialog = (result: boolean) => {
-  const state = dialogState();
-  if (state) {
-    state.resolve(result);
-    setDialogState(null);
-  }
-};
-
-export const [useAnimatedIcons, setUseAnimatedIcons] =
-  createSignal(initialAnimState);
-export const toggleAnimatedIcons = (val: boolean) => {
-  setUseAnimatedIcons(val);
-  if (isBrowser)
-    window.localStorage.setItem("useAnimatedIcons", val.toString());
-};
-
-export const [sidebarHoverMode, setSidebarHoverMode] =
-  createSignal(initialHoverState);
-export const toggleSidebarHoverMode = (val: boolean) => {
-  setSidebarHoverMode(val);
-  if (isBrowser)
-    window.localStorage.setItem("sidebarHoverMode", val.toString());
-};
-
-export const [appTheme, setAppTheme] = createSignal(initialTheme);
-export const toggleAppTheme = (theme: "light" | "dark") => {
-  setAppTheme(theme);
-  if (isBrowser) {
-    window.localStorage.setItem("appTheme", theme);
-    document.documentElement.setAttribute("data-theme", theme);
-  }
-};
-
-export const [appPalette, setAppPalette] = createSignal(initialPalette);
-export const toggleAppPalette = (palette: string) => {
-  setAppPalette(palette);
-  if (isBrowser) {
-    window.localStorage.setItem("appPalette", palette);
-    document.documentElement.setAttribute("data-palette", palette);
-  }
-};
-
-export const [concurrentDownloads, setConcurrentDownloads] = createSignal(
-  getNum("concurrentDownloads", 3),
-);
-export const updateConcurrentDownloads = (val: number) => {
-  setConcurrentDownloads(val);
-  if (isBrowser)
-    window.localStorage.setItem("concurrentDownloads", val.toString());
-  processQueue();
-};
-
-export const [concurrentFragments, setConcurrentFragments] = createSignal(
-  getNum("concurrentFragments", 1),
-);
-export const updateConcurrentFragments = (val: number) => {
-  setConcurrentFragments(val);
-  if (isBrowser)
-    window.localStorage.setItem("concurrentFragments", val.toString());
-};
-
-export const [speedLimit, setSpeedLimit] = createSignal(
-  getStr("speedLimit", ""),
-);
-export const updateSpeedLimit = (val: string) => {
-  setSpeedLimit(val);
-  if (isBrowser) window.localStorage.setItem("speedLimit", val);
-};
-
-export const [browserCookies, setBrowserCookies] = createSignal(
-  getStr("browserCookies", "None"),
-);
-export const updateBrowserCookies = (val: string) => {
-  setBrowserCookies(val);
-  if (isBrowser) window.localStorage.setItem("browserCookies", val);
-};
-
-export const [autoSubtitles, setAutoSubtitles] = createSignal(
-  getBool("autoSubtitles", false),
-);
-export const toggleAutoSubtitles = (val: boolean) => {
-  setAutoSubtitles(val);
-  if (isBrowser) window.localStorage.setItem("autoSubtitles", val.toString());
-};
-
-export const [removeSponsorBlock, setRemoveSponsorBlock] = createSignal(
-  getBool("removeSponsorBlock", false),
-);
-export const toggleRemoveSponsorBlock = (val: boolean) => {
-  setRemoveSponsorBlock(val);
-  if (isBrowser)
-    window.localStorage.setItem("removeSponsorBlock", val.toString());
-};
-
-export const [downloadType, setDownloadType] = createSignal(
-  getStr("downloadType", "Video"),
-);
-export const updateDownloadType = (val: string) => {
-  setDownloadType(val);
-  if (isBrowser) window.localStorage.setItem("downloadType", val);
-};
-
-export const [dlSubtitles, setDlSubtitles] = createSignal(
-  getBool("dlSubtitles", true),
-);
-export const toggleDlSubtitles = (val: boolean) => {
-  setDlSubtitles(val);
-  if (isBrowser) window.localStorage.setItem("dlSubtitles", val.toString());
-};
-
-export const [liveFromStart, setLiveFromStart] = createSignal(
-  getBool("liveFromStart", false),
-);
-export const toggleLiveFromStart = (val: boolean) => {
-  setLiveFromStart(val);
-  if (isBrowser) window.localStorage.setItem("liveFromStart", val.toString());
-};
-
-export const [forceSetup, setForceSetup] = createSignal(false);
 
 export interface VideoEntry {
   id: string;
@@ -208,19 +71,249 @@ export interface DownloadTask {
   phase: string;
 }
 
-export const [downloadUrl, setDownloadUrl] = createSignal("");
+// Wrap all global reactive signals inside createRoot
+export const {
+  toasts,
+  setToasts,
+  dialogState,
+  setDialogState,
+  useAnimatedIcons,
+  setUseAnimatedIcons,
+  sidebarHoverMode,
+  setSidebarHoverMode,
+  appTheme,
+  setAppTheme,
+  appPalette,
+  setAppPalette,
+  concurrentDownloads,
+  setConcurrentDownloads,
+  concurrentFragments,
+  setConcurrentFragments,
+  speedLimit,
+  setSpeedLimit,
+  browserCookies,
+  setBrowserCookies,
+  autoSubtitles,
+  setAutoSubtitles,
+  removeSponsorBlock,
+  setRemoveSponsorBlock,
+  downloadType,
+  setDownloadType,
+  dlSubtitles,
+  setDlSubtitles,
+  liveFromStart,
+  setLiveFromStart,
+  forceSetup,
+  setForceSetup,
+  downloadUrl,
+  setDownloadUrl,
+  downloadQuality,
+  setDownloadQuality,
+  tasks,
+  setTasks,
+  isProcessingQueue,
+  setIsProcessingQueue,
+  homeVideos,
+  setHomeVideos,
+} = createRoot(() => {
+  const [toasts, setToasts] = createSignal<Toast[]>([]);
+  const [dialogState, setDialogState] = createSignal<DialogState | null>(null);
+  const [useAnimatedIcons, setUseAnimatedIcons] =
+    createSignal(initialAnimState);
+  const [sidebarHoverMode, setSidebarHoverMode] =
+    createSignal(initialHoverState);
+  const [appTheme, setAppTheme] = createSignal(initialTheme);
+  const [appPalette, setAppPalette] = createSignal(initialPalette);
+  const [concurrentDownloads, setConcurrentDownloads] = createSignal(
+    getNum("concurrentDownloads", 3),
+  );
+  const [concurrentFragments, setConcurrentFragments] = createSignal(
+    getNum("concurrentFragments", 1),
+  );
+  const [speedLimit, setSpeedLimit] = createSignal(getStr("speedLimit", ""));
+  const [browserCookies, setBrowserCookies] = createSignal(
+    getStr("browserCookies", "None"),
+  );
+  const [autoSubtitles, setAutoSubtitles] = createSignal(
+    getBool("autoSubtitles", false),
+  );
+  const [removeSponsorBlock, setRemoveSponsorBlock] = createSignal(
+    getBool("removeSponsorBlock", false),
+  );
+  const [downloadType, setDownloadType] = createSignal(
+    getStr("downloadType", "Video"),
+  );
+  const [dlSubtitles, setDlSubtitles] = createSignal(
+    getBool("dlSubtitles", true),
+  );
+  const [liveFromStart, setLiveFromStart] = createSignal(
+    getBool("liveFromStart", false),
+  );
+  const [forceSetup, setForceSetup] = createSignal(false);
+  const [downloadUrl, setDownloadUrl] = createSignal("");
+  const [downloadQuality, setDownloadQuality] = createSignal(
+    getStr("downloadQuality", "1440p"),
+  );
+  const [tasks, setTasks] = createSignal<DownloadTask[]>([]);
+  const [isProcessingQueue, setIsProcessingQueue] = createSignal(false);
+  const [homeVideos, setHomeVideos] = createSignal<VideoEntry[]>([]);
 
-export const [downloadQuality, setDownloadQuality] = createSignal(
-  getStr("downloadQuality", "1440p"),
-);
+  return {
+    toasts,
+    setToasts,
+    dialogState,
+    setDialogState,
+    useAnimatedIcons,
+    setUseAnimatedIcons,
+    sidebarHoverMode,
+    setSidebarHoverMode,
+    appTheme,
+    setAppTheme,
+    appPalette,
+    setAppPalette,
+    concurrentDownloads,
+    setConcurrentDownloads,
+    concurrentFragments,
+    setConcurrentFragments,
+    speedLimit,
+    setSpeedLimit,
+    browserCookies,
+    setBrowserCookies,
+    autoSubtitles,
+    setAutoSubtitles,
+    removeSponsorBlock,
+    setRemoveSponsorBlock,
+    downloadType,
+    setDownloadType,
+    dlSubtitles,
+    setDlSubtitles,
+    liveFromStart,
+    setLiveFromStart,
+    forceSetup,
+    setForceSetup,
+    downloadUrl,
+    setDownloadUrl,
+    downloadQuality,
+    setDownloadQuality,
+    tasks,
+    setTasks,
+    isProcessingQueue,
+    setIsProcessingQueue,
+    homeVideos,
+    setHomeVideos,
+  };
+});
+
+export const addToast = (
+  message: string,
+  type: "info" | "error" | "success" = "info",
+) => {
+  const id = Math.random().toString(36).substring(2, 9);
+  setToasts((prev) => [...prev, { id, message, type }]);
+  setTimeout(() => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, 4500);
+};
+
+export const showConfirmDialog = (
+  message: string,
+  title: string,
+  type: "info" | "warning" | "error" = "info",
+): Promise<boolean> => {
+  return new Promise((resolve) => {
+    setDialogState({ title, message, type, resolve });
+  });
+};
+
+export const closeDialog = (result: boolean) => {
+  const state = dialogState();
+  if (state) {
+    state.resolve(result);
+    setDialogState(null);
+  }
+};
+
+export const toggleAnimatedIcons = (val: boolean) => {
+  setUseAnimatedIcons(val);
+  if (isBrowser)
+    window.localStorage.setItem("useAnimatedIcons", val.toString());
+};
+
+export const toggleSidebarHoverMode = (val: boolean) => {
+  setSidebarHoverMode(val);
+  if (isBrowser)
+    window.localStorage.setItem("sidebarHoverMode", val.toString());
+};
+
+export const toggleAppTheme = (theme: "light" | "dark") => {
+  setAppTheme(theme);
+  if (isBrowser) {
+    window.localStorage.setItem("appTheme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+};
+
+export const toggleAppPalette = (palette: string) => {
+  setAppPalette(palette);
+  if (isBrowser) {
+    window.localStorage.setItem("appPalette", palette);
+    document.documentElement.setAttribute("data-palette", palette);
+  }
+};
+
+export const updateConcurrentDownloads = (val: number) => {
+  setConcurrentDownloads(val);
+  if (isBrowser)
+    window.localStorage.setItem("concurrentDownloads", val.toString());
+  processQueue();
+};
+
+export const updateConcurrentFragments = (val: number) => {
+  setConcurrentFragments(val);
+  if (isBrowser)
+    window.localStorage.setItem("concurrentFragments", val.toString());
+};
+
+export const updateSpeedLimit = (val: string) => {
+  setSpeedLimit(val);
+  if (isBrowser) window.localStorage.setItem("speedLimit", val);
+};
+
+export const updateBrowserCookies = (val: string) => {
+  setBrowserCookies(val);
+  if (isBrowser) window.localStorage.setItem("browserCookies", val);
+};
+
+export const toggleAutoSubtitles = (val: boolean) => {
+  setAutoSubtitles(val);
+  if (isBrowser) window.localStorage.setItem("autoSubtitles", val.toString());
+};
+
+export const toggleRemoveSponsorBlock = (val: boolean) => {
+  setRemoveSponsorBlock(val);
+  if (isBrowser)
+    window.localStorage.setItem("removeSponsorBlock", val.toString());
+};
+
+export const updateDownloadType = (val: string) => {
+  setDownloadType(val);
+  if (isBrowser) window.localStorage.setItem("downloadType", val);
+};
+
+export const toggleDlSubtitles = (val: boolean) => {
+  setDlSubtitles(val);
+  if (isBrowser) window.localStorage.setItem("dlSubtitles", val.toString());
+};
+
+export const toggleLiveFromStart = (val: boolean) => {
+  setLiveFromStart(val);
+  if (isBrowser) window.localStorage.setItem("liveFromStart", val.toString());
+};
+
 export const updateDownloadQuality = (val: string) => {
   setDownloadQuality(val);
   if (isBrowser) window.localStorage.setItem("downloadQuality", val);
 };
-
-export const [tasks, setTasks] = createSignal<DownloadTask[]>([]);
-export const [isProcessingQueue, setIsProcessingQueue] = createSignal(false);
-export const [homeVideos, setHomeVideos] = createSignal<VideoEntry[]>([]);
 
 export const updateTask = (id: string, updates: Partial<DownloadTask>) => {
   setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
