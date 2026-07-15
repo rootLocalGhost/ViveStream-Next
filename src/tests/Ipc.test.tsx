@@ -35,7 +35,7 @@ describe("Tauri IPC Mocking (Integration)", () => {
     vi.clearAllMocks();
   });
 
-  it("should call download_video with correctly parsed VideoEntry struct", async () => {
+  it("should call download_video with correctly parsed VideoEntry struct and playerClient", async () => {
     render(() => <Downloads />);
 
     const input = screen.getByPlaceholderText("Paste video or playlist URL...");
@@ -51,9 +51,9 @@ describe("Tauri IPC Mocking (Integration)", () => {
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("get_video_metadata", {
         url: "https://youtube.com/watch?v=mock_id_123",
+        playerClient: "tv_embedded,web_embedded",
       });
 
-      // Use objectContaining because the store now injects cookies, speedLimit, etc.
       expect(invoke).toHaveBeenCalledWith(
         "download_video",
         expect.objectContaining({
@@ -66,6 +66,7 @@ describe("Tauri IPC Mocking (Integration)", () => {
             thumbnail_path: "/mock/thumbs/mock_id_123.jpg",
           },
           quality: "1440p",
+          playerClient: "tv_embedded,web_embedded",
         }),
       );
     });
