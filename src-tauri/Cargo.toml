@@ -31,3 +31,6 @@ souvlaki = "0.8.3"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 rusqlite = "0.31.0"
 warp = "0.3"
+
+[dev-dependencies]
+tauri = { version = "2.11.2", features = ["test"] }
