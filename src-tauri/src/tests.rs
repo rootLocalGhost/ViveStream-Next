@@ -6,14 +6,13 @@ mod tests {
     #[test]
     fn test_get_binary_paths() {
         let bin_dir = PathBuf::from("/mock/bin/folder");
-        let (ytdlp, ffmpeg, deno, bgutil) = get_binary_paths(&bin_dir);
+        let (ytdlp, ffmpeg, deno) = get_binary_paths(&bin_dir);
 
         #[cfg(target_os = "windows")]
         {
             assert_eq!(ytdlp, bin_dir.join("yt-dlp.exe"));
             assert_eq!(ffmpeg, bin_dir.join("ffmpeg.exe"));
             assert_eq!(deno, bin_dir.join("deno.exe"));
-            assert_eq!(bgutil, bin_dir.join("bgutil-pot.exe"));
         }
 
         #[cfg(not(target_os = "windows"))]
@@ -21,7 +20,6 @@ mod tests {
             assert_eq!(ytdlp, bin_dir.join("yt-dlp"));
             assert_eq!(ffmpeg, bin_dir.join("ffmpeg"));
             assert_eq!(deno, bin_dir.join("deno"));
-            assert_eq!(bgutil, bin_dir.join("bgutil-pot"));
         }
     }
 }

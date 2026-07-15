@@ -12,37 +12,97 @@ use std::time::Instant;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_dialog::DialogExt;
 
-pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
+pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
     return (
         bin_dir.join("yt-dlp.exe"),
         bin_dir.join("ffmpeg.exe"),
         bin_dir.join("deno.exe"),
-        bin_dir.join("bgutil-pot.exe"),
     );
     #[cfg(not(target_os = "windows"))]
     return (
         bin_dir.join("yt-dlp"),
         bin_dir.join("ffmpeg"),
         bin_dir.join("deno"),
-        bin_dir.join("bgutil-pot"),
     );
+}
+
+// Spawns a hidden native WebView, forces YouTube to calculate a BotGuard token, and intercepts it
+async fn extract_po_token(app: &AppHandle) -> Result<String, String> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let tx = std::sync::Arc::new(std::sync::Mutex::new(Some(tx)));
+    let tx_clone = tx.clone();
+
+    let window_label = format!(
+        "pot_{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    );
+
+    let builder = tauri::WebviewWindowBuilder::new(
+        app,
+        &window_label,
+        tauri::WebviewUrl::External("https://www.youtube.com/embed/bVYw5xR8xFg".parse().unwrap()),
+    )
+    .visible(false)
+    .initialization_script(
+        r#"
+        const origFetch = window.fetch;
+        window.fetch = async function(res, init) {
+            if (typeof res === 'string' && res.includes('/youtubei/v1/player')) {
+                try {
+                    if (init && init.body) {
+                        const body = JSON.parse(init.body);
+                        const token = body?.serviceIntegrityDimensions?.poToken;
+                        if (token) {
+                            window.location.replace("https://vstoken.local/" + token);
+                        }
+                    }
+                } catch(e) {}
+            }
+            return origFetch.apply(this, arguments);
+        };
+    "#,
+    )
+    .on_navigation(move |url| {
+        if url.host_str() == Some("vstoken.local") {
+            let token = url.path().trim_start_matches('/').to_string();
+            if let Some(sender) = tx_clone.lock().unwrap().take() {
+                let _ = sender.send(token);
+            }
+            return false; // Cancel navigation
+        }
+        true
+    });
+
+    let webview = builder.build().map_err(|e| e.to_string())?;
+
+    match tokio::time::timeout(std::time::Duration::from_secs(8), rx).await {
+        Ok(Ok(token)) => {
+            let _ = webview.close();
+            Ok(token)
+        }
+        _ => {
+            let _ = webview.close();
+            Err("Timeout".into())
+        }
+    }
 }
 
 #[tauri::command]
 pub async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String> {
     let bin_dir = get_bin_dir(&app)?;
-    let (ytdlp, ffmpeg, deno, bgutil) = get_binary_paths(&bin_dir);
+    let (ytdlp, ffmpeg, deno) = get_binary_paths(&bin_dir);
 
     #[cfg(target_os = "windows")]
     let ffprobe = bin_dir.join("ffprobe.exe");
     #[cfg(not(target_os = "windows"))]
     let ffprobe = bin_dir.join("ffprobe");
 
-    let plugin_dir = bin_dir.join("yt_dlp_plugins");
-
     Ok(BinaryCheckStatus {
-        ytdlp_exists: ytdlp.exists() && plugin_dir.exists() && deno.exists() && bgutil.exists(),
+        ytdlp_exists: ytdlp.exists() && deno.exists(),
         ffmpeg_exists: ffmpeg.exists() && ffprobe.exists(),
         bin_folder: bin_dir,
     })
@@ -157,9 +217,13 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
-            if file.name().ends_with("deno.exe") || file.name().ends_with("deno") {
-                let outpath = bin_dir.join(std::path::Path::new(file.name()).file_name().unwrap());
-                std::io::copy(&mut file, &mut File::create(&outpath).unwrap()).unwrap();
+            let name = file.name();
+            if name.ends_with("deno.exe") || name.ends_with("deno") {
+                let file_name = std::path::Path::new(name).file_name().unwrap();
+                let outpath = bin_dir.join(file_name);
+                let mut outfile = File::create(&outpath).map_err(|e| e.to_string())?;
+                std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
+
                 #[cfg(not(target_os = "windows"))]
                 {
                     use std::os::unix::fs::PermissionsExt;
@@ -170,108 +234,14 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                             .permissions()
                             .set_mode(0o755),
                     )
-                    .unwrap();
+                    .map_err(|e| e.to_string())?;
                 }
             }
         }
     }
     let _ = fs::remove_file(deno_zip_path);
 
-    // 3. FETCH RUST PO TOKEN PROVIDER BINARY (bgutil-pot)
-    emit_progress("Fetching Native Rust PO Token Generator...");
-    #[cfg(target_os = "windows")]
-    let bgutil_url = "https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-pot-windows-x86_64.exe";
-    #[cfg(not(target_os = "windows"))]
-    let bgutil_url = "https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-pot-linux-x86_64";
-
-    let bgutil_bytes = client
-        .get(bgutil_url)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?
-        .bytes()
-        .await
-        .map_err(|e| e.to_string())?;
-    let bgutil_target_name = if cfg!(target_os = "windows") {
-        "bgutil-pot.exe"
-    } else {
-        "bgutil-pot"
-    };
-    let bgutil_path = bin_dir.join(bgutil_target_name);
-
-    File::create(&bgutil_path)
-        .map_err(|e| e.to_string())?
-        .write_all(&bgutil_bytes)
-        .map_err(|e| e.to_string())?;
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&bgutil_path).unwrap().permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(&bgutil_path, perms).unwrap();
-    }
-
-    // 4. FETCH PO TOKEN RUST PLUGIN BRIDGE
-    emit_progress("Fetching Rust PO Token Plugin Bridge...");
-    let plugin_url = "https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-ytdlp-pot-provider-rs.zip";
-    let plugin_bytes = client
-        .get(plugin_url)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?
-        .bytes()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let plugin_zip_path = bin_dir.join("plugin_temp.zip");
-    File::create(&plugin_zip_path)
-        .map_err(|e| e.to_string())?
-        .write_all(&plugin_bytes)
-        .map_err(|e| e.to_string())?;
-
-    emit_progress("Injecting Rust PO Token Plugin into yt-dlp...");
-    {
-        let file = File::open(&plugin_zip_path).map_err(|e| e.to_string())?;
-        let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
-
-        for i in 0..archive.len() {
-            let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
-            let path = match file.enclosed_name() {
-                Some(p) => p,
-                None => continue,
-            };
-
-            let mut new_path = PathBuf::new();
-            let mut found_plugin_root = false;
-
-            for comp in path.components() {
-                if comp.as_os_str() == "yt_dlp_plugins" {
-                    found_plugin_root = true;
-                }
-                if found_plugin_root {
-                    new_path.push(comp);
-                }
-            }
-
-            if !found_plugin_root || new_path.as_os_str().is_empty() {
-                continue;
-            }
-            let outpath = bin_dir.join(&new_path);
-
-            if file.is_dir() {
-                fs::create_dir_all(&outpath).map_err(|e| e.to_string())?;
-            } else {
-                if let Some(p) = outpath.parent() {
-                    fs::create_dir_all(p).map_err(|e| e.to_string())?;
-                }
-                std::io::copy(&mut file, &mut File::create(&outpath).unwrap()).unwrap();
-            }
-        }
-    }
-    let _ = fs::remove_file(plugin_zip_path);
-
-    // 5. FETCH FFMPEG
+    // 3. FETCH FFMPEG
     emit_progress("Fetching repacked Lite FFmpeg build...");
     #[cfg(target_os = "windows")]
     let ffmpeg_url = "https://github.com/rootlocalghost/ViveStream-Next-Engines/releases/latest/download/ffmpeg-win64-lite.zip";
@@ -352,7 +322,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     let _ = fs::remove_file(temp_path);
-    emit_progress("Engines and native plugins extracted perfectly.");
+    emit_progress("Engines extracted perfectly.");
 
     app.dialog()
         .message("Deployment complete. ViveStream will now restart to initialize engines.")
@@ -372,7 +342,7 @@ pub async fn get_video_metadata(
 ) -> Result<Vec<VideoEntry>, String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
-    let (ytdlp_path, _, deno_path, _) = get_binary_paths(&bin_dir);
+    let (ytdlp_path, _, deno_path) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() {
         return Err("yt-dlp binary missing.".into());
@@ -393,6 +363,16 @@ pub async fn get_video_metadata(
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
 
+    let po_token = match extract_po_token(&app).await {
+        Ok(t) => t,
+        Err(_) => String::new(),
+    };
+
+    let mut client_args = format!("youtube:player_client={}", player_client);
+    if !po_token.is_empty() {
+        client_args.push_str(&format!(";po_token=web+{}", po_token));
+    }
+
     let mut cmd = Command::new(&ytdlp_path);
     #[cfg(target_os = "windows")]
     cmd.creation_flags(0x08000000);
@@ -403,12 +383,10 @@ pub async fn get_video_metadata(
         .args([
             "--force-ipv4",
             "--flat-playlist",
-            "--plugin-dirs",
-            bin_dir.to_str().unwrap(),
             "--js-runtimes",
             &format!("deno:{}", deno_path.to_str().unwrap()),
             "--extractor-args",
-            &format!("youtube:player_client={}", player_client),
+            &client_args,
             "--print",
             "%(id)s|%(uploader)s|%(title)s",
             &url,
@@ -469,7 +447,7 @@ pub async fn download_video(
 ) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
-    let (ytdlp_path, ffmpeg_path, deno_path, _) = get_binary_paths(&bin_dir);
+    let (ytdlp_path, ffmpeg_path, deno_path) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() || !ffmpeg_path.exists() {
         return Err("Binaries missing.".into());
@@ -503,8 +481,30 @@ pub async fn download_video(
 
     let _ = app.emit(
         &progress_event,
-        "Step 1: Authenticating and Downloading stream...",
+        "Step 1: Spawning local WebView to intercept BotGuard PO Token...",
     );
+
+    let po_token = match extract_po_token(&app).await {
+        Ok(t) => {
+            let _ = app.emit(
+                &progress_event,
+                "PO Token generated successfully. Initializing stream...",
+            );
+            t
+        }
+        Err(_) => {
+            let _ = app.emit(
+                &progress_event,
+                "PO Token extraction timed out, proceeding without token...",
+            );
+            String::new()
+        }
+    };
+
+    let mut client_args = format!("youtube:player_client={}", player_client);
+    if !po_token.is_empty() {
+        client_args.push_str(&format!(";po_token=web+{}", po_token));
+    }
 
     let is_audio = dl_type == "Audio";
     let res_filter = if is_audio {
@@ -525,8 +525,6 @@ pub async fn download_video(
         "--force-ipv4".to_string(),
         "--ffmpeg-location".to_string(),
         ffmpeg_path.to_str().unwrap().to_string(),
-        "--plugin-dirs".to_string(),
-        bin_dir.to_str().unwrap().to_string(),
         "--js-runtimes".to_string(),
         format!("deno:{}", deno_path.to_str().unwrap()),
         "--retries".to_string(),
@@ -535,7 +533,7 @@ pub async fn download_video(
         "-f".to_string(),
         res_filter,
         "--extractor-args".to_string(),
-        format!("youtube:player_client={}", player_client),
+        client_args,
         "--paths".to_string(),
         vid_dir.to_str().unwrap().to_string(),
         "--paths".to_string(),
@@ -778,7 +776,7 @@ pub async fn download_video(
 pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<String, String> {
     let base_dir = get_base_dir(&app)?;
     let bin_dir = get_bin_dir(&app)?;
-    let (ytdlp_path, _, deno_path, _) = crate::downloader::get_binary_paths(&bin_dir);
+    let (ytdlp_path, _, deno_path) = crate::downloader::get_binary_paths(&bin_dir);
 
     let path_sep = if cfg!(target_os = "windows") {
         ";"
@@ -797,6 +795,12 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
     if !vid_dir.exists() {
         return Ok("No video directory found. Database matches clean state.".into());
     }
+
+    // AWAIT BEFORE DB CONNECTION TO PREVENT THREAD PANICS
+    let po_token = match extract_po_token(&app).await {
+        Ok(t) => t,
+        Err(_) => String::new(),
+    };
 
     let mut physical_ids = std::collections::HashSet::new();
 
@@ -839,6 +843,11 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
     }
 
     if !missing_metadata_ids.is_empty() && ytdlp_path.exists() {
+        let mut client_args = format!("youtube:player_client={}", player_client);
+        if !po_token.is_empty() {
+            client_args.push_str(&format!(";po_token=web+{}", po_token));
+        }
+
         for chunk in missing_metadata_ids.chunks(20) {
             let mut cmd = Command::new(&ytdlp_path);
             #[cfg(target_os = "windows")]
@@ -848,15 +857,11 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
             cmd.env("PATH", &new_path);
             cmd.arg("--force-ipv4");
             cmd.arg("--flat-playlist");
-            cmd.args(["--plugin-dirs", bin_dir.to_str().unwrap()]);
             cmd.args([
                 "--js-runtimes",
                 &format!("deno:{}", deno_path.to_str().unwrap()),
             ]);
-            cmd.args([
-                "--extractor-args",
-                &format!("youtube:player_client={}", player_client),
-            ]);
+            cmd.args(["--extractor-args", &client_args]);
             cmd.args(["--print", "%(id)s|%(uploader)s|%(title)s"]);
 
             for id in chunk {
