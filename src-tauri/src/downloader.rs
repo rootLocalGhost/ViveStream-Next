@@ -12,24 +12,37 @@ use std::time::Instant;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_dialog::DialogExt;
 
-pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf) {
+pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
-    return (bin_dir.join("yt-dlp.exe"), bin_dir.join("ffmpeg.exe"));
+    return (
+        bin_dir.join("yt-dlp.exe"),
+        bin_dir.join("ffmpeg.exe"),
+        bin_dir.join("deno.exe"),
+        bin_dir.join("bgutil-pot.exe"),
+    );
     #[cfg(not(target_os = "windows"))]
-    return (bin_dir.join("yt-dlp"), bin_dir.join("ffmpeg"));
+    return (
+        bin_dir.join("yt-dlp"),
+        bin_dir.join("ffmpeg"),
+        bin_dir.join("deno"),
+        bin_dir.join("bgutil-pot"),
+    );
 }
 
 #[tauri::command]
 pub async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String> {
     let bin_dir = get_bin_dir(&app)?;
-    let (ytdlp, ffmpeg) = get_binary_paths(&bin_dir);
+    let (ytdlp, ffmpeg, deno, bgutil) = get_binary_paths(&bin_dir);
+
     #[cfg(target_os = "windows")]
     let ffprobe = bin_dir.join("ffprobe.exe");
     #[cfg(not(target_os = "windows"))]
     let ffprobe = bin_dir.join("ffprobe");
 
+    let plugin_dir = bin_dir.join("yt_dlp_plugins");
+
     Ok(BinaryCheckStatus {
-        ytdlp_exists: ytdlp.exists(),
+        ytdlp_exists: ytdlp.exists() && plugin_dir.exists() && deno.exists() && bgutil.exists(),
         ffmpeg_exists: ffmpeg.exists() && ffprobe.exists(),
         bin_folder: bin_dir,
     })
@@ -50,6 +63,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         let _ = app.emit("setup-progress", msg);
     };
 
+    // 1. FETCH YT-DLP
     #[cfg(target_os = "windows")]
     let ytdlp_url =
         "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe";
@@ -68,10 +82,10 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     emit_progress("Validating yt-dlp SHA256 checksum...");
-    let sums_url =
-        "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
     let sums_text = client
-        .get(sums_url)
+        .get(
+            "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS",
+        )
         .send()
         .await
         .map_err(|e| e.to_string())?
@@ -84,7 +98,6 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     } else {
         "yt-dlp"
     };
-
     let expected_hash = sums_text
         .lines()
         .find(|line| line.ends_with(target_bin_name))
@@ -93,9 +106,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     let mut hasher = Sha256::new();
     hasher.update(&bytes);
-    let actual_hash = format!("{:x}", hasher.finalize());
-
-    if expected_hash != actual_hash {
+    if expected_hash != format!("{:x}", hasher.finalize()) {
         return Err(format!("SECURITY FAULT: yt-dlp checksum mismatch!"));
     }
 
@@ -109,15 +120,159 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     #[cfg(not(target_os = "windows"))]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&ytdlp_path)
-            .map_err(|e| e.to_string())?
-            .permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(&ytdlp_path, perms).map_err(|e| e.to_string())?;
+        fs::set_permissions(
+            &ytdlp_path,
+            fs::metadata(&ytdlp_path)
+                .unwrap()
+                .permissions()
+                .set_mode(0o755),
+        )
+        .map_err(|e| e.to_string())?;
     }
 
-    emit_progress("Fetching repacked Lite FFmpeg build...");
+    // 2. FETCH DENO (Required strictly for JS n-Challenge Decryption)
+    emit_progress("Fetching standalone Deno JS runtime...");
+    #[cfg(target_os = "windows")]
+    let deno_url =
+        "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip";
+    #[cfg(not(target_os = "windows"))]
+    let deno_url = "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip";
 
+    let deno_bytes = client
+        .get(deno_url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .bytes()
+        .await
+        .map_err(|e| e.to_string())?;
+    let deno_zip_path = bin_dir.join("deno_temp.zip");
+    File::create(&deno_zip_path)
+        .map_err(|e| e.to_string())?
+        .write_all(&deno_bytes)
+        .map_err(|e| e.to_string())?;
+
+    {
+        let file = File::open(&deno_zip_path).map_err(|e| e.to_string())?;
+        let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
+            if file.name().ends_with("deno.exe") || file.name().ends_with("deno") {
+                let outpath = bin_dir.join(std::path::Path::new(file.name()).file_name().unwrap());
+                std::io::copy(&mut file, &mut File::create(&outpath).unwrap()).unwrap();
+                #[cfg(not(target_os = "windows"))]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    fs::set_permissions(
+                        &outpath,
+                        fs::metadata(&outpath)
+                            .unwrap()
+                            .permissions()
+                            .set_mode(0o755),
+                    )
+                    .unwrap();
+                }
+            }
+        }
+    }
+    let _ = fs::remove_file(deno_zip_path);
+
+    // 3. FETCH RUST PO TOKEN PROVIDER BINARY (bgutil-pot)
+    emit_progress("Fetching Native Rust PO Token Generator...");
+    #[cfg(target_os = "windows")]
+    let bgutil_url = "https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-pot-windows-x86_64.exe";
+    #[cfg(not(target_os = "windows"))]
+    let bgutil_url = "https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-pot-linux-x86_64";
+
+    let bgutil_bytes = client
+        .get(bgutil_url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .bytes()
+        .await
+        .map_err(|e| e.to_string())?;
+    let bgutil_target_name = if cfg!(target_os = "windows") {
+        "bgutil-pot.exe"
+    } else {
+        "bgutil-pot"
+    };
+    let bgutil_path = bin_dir.join(bgutil_target_name);
+
+    File::create(&bgutil_path)
+        .map_err(|e| e.to_string())?
+        .write_all(&bgutil_bytes)
+        .map_err(|e| e.to_string())?;
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(&bgutil_path).unwrap().permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&bgutil_path, perms).unwrap();
+    }
+
+    // 4. FETCH PO TOKEN RUST PLUGIN BRIDGE
+    emit_progress("Fetching Rust PO Token Plugin Bridge...");
+    let plugin_url = "https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-ytdlp-pot-provider-rs.zip";
+    let plugin_bytes = client
+        .get(plugin_url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .bytes()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let plugin_zip_path = bin_dir.join("plugin_temp.zip");
+    File::create(&plugin_zip_path)
+        .map_err(|e| e.to_string())?
+        .write_all(&plugin_bytes)
+        .map_err(|e| e.to_string())?;
+
+    emit_progress("Injecting Rust PO Token Plugin into yt-dlp...");
+    {
+        let file = File::open(&plugin_zip_path).map_err(|e| e.to_string())?;
+        let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
+
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
+            let path = match file.enclosed_name() {
+                Some(p) => p,
+                None => continue,
+            };
+
+            let mut new_path = PathBuf::new();
+            let mut found_plugin_root = false;
+
+            for comp in path.components() {
+                if comp.as_os_str() == "yt_dlp_plugins" {
+                    found_plugin_root = true;
+                }
+                if found_plugin_root {
+                    new_path.push(comp);
+                }
+            }
+
+            if !found_plugin_root || new_path.as_os_str().is_empty() {
+                continue;
+            }
+            let outpath = bin_dir.join(&new_path);
+
+            if file.is_dir() {
+                fs::create_dir_all(&outpath).map_err(|e| e.to_string())?;
+            } else {
+                if let Some(p) = outpath.parent() {
+                    fs::create_dir_all(p).map_err(|e| e.to_string())?;
+                }
+                std::io::copy(&mut file, &mut File::create(&outpath).unwrap()).unwrap();
+            }
+        }
+    }
+    let _ = fs::remove_file(plugin_zip_path);
+
+    // 5. FETCH FFMPEG
+    emit_progress("Fetching repacked Lite FFmpeg build...");
     #[cfg(target_os = "windows")]
     let ffmpeg_url = "https://github.com/rootlocalghost/ViveStream-Next-Engines/releases/latest/download/ffmpeg-win64-lite.zip";
     #[cfg(not(target_os = "windows"))]
@@ -128,7 +283,6 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
         .send()
         .await
         .map_err(|e| e.to_string())?;
-
     let total_size = res.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
 
@@ -143,30 +297,28 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     while let Some(chunk) = res.chunk().await.map_err(|e| e.to_string())? {
         temp_file.write_all(&chunk).map_err(|e| e.to_string())?;
         downloaded += chunk.len() as u64;
-
         if total_size > 0 && last_emit.elapsed().as_millis() > 150 {
-            let percent = (downloaded as f64 / total_size as f64) * 100.0;
-            emit_progress(&format!("[PROGRESS] {:.1}", percent));
+            emit_progress(&format!(
+                "[PROGRESS] {:.1}",
+                (downloaded as f64 / total_size as f64) * 100.0
+            ));
             last_emit = Instant::now();
         }
     }
-    emit_progress(&format!("[PROGRESS] 100.0"));
+    emit_progress("[PROGRESS] 100.0");
     emit_progress("Download complete. Extracting raw executables from disk...");
 
     #[cfg(target_os = "windows")]
     {
         let file = File::open(&temp_path).map_err(|e| e.to_string())?;
         let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
-
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
             if file.is_file() {
                 let name = file.name();
                 if name.ends_with("ffmpeg.exe") || name.ends_with("ffprobe.exe") {
-                    let file_name = std::path::Path::new(name).file_name().unwrap();
-                    let mut outfile =
-                        File::create(bin_dir.join(file_name)).map_err(|e| e.to_string())?;
-                    std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
+                    let outpath = bin_dir.join(std::path::Path::new(name).file_name().unwrap());
+                    std::io::copy(&mut file, &mut File::create(outpath).unwrap()).unwrap();
                 }
             }
         }
@@ -174,30 +326,25 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     #[cfg(not(target_os = "windows"))]
     {
-        let file = File::open(&temp_path).map_err(|e| e.to_string())?;
         use tar::Archive;
         use xz2::read::XzDecoder;
-        let mut archive = Archive::new(XzDecoder::new(file));
-
-        for entry in archive.entries().map_err(|e| e.to_string())? {
-            let mut entry = entry.map_err(|e| e.to_string())?;
+        let mut archive = Archive::new(XzDecoder::new(File::open(&temp_path).unwrap()));
+        for entry in archive.entries().unwrap() {
+            let mut entry = entry.unwrap();
             if entry.header().entry_type().is_file() {
-                if let Some(name) = entry
-                    .path()
-                    .map_err(|e| e.to_string())?
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                {
+                if let Some(name) = entry.path().unwrap().file_name().and_then(|n| n.to_str()) {
                     if name == "ffmpeg" || name == "ffprobe" {
                         let outpath = bin_dir.join(name);
-                        entry.unpack(&outpath).map_err(|e| e.to_string())?;
-
+                        entry.unpack(&outpath).unwrap();
                         use std::os::unix::fs::PermissionsExt;
-                        let mut perms = fs::metadata(&outpath)
-                            .map_err(|e| e.to_string())?
-                            .permissions();
-                        perms.set_mode(0o755);
-                        fs::set_permissions(&outpath, perms).map_err(|e| e.to_string())?;
+                        fs::set_permissions(
+                            &outpath,
+                            fs::metadata(&outpath)
+                                .unwrap()
+                                .permissions()
+                                .set_mode(0o755),
+                        )
+                        .unwrap();
                     }
                 }
             }
@@ -205,7 +352,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     }
 
     let _ = fs::remove_file(temp_path);
-    emit_progress("FFmpeg and FFprobe extracted perfectly.");
+    emit_progress("Engines and native plugins extracted perfectly.");
 
     app.dialog()
         .message("Deployment complete. ViveStream will now restart to initialize engines.")
@@ -218,14 +365,30 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<VideoEntry>, String> {
+pub async fn get_video_metadata(
+    app: AppHandle,
+    url: String,
+    player_client: String,
+) -> Result<Vec<VideoEntry>, String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
-    let (ytdlp_path, _) = get_binary_paths(&bin_dir);
+    let (ytdlp_path, _, deno_path, _) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() {
         return Err("yt-dlp binary missing.".into());
     }
+
+    let path_sep = if cfg!(target_os = "windows") {
+        ";"
+    } else {
+        ":"
+    };
+    let new_path = format!(
+        "{}{}{}",
+        bin_dir.to_str().unwrap(),
+        path_sep,
+        std::env::var("PATH").unwrap_or_default()
+    );
 
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
@@ -235,11 +398,17 @@ pub async fn get_video_metadata(app: AppHandle, url: String) -> Result<Vec<Video
     cmd.creation_flags(0x08000000);
 
     let output = cmd
+        .current_dir(&bin_dir)
+        .env("PATH", &new_path)
         .args([
             "--force-ipv4",
             "--flat-playlist",
+            "--plugin-dirs",
+            bin_dir.to_str().unwrap(),
+            "--js-runtimes",
+            &format!("deno:{}", deno_path.to_str().unwrap()),
             "--extractor-args",
-            "youtube:player_client=android_vr,tv,mweb,web_safari",
+            &format!("youtube:player_client={}", player_client),
             "--print",
             "%(id)s|%(uploader)s|%(title)s",
             &url,
@@ -296,14 +465,27 @@ pub async fn download_video(
     dl_subs: bool,
     sponsorblock: bool,
     live_from_start: bool,
+    player_client: String,
 ) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
-    let (ytdlp_path, ffmpeg_path) = get_binary_paths(&bin_dir);
+    let (ytdlp_path, ffmpeg_path, deno_path, _) = get_binary_paths(&bin_dir);
 
     if !ytdlp_path.exists() || !ffmpeg_path.exists() {
         return Err("Binaries missing.".into());
     }
+
+    let path_sep = if cfg!(target_os = "windows") {
+        ";"
+    } else {
+        ":"
+    };
+    let new_path = format!(
+        "{}{}{}",
+        bin_dir.to_str().unwrap(),
+        path_sep,
+        std::env::var("PATH").unwrap_or_default()
+    );
 
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
@@ -319,7 +501,10 @@ pub async fn download_video(
     let final_path = PathBuf::from(&metadata.video_path);
     let progress_event = format!("download-progress-{}", metadata.id);
 
-    let _ = app.emit(&progress_event, "Step 1: Downloading stream...");
+    let _ = app.emit(
+        &progress_event,
+        "Step 1: Authenticating and Downloading stream...",
+    );
 
     let is_audio = dl_type == "Audio";
     let res_filter = if is_audio {
@@ -340,13 +525,17 @@ pub async fn download_video(
         "--force-ipv4".to_string(),
         "--ffmpeg-location".to_string(),
         ffmpeg_path.to_str().unwrap().to_string(),
+        "--plugin-dirs".to_string(),
+        bin_dir.to_str().unwrap().to_string(),
+        "--js-runtimes".to_string(),
+        format!("deno:{}", deno_path.to_str().unwrap()),
         "--retries".to_string(),
         "10".to_string(),
         "--newline".to_string(),
         "-f".to_string(),
         res_filter,
         "--extractor-args".to_string(),
-        "youtube:player_client=android_vr,tv,mweb,web_safari".to_string(),
+        format!("youtube:player_client={}", player_client),
         "--paths".to_string(),
         vid_dir.to_str().unwrap().to_string(),
         "--paths".to_string(),
@@ -411,6 +600,8 @@ pub async fn download_video(
     yt_cmd.creation_flags(0x08000000);
 
     let mut child = yt_cmd
+        .current_dir(&bin_dir)
+        .env("PATH", &new_path)
         .args(&yt_args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -447,6 +638,7 @@ pub async fn download_video(
     if raw_thumb.exists() {
         let _ = fs::rename(&raw_thumb, &metadata.thumbnail_path);
     }
+
     let avatar_path = av_dir.join(format!("{}.jpg", metadata.channel));
     if !avatar_path.exists() {
         let _ = fs::copy(&metadata.thumbnail_path, &avatar_path);
@@ -466,8 +658,7 @@ pub async fn download_video(
             if path.is_file() {
                 let fname = path.file_name().unwrap_or_default().to_string_lossy();
                 if fname.starts_with(&format!("raw_{}", metadata.id)) && fname.ends_with(".vtt") {
-                    let final_sub = vid_dir.join(format!("{}.vtt", metadata.id));
-                    let _ = fs::rename(&path, &final_sub);
+                    let _ = fs::rename(&path, vid_dir.join(format!("{}.vtt", metadata.id)));
                 }
             }
         }
@@ -571,17 +762,130 @@ pub async fn download_video(
 
     let mut conn = get_db_connection(&app)?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
-
     tx.execute(
         "INSERT OR IGNORE INTO Artists (name, avatar_path) VALUES (?1, ?2)",
         [&metadata.channel, &format!("{}.jpg", metadata.channel)],
     )
     .map_err(|e| e.to_string())?;
-
     tx.execute("INSERT INTO Videos (id, title, channel_name, video_path, thumbnail_path, is_favorite) VALUES (?1, ?2, ?3, ?4, ?5, 0) ON CONFLICT(id) DO UPDATE SET title = excluded.title, channel_name = excluded.channel_name, video_path = excluded.video_path, thumbnail_path = excluded.thumbnail_path",
         (&metadata.id, &metadata.title, &metadata.channel, &metadata.video_path, &metadata.thumbnail_path)).map_err(|e| e.to_string())?;
-
     tx.commit().map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<String, String> {
+    let base_dir = get_base_dir(&app)?;
+    let bin_dir = get_bin_dir(&app)?;
+    let (ytdlp_path, _, deno_path, _) = crate::downloader::get_binary_paths(&bin_dir);
+
+    let path_sep = if cfg!(target_os = "windows") {
+        ";"
+    } else {
+        ":"
+    };
+    let new_path = format!(
+        "{}{}{}",
+        bin_dir.to_str().unwrap(),
+        path_sep,
+        std::env::var("PATH").unwrap_or_default()
+    );
+
+    let vid_dir = base_dir.join("Videos");
+
+    if !vid_dir.exists() {
+        return Ok("No video directory found. Database matches clean state.".into());
+    }
+
+    let mut physical_ids = std::collections::HashSet::new();
+
+    if let Ok(entries) = fs::read_dir(&vid_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() && path.extension().map_or(false, |ext| ext == "mp4") {
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    if !stem.starts_with("raw_") {
+                        physical_ids.insert(stem.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    let mut conn = get_db_connection(&app)?;
+    let mut stmt = conn
+        .prepare("SELECT id FROM Videos")
+        .map_err(|e| e.to_string())?;
+    let db_ids: Vec<String> = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| e.to_string())?
+        .flatten()
+        .collect();
+    drop(stmt);
+
+    for id in db_ids {
+        if !physical_ids.contains(&id) {
+            let _ = conn.execute("DELETE FROM Playlist_Videos WHERE video_id = ?1", [&id]);
+            let _ = conn.execute("DELETE FROM Videos WHERE id = ?1", [&id]);
+        }
+    }
+
+    let mut missing_metadata_ids = Vec::new();
+    for id in &physical_ids {
+        if conn.query_row("SELECT COUNT(*) FROM Videos WHERE id = ?1 AND title IS NOT NULL AND channel_name IS NOT NULL", [id], |row| row.get::<_, i64>(0)).unwrap_or(0) == 0 {
+            missing_metadata_ids.push(id.clone());
+        }
+    }
+
+    if !missing_metadata_ids.is_empty() && ytdlp_path.exists() {
+        for chunk in missing_metadata_ids.chunks(20) {
+            let mut cmd = Command::new(&ytdlp_path);
+            #[cfg(target_os = "windows")]
+            cmd.creation_flags(0x08000000);
+
+            cmd.current_dir(&bin_dir);
+            cmd.env("PATH", &new_path);
+            cmd.arg("--force-ipv4");
+            cmd.arg("--flat-playlist");
+            cmd.args(["--plugin-dirs", bin_dir.to_str().unwrap()]);
+            cmd.args([
+                "--js-runtimes",
+                &format!("deno:{}", deno_path.to_str().unwrap()),
+            ]);
+            cmd.args([
+                "--extractor-args",
+                &format!("youtube:player_client={}", player_client),
+            ]);
+            cmd.args(["--print", "%(id)s|%(uploader)s|%(title)s"]);
+
+            for id in chunk {
+                cmd.arg(format!("https://www.youtube.com/watch?v={}", id));
+            }
+
+            if let Ok(output) = cmd.output() {
+                if output.status.success() {
+                    let tx = conn.transaction().map_err(|e| e.to_string())?;
+                    for line in String::from_utf8_lossy(&output.stdout).lines() {
+                        let parts: Vec<&str> = line.splitn(3, '|').collect();
+                        if parts.len() == 3 {
+                            let (id, channel, title) = (parts[0], parts[1], parts[2]);
+                            let _ = tx.execute(
+                                "INSERT OR IGNORE INTO Artists (name, avatar_path) VALUES (?1, ?2)",
+                                [channel, &format!("{}.jpg", channel)],
+                            );
+                            let _ = tx.execute("INSERT INTO Videos (id, title, channel_name, video_path, thumbnail_path, is_favorite) VALUES (?1, ?2, ?3, ?4, ?5, 0) ON CONFLICT(id) DO UPDATE SET title = excluded.title, channel_name = excluded.channel_name, video_path = excluded.video_path",
+                                (id, title, channel, vid_dir.join(format!("{}.mp4", id)).to_str().unwrap(), base_dir.join("Thumbnails").join(format!("{}.jpg", id)).to_str().unwrap()));
+                        }
+                    }
+                    tx.commit().map_err(|e| e.to_string())?;
+                }
+            }
+        }
+    }
+    let _ = conn.execute("DELETE FROM Artists WHERE name NOT IN (SELECT DISTINCT channel_name FROM Videos WHERE channel_name IS NOT NULL)", []);
+    Ok(format!(
+        "Successfully indexed database logic. Verified {} files.",
+        physical_ids.len()
+    ))
 }
