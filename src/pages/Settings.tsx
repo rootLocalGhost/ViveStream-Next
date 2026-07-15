@@ -15,6 +15,8 @@ import {
   updateSpeedLimit,
   browserCookies,
   updateBrowserCookies,
+  playerClient,
+  updatePlayerClient,
   autoSubtitles,
   toggleAutoSubtitles,
   removeSponsorBlock,
@@ -32,7 +34,10 @@ export default function Settings() {
   const [loadingUpdate, setLoadingUpdate] = createSignal(false);
   const [loadingReindex, setLoadingReindex] = createSignal(false);
   const [cookiesDropdownOpen, setCookiesDropdownOpen] = createSignal(false);
+  const [clientDropdownOpen, setClientDropdownOpen] = createSignal(false);
+
   let cookiesRef: HTMLDivElement | undefined;
+  let clientRef: HTMLDivElement | undefined;
 
   const cookieOptions = [
     "None",
@@ -43,10 +48,21 @@ export default function Settings() {
     "Safari",
   ];
 
+  const clientOptions = [
+    "tv_embedded,web_embedded",
+    "android_vr,tv,mweb",
+    "mweb,tv,web_safari",
+    "ios,android",
+    "default",
+  ];
+
   onMount(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (cookiesRef && !cookiesRef.contains(e.target as Node)) {
         setCookiesDropdownOpen(false);
+      }
+      if (clientRef && !clientRef.contains(e.target as Node)) {
+        setClientDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -73,7 +89,9 @@ export default function Settings() {
   const handleReindexLibrary = async () => {
     setLoadingReindex(true);
     try {
-      const result = await invoke<string>("reindex_library");
+      const result = await invoke<string>("reindex_library", {
+        playerClient: playerClient(),
+      });
       addToast(result, "success");
     } catch (e) {
       addToast(`Re-indexing task failed: ${e}`, "error");
@@ -150,6 +168,7 @@ export default function Settings() {
       <h2 class="page-title">
         <i class="ph-fill ph-gear"></i> Settings
       </h2>
+
       <div class="settings-card">
         <div class="flex-row-between">
           <div>
@@ -179,7 +198,9 @@ export default function Settings() {
             </button>
           </div>
         </div>
+
         <div class="full-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Color Palette</h3>
@@ -200,7 +221,9 @@ export default function Settings() {
             </button>
           </div>
         </div>
+
         <div class="full-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Auto-Expand Sidebar</h3>
@@ -222,6 +245,7 @@ export default function Settings() {
       <h2 class="page-title page-title-spaced">
         <i class="ph-fill ph-sliders"></i> Engine Preferences
       </h2>
+
       <div class="settings-card">
         <div class="flex-row-between">
           <div>
@@ -250,7 +274,9 @@ export default function Settings() {
             <span class="slider-val">{concurrentDownloads()}</span>
           </div>
         </div>
+
         <div class="full-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Concurrent Fragments</h3>
@@ -278,7 +304,9 @@ export default function Settings() {
             <span class="slider-val">{concurrentFragments()}</span>
           </div>
         </div>
+
         <div class="full-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
@@ -294,7 +322,9 @@ export default function Settings() {
             onInput={(e) => updateSpeedLimit(e.target.value)}
           />
         </div>
+
         <div class="full-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Browser Cookies</h3>
@@ -330,7 +360,48 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
         <div class="full-divider"></div>
+
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">YouTube API Client Fallback</h3>
+            <p class="settings-desc">
+              Hot-swap client masquerading to bypass blocks (mweb requires PO
+              tokens).
+            </p>
+          </div>
+          <div
+            class={`custom-select-wrapper ${clientDropdownOpen() ? "open" : ""}`}
+            ref={clientRef}
+          >
+            <div
+              class="custom-select-trigger"
+              onClick={() => setClientDropdownOpen(!clientDropdownOpen())}
+            >
+              <span>{playerClient()}</span>
+              <i class="ph ph-caret-down"></i>
+            </div>
+            <div class="custom-select-menu">
+              <For each={clientOptions}>
+                {(client) => (
+                  <div
+                    class={`custom-select-item ${playerClient() === client ? "selected" : ""}`}
+                    onClick={() => {
+                      updatePlayerClient(client);
+                      setClientDropdownOpen(false);
+                    }}
+                  >
+                    {client}
+                  </div>
+                )}
+              </For>
+            </div>
+          </div>
+        </div>
+
+        <div class="full-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Download Automatic Subtitles</h3>
@@ -347,7 +418,9 @@ export default function Settings() {
             <span class="slider"></span>
           </label>
         </div>
+
         <div class="full-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Remove Sponsored Segments</h3>
@@ -364,7 +437,9 @@ export default function Settings() {
             <span class="slider"></span>
           </label>
         </div>
+
         <div class="full-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Re-index Local Storage</h3>
@@ -395,6 +470,7 @@ export default function Settings() {
       <h2 class="page-title page-title-spaced page-title-danger">
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
+
       <div class="danger-card">
         <div class="flex-row-between">
           <div>
@@ -411,7 +487,9 @@ export default function Settings() {
             Launch Setup
           </button>
         </div>
+
         <div class="full-divider danger-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Update Core Engines</h3>
@@ -437,7 +515,9 @@ export default function Settings() {
             {loadingUpdate() ? "Updating..." : "Update Engines"}
           </button>
         </div>
+
         <div class="full-divider danger-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title">Wipe Core Engines</h3>
@@ -460,7 +540,9 @@ export default function Settings() {
             {loadingDep() ? "Wiping..." : "Wipe Engines"}
           </button>
         </div>
+
         <div class="full-divider danger-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title danger">Clean Database & Media</h3>
@@ -486,7 +568,9 @@ export default function Settings() {
             {loadingClean() ? "Cleaning..." : "Clean Data"}
           </button>
         </div>
+
         <div class="full-divider danger-divider"></div>
+
         <div class="flex-row-between">
           <div>
             <h3 class="settings-title danger">
