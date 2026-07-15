@@ -180,14 +180,9 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     #[cfg(not(target_os = "windows"))]
     {
         use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(
-            &ytdlp_path,
-            fs::metadata(&ytdlp_path)
-                .unwrap()
-                .permissions()
-                .set_mode(0o755),
-        )
-        .map_err(|e| e.to_string())?;
+        let mut permissions = fs::metadata(&ytdlp_path).unwrap().permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&ytdlp_path, permissions).map_err(|e| e.to_string())?;
     }
 
     // 2. FETCH DENO (Required strictly for JS n-Challenge Decryption)
@@ -227,14 +222,9 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                 #[cfg(not(target_os = "windows"))]
                 {
                     use std::os::unix::fs::PermissionsExt;
-                    fs::set_permissions(
-                        &outpath,
-                        fs::metadata(&outpath)
-                            .unwrap()
-                            .permissions()
-                            .set_mode(0o755),
-                    )
-                    .map_err(|e| e.to_string())?;
+                    let mut permissions = fs::metadata(&outpath).unwrap().permissions();
+                    permissions.set_mode(0o755);
+                    fs::set_permissions(&outpath, permissions).map_err(|e| e.to_string())?;
                 }
             }
         }
@@ -307,14 +297,9 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                         let outpath = bin_dir.join(name);
                         entry.unpack(&outpath).unwrap();
                         use std::os::unix::fs::PermissionsExt;
-                        fs::set_permissions(
-                            &outpath,
-                            fs::metadata(&outpath)
-                                .unwrap()
-                                .permissions()
-                                .set_mode(0o755),
-                        )
-                        .unwrap();
+                        let mut permissions = fs::metadata(&outpath).unwrap().permissions();
+                        permissions.set_mode(0o755);
+                        fs::set_permissions(&outpath, permissions).unwrap();
                     }
                 }
             }

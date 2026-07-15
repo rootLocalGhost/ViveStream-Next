@@ -1,6 +1,5 @@
 use crate::db::get_db_connection;
 use std::fs;
-#[cfg(target_os = "windows")]
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
