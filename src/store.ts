@@ -71,7 +71,6 @@ export interface DownloadTask {
   phase: string;
 }
 
-// Wrap all global reactive signals inside createRoot
 export const {
   toasts,
   setToasts,
@@ -93,6 +92,8 @@ export const {
   setSpeedLimit,
   browserCookies,
   setBrowserCookies,
+  playerClient,
+  setPlayerClient,
   autoSubtitles,
   setAutoSubtitles,
   removeSponsorBlock,
@@ -118,12 +119,14 @@ export const {
 } = createRoot(() => {
   const [toasts, setToasts] = createSignal<Toast[]>([]);
   const [dialogState, setDialogState] = createSignal<DialogState | null>(null);
+
   const [useAnimatedIcons, setUseAnimatedIcons] =
     createSignal(initialAnimState);
   const [sidebarHoverMode, setSidebarHoverMode] =
     createSignal(initialHoverState);
   const [appTheme, setAppTheme] = createSignal(initialTheme);
   const [appPalette, setAppPalette] = createSignal(initialPalette);
+
   const [concurrentDownloads, setConcurrentDownloads] = createSignal(
     getNum("concurrentDownloads", 3),
   );
@@ -134,12 +137,16 @@ export const {
   const [browserCookies, setBrowserCookies] = createSignal(
     getStr("browserCookies", "None"),
   );
+  const [playerClient, setPlayerClient] = createSignal(
+    getStr("playerClient", "tv_embedded,web_embedded"),
+  );
   const [autoSubtitles, setAutoSubtitles] = createSignal(
     getBool("autoSubtitles", false),
   );
   const [removeSponsorBlock, setRemoveSponsorBlock] = createSignal(
     getBool("removeSponsorBlock", false),
   );
+
   const [downloadType, setDownloadType] = createSignal(
     getStr("downloadType", "Video"),
   );
@@ -149,11 +156,13 @@ export const {
   const [liveFromStart, setLiveFromStart] = createSignal(
     getBool("liveFromStart", false),
   );
+
   const [forceSetup, setForceSetup] = createSignal(false);
   const [downloadUrl, setDownloadUrl] = createSignal("");
   const [downloadQuality, setDownloadQuality] = createSignal(
     getStr("downloadQuality", "1440p"),
   );
+
   const [tasks, setTasks] = createSignal<DownloadTask[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = createSignal(false);
   const [homeVideos, setHomeVideos] = createSignal<VideoEntry[]>([]);
@@ -179,6 +188,8 @@ export const {
     setSpeedLimit,
     browserCookies,
     setBrowserCookies,
+    playerClient,
+    setPlayerClient,
     autoSubtitles,
     setAutoSubtitles,
     removeSponsorBlock,
@@ -210,6 +221,7 @@ export const addToast = (
 ) => {
   const id = Math.random().toString(36).substring(2, 9);
   setToasts((prev) => [...prev, { id, message, type }]);
+
   setTimeout(() => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, 4500);
@@ -282,6 +294,11 @@ export const updateSpeedLimit = (val: string) => {
 export const updateBrowserCookies = (val: string) => {
   setBrowserCookies(val);
   if (isBrowser) window.localStorage.setItem("browserCookies", val);
+};
+
+export const updatePlayerClient = (val: string) => {
+  setPlayerClient(val);
+  if (isBrowser) window.localStorage.setItem("playerClient", val);
 };
 
 export const toggleAutoSubtitles = (val: boolean) => {
@@ -360,12 +377,14 @@ const executeDownload = async (task: DownloadTask) => {
     `download-progress-${task.id}`,
     (event) => {
       const log = event.payload;
+
       setTasks((prev) =>
         prev.map((t) => {
           if (t.id !== task.id) return t;
 
           let newProgress = t.progress;
           let newPhase = t.phase;
+
           const cleanLog = log.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "");
 
           if (cleanLog.includes("[download]") && cleanLog.includes("%")) {
@@ -408,6 +427,7 @@ const executeDownload = async (task: DownloadTask) => {
       dlSubs: dlSubtitles(),
       sponsorblock: removeSponsorBlock(),
       liveFromStart: liveFromStart(),
+      playerClient: playerClient(),
     });
 
     updateTask(task.id, {
@@ -446,6 +466,7 @@ export const startDownloadQueue = async () => {
   try {
     const metadataList = await invoke<VideoEntry[]>("get_video_metadata", {
       url: targetUrl,
+      playerClient: playerClient(),
     });
 
     const newTasks: DownloadTask[] = metadataList.map((meta) => ({
