@@ -175,6 +175,9 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     emit_progress("yt-dlp checksum verified. Proceeding with write.");
     let ytdlp_path = bin_dir.join(target_bin_name);
+    let _perms = fs::metadata(&ytdlp_path)
+        .unwrap_or_else(|_| File::create(&ytdlp_path).unwrap().metadata().unwrap())
+        .permissions();
     File::create(&ytdlp_path)
         .map_err(|e| e.to_string())?
         .write_all(&bytes)
@@ -183,9 +186,6 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     #[cfg(not(target_os = "windows"))]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&ytdlp_path)
-            .map_err(|e| e.to_string())?
-            .permissions();
         perms.set_mode(0o755);
         fs::set_permissions(&ytdlp_path, perms).map_err(|e| e.to_string())?;
     }
@@ -227,11 +227,11 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                 #[cfg(not(target_os = "windows"))]
                 {
                     use std::os::unix::fs::PermissionsExt;
-                    let mut perms = fs::metadata(&outpath)
+                    let mut deno_perms = fs::metadata(&outpath)
                         .map_err(|e| e.to_string())?
                         .permissions();
-                    perms.set_mode(0o755);
-                    fs::set_permissions(&outpath, perms).map_err(|e| e.to_string())?;
+                    deno_perms.set_mode(0o755);
+                    fs::set_permissions(&outpath, deno_perms).map_err(|e| e.to_string())?;
                 }
             }
         }
@@ -312,11 +312,11 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                         entry.unpack(&outpath).map_err(|e| e.to_string())?;
 
                         use std::os::unix::fs::PermissionsExt;
-                        let mut perms = fs::metadata(&outpath)
+                        let mut ff_perms = fs::metadata(&outpath)
                             .map_err(|e| e.to_string())?
                             .permissions();
-                        perms.set_mode(0o755);
-                        fs::set_permissions(&outpath, perms).map_err(|e| e.to_string())?;
+                        ff_perms.set_mode(0o755);
+                        fs::set_permissions(&outpath, ff_perms).map_err(|e| e.to_string())?;
                     }
                 }
             }

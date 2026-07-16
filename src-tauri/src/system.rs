@@ -16,6 +16,7 @@ pub fn get_bin_dir(app: &AppHandle) -> Result<PathBuf, String> {
 #[tauri::command]
 pub async fn wipe_dependencies(app: AppHandle) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
+
     // Nuke the entire bin directory to cleanly remove Deno, plugins, and old executables
     if bin_dir.exists() {
         let _ = fs::remove_dir_all(&bin_dir);
@@ -42,6 +43,7 @@ pub async fn clean_database_and_media(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
+
     if bin_dir.exists() {
         let _ = fs::remove_dir_all(&bin_dir);
     }
