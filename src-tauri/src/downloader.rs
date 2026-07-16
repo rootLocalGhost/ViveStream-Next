@@ -33,6 +33,8 @@ async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, Str
     let tx = std::sync::Arc::new(std::sync::Mutex::new(Some(tx)));
     let tx_clone = tx.clone();
 
+    // Using autoplay=1 ensures the iframe actually attempts playback, forcing BotGuard generation instantly
+    let embed_url = format!("https://www.youtube.com/embed/{}?autoplay=1", video_id);
     let window_label = format!(
         "pot_{}",
         std::time::SystemTime::now()
@@ -40,9 +42,6 @@ async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, Str
             .unwrap()
             .as_nanos()
     );
-
-    // Using autoplay=1 ensures the iframe actually attempts playback, forcing BotGuard generation instantly
-    let embed_url = format!("https://www.youtube.com/embed/{}?autoplay=1", video_id);
 
     let builder = tauri::WebviewWindowBuilder::new(
         app,
@@ -184,14 +183,11 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     #[cfg(not(target_os = "windows"))]
     {
         use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(
-            &ytdlp_path,
-            fs::metadata(&ytdlp_path)
-                .unwrap()
-                .permissions()
-                .set_mode(0o755),
-        )
-        .map_err(|e| e.to_string())?;
+        let mut perms = fs::metadata(&ytdlp_path)
+            .map_err(|e| e.to_string())?
+            .permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&ytdlp_path, perms).map_err(|e| e.to_string())?;
     }
 
     // 2. FETCH DENO (Required strictly for JS n-Challenge Decryption)
@@ -231,14 +227,11 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                 #[cfg(not(target_os = "windows"))]
                 {
                     use std::os::unix::fs::PermissionsExt;
-                    fs::set_permissions(
-                        &outpath,
-                        fs::metadata(&outpath)
-                            .unwrap()
-                            .permissions()
-                            .set_mode(0o755),
-                    )
-                    .map_err(|e| e.to_string())?;
+                    let mut perms = fs::metadata(&outpath)
+                        .map_err(|e| e.to_string())?
+                        .permissions();
+                    perms.set_mode(0o755);
+                    fs::set_permissions(&outpath, perms).map_err(|e| e.to_string())?;
                 }
             }
         }
@@ -302,23 +295,28 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     {
         use tar::Archive;
         use xz2::read::XzDecoder;
-        let mut archive = Archive::new(XzDecoder::new(File::open(&temp_path).unwrap()));
-        for entry in archive.entries().unwrap() {
-            let mut entry = entry.unwrap();
+        let mut archive = Archive::new(XzDecoder::new(
+            File::open(&temp_path).map_err(|e| e.to_string())?,
+        ));
+        for entry in archive.entries().map_err(|e| e.to_string())? {
+            let mut entry = entry.map_err(|e| e.to_string())?;
             if entry.header().entry_type().is_file() {
-                if let Some(name) = entry.path().unwrap().file_name().and_then(|n| n.to_str()) {
+                if let Some(name) = entry
+                    .path()
+                    .map_err(|e| e.to_string())?
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                {
                     if name == "ffmpeg" || name == "ffprobe" {
                         let outpath = bin_dir.join(name);
-                        entry.unpack(&outpath).unwrap();
+                        entry.unpack(&outpath).map_err(|e| e.to_string())?;
+
                         use std::os::unix::fs::PermissionsExt;
-                        fs::set_permissions(
-                            &outpath,
-                            fs::metadata(&outpath)
-                                .unwrap()
-                                .permissions()
-                                .set_mode(0o755),
-                        )
-                        .unwrap();
+                        let mut perms = fs::metadata(&outpath)
+                            .map_err(|e| e.to_string())?
+                            .permissions();
+                        perms.set_mode(0o755);
+                        fs::set_permissions(&outpath, perms).map_err(|e| e.to_string())?;
                     }
                 }
             }
@@ -367,11 +365,10 @@ pub async fn get_video_metadata(
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
 
-    // Extract video ID from URL string purely to feed the webview for token generation (if needed)
     let temp_id = if let Some(idx) = url.find("v=") {
         url[idx + 2..].split('&').next().unwrap_or("bVYw5xR8xFg")
     } else {
-        "bVYw5xR8xFg" // Fallback generic video ID
+        "bVYw5xR8xFg"
     };
 
     let po_token = match extract_po_token(&app, temp_id).await {
