@@ -27,8 +27,8 @@ pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf, PathBuf) {
     );
 }
 
-// Spawns a hidden native WebView, forces YouTube to calculate a BotGuard token, and intercepts it
-async fn extract_po_token(app: &AppHandle) -> Result<String, String> {
+// Spawns a hidden native WebView, forces YouTube to calculate a BotGuard token via autoplay, and intercepts it
+async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
     let tx = std::sync::Arc::new(std::sync::Mutex::new(Some(tx)));
     let tx_clone = tx.clone();
@@ -41,10 +41,13 @@ async fn extract_po_token(app: &AppHandle) -> Result<String, String> {
             .as_nanos()
     );
 
+    // Using autoplay=1 ensures the iframe actually attempts playback, forcing BotGuard generation instantly
+    let embed_url = format!("https://www.youtube.com/embed/{}?autoplay=1", video_id);
+
     let builder = tauri::WebviewWindowBuilder::new(
         app,
         &window_label,
-        tauri::WebviewUrl::External("https://www.youtube.com/embed/bVYw5xR8xFg".parse().unwrap()),
+        tauri::WebviewUrl::External(embed_url.parse().unwrap()),
     )
     .visible(false)
     .initialization_script(
@@ -79,7 +82,8 @@ async fn extract_po_token(app: &AppHandle) -> Result<String, String> {
 
     let webview = builder.build().map_err(|e| e.to_string())?;
 
-    match tokio::time::timeout(std::time::Duration::from_secs(8), rx).await {
+    // Increased timeout to 12s to account for potentially slow network connections hitting the iframe
+    match tokio::time::timeout(std::time::Duration::from_secs(12), rx).await {
         Ok(Ok(token)) => {
             let _ = webview.close();
             Ok(token)
@@ -180,9 +184,14 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     #[cfg(not(target_os = "windows"))]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut permissions = fs::metadata(&ytdlp_path).unwrap().permissions();
-        permissions.set_mode(0o755);
-        fs::set_permissions(&ytdlp_path, permissions).map_err(|e| e.to_string())?;
+        fs::set_permissions(
+            &ytdlp_path,
+            fs::metadata(&ytdlp_path)
+                .unwrap()
+                .permissions()
+                .set_mode(0o755),
+        )
+        .map_err(|e| e.to_string())?;
     }
 
     // 2. FETCH DENO (Required strictly for JS n-Challenge Decryption)
@@ -222,9 +231,14 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                 #[cfg(not(target_os = "windows"))]
                 {
                     use std::os::unix::fs::PermissionsExt;
-                    let mut permissions = fs::metadata(&outpath).unwrap().permissions();
-                    permissions.set_mode(0o755);
-                    fs::set_permissions(&outpath, permissions).map_err(|e| e.to_string())?;
+                    fs::set_permissions(
+                        &outpath,
+                        fs::metadata(&outpath)
+                            .unwrap()
+                            .permissions()
+                            .set_mode(0o755),
+                    )
+                    .map_err(|e| e.to_string())?;
                 }
             }
         }
@@ -297,9 +311,14 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
                         let outpath = bin_dir.join(name);
                         entry.unpack(&outpath).unwrap();
                         use std::os::unix::fs::PermissionsExt;
-                        let mut permissions = fs::metadata(&outpath).unwrap().permissions();
-                        permissions.set_mode(0o755);
-                        fs::set_permissions(&outpath, permissions).unwrap();
+                        fs::set_permissions(
+                            &outpath,
+                            fs::metadata(&outpath)
+                                .unwrap()
+                                .permissions()
+                                .set_mode(0o755),
+                        )
+                        .unwrap();
                     }
                 }
             }
@@ -348,7 +367,14 @@ pub async fn get_video_metadata(
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
 
-    let po_token = match extract_po_token(&app).await {
+    // Extract video ID from URL string purely to feed the webview for token generation (if needed)
+    let temp_id = if let Some(idx) = url.find("v=") {
+        url[idx + 2..].split('&').next().unwrap_or("bVYw5xR8xFg")
+    } else {
+        "bVYw5xR8xFg" // Fallback generic video ID
+    };
+
+    let po_token = match extract_po_token(&app, temp_id).await {
         Ok(t) => t,
         Err(_) => String::new(),
     };
@@ -469,7 +495,7 @@ pub async fn download_video(
         "Step 1: Spawning local WebView to intercept BotGuard PO Token...",
     );
 
-    let po_token = match extract_po_token(&app).await {
+    let po_token = match extract_po_token(&app, &metadata.id).await {
         Ok(t) => {
             let _ = app.emit(
                 &progress_event,
@@ -782,7 +808,7 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
     }
 
     // AWAIT BEFORE DB CONNECTION TO PREVENT THREAD PANICS
-    let po_token = match extract_po_token(&app).await {
+    let po_token = match extract_po_token(&app, "bVYw5xR8xFg").await {
         Ok(t) => t,
         Err(_) => String::new(),
     };

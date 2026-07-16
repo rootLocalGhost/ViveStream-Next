@@ -85,7 +85,6 @@
   font-size: 22px;
 }
 
-/* CUSTOM PILL CONTROLS */
 .downloads-page .segmented-control {
   display: inline-flex;
   gap: 4px;
@@ -123,7 +122,6 @@
   color: var(--secondary-text);
 }
 
-/* TABS HEADER */
 .downloads-page .tabs-header {
   display: flex;
   align-items: center;
@@ -189,7 +187,6 @@
   transform: var(--btn-active-transform);
 }
 
-/* EMPTY STATE */
 .downloads-page .empty-queue-state {
   display: flex;
   flex-direction: column;
@@ -216,7 +213,6 @@
   font-size: 16px;
 }
 
-/* GRID LAYOUT FOR DOWNLOAD CARDS */
 .downloads-page .download-task-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -297,14 +293,17 @@
 .downloads-page .task-state.pending {
   color: var(--secondary-text);
 }
+
 .downloads-page .task-state.downloading {
   color: var(--primary-accent);
   font-weight: bold;
 }
+
 .downloads-page .task-state.done {
   color: #27c93f;
   font-weight: bold;
 }
+
 .downloads-page .task-state.error {
   color: var(--primary-accent);
   font-weight: bold;
@@ -344,6 +343,7 @@
 .downloads-page .progress-fill.done {
   background: #27c93f;
 }
+
 .downloads-page .progress-fill.error {
   background: var(--primary-accent);
 }
@@ -376,8 +376,49 @@
   box-shadow: var(--clay-inset-shadow);
 }
 
-.downloads-page .terminal-block {
+.downloads-page .terminal-wrapper {
   margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.downloads-page .terminal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.downloads-page .terminal-title {
+  font-size: 11px;
+  color: var(--secondary-text);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.downloads-page .task-copy-btn {
+  background: transparent;
+  color: var(--secondary-text);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: color 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.downloads-page .task-copy-btn:hover {
+  color: var(--primary-accent);
+  background: var(--glass-hover);
+}
+
+.downloads-page .terminal-block {
   max-height: 120px;
   overflow-y: auto;
   background: #000;
@@ -393,4 +434,5 @@
 .downloads-page .task-log-line {
   margin-bottom: 4px;
   opacity: 0.8;
+  word-wrap: break-word;
 }

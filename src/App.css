@@ -14,7 +14,6 @@
 :root {
   --font-display: "MajorMonoDisplay", monospace;
   --font-body: "Poppins", sans-serif;
-  /* Base Accent Default (Sunset) */
   --primary-accent: #f25c54;
   --primary-accent-dark: #e04b43;
   --sidebar-collapsed-width: 72px;
@@ -70,7 +69,6 @@
   --glass-hover: rgba(0, 0, 0, 0.04);
   --app-border: none;
   --clay-bg: #fdf6f0;
-
   --clay-card-shadow:
     16px 16px 32px rgba(247, 157, 101, 0.35),
     inset -6px -6px 12px rgba(247, 157, 101, 0.25), inset 6px 6px 12px #ffffff;
@@ -97,7 +95,6 @@
   --clay-bg: #fff0f2;
   --overlay-bg: rgba(255, 240, 242, 0.85);
   --border-color: rgba(239, 35, 60, 0.15);
-
   --clay-card-shadow:
     16px 16px 32px rgba(239, 35, 60, 0.15),
     inset -6px -6px 12px rgba(239, 35, 60, 0.1), inset 6px 6px 12px #ffffff;
@@ -117,7 +114,6 @@
     inset 3px 3px 6px rgba(255, 255, 255, 0.5);
 }
 
-/* Base Utility Classes */
 * {
   box-sizing: border-box;
   font-family: var(--font-body);
@@ -132,6 +128,41 @@ body {
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
+}
+
+/* Elegant Auto-Hiding Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+*:hover {
+  scrollbar-color: rgba(139, 146, 152, 0.4) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: transparent;
+}
+
+*::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 146, 152, 0.4);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary-accent) !important;
 }
 
 .page-title {
@@ -172,7 +203,6 @@ body {
   gap: 24px;
 }
 
-/* CLAYMORPHISM DIVIDERS */
 .full-divider {
   width: 100%;
   height: 4px;
@@ -191,7 +221,6 @@ body {
   background: rgba(239, 35, 60, 0.1) !important;
 }
 
-/* CLAYMORPHISM GLOBAL TOGGLE SWITCH */
 .switch {
   position: relative;
   display: inline-block;
@@ -244,7 +273,6 @@ input:checked + .slider:before {
   background-color: white;
 }
 
-/* CLAYMORPHISM CUSTOM GLOBAL DROPDOWN */
 .custom-select-wrapper {
   position: relative;
   user-select: none;
@@ -317,7 +345,6 @@ input:checked + .slider:before {
   font-weight: bold;
 }
 
-/* Form Controls */
 .command-input {
   flex: 1;
   background: transparent;
@@ -353,7 +380,6 @@ input:checked + .slider:before {
   max-width: 500px;
 }
 
-/* Components */
 .clay-card {
   background: var(--clay-bg);
   border-radius: var(--clay-radius);
@@ -400,7 +426,6 @@ input:checked + .slider:before {
   color: white;
 }
 
-/* Animation & Utils */
 .spinIcon {
   animation: spinIcon 1.5s linear infinite;
 }
@@ -411,7 +436,6 @@ input:checked + .slider:before {
   }
 }
 
-/* Titlebar */
 .immersive-titlebar-wrapper {
   position: absolute;
   top: 0;
@@ -492,7 +516,6 @@ input:checked + .slider:before {
   font-size: 14px;
 }
 
-/* Layout Elements */
 .app-logo .logo-glow {
   filter: drop-shadow(0 0 2px var(--primary-accent))
     drop-shadow(0 0 6px var(--primary-accent));
@@ -554,7 +577,6 @@ input:checked + .slider:before {
   }
 }
 
-/* Sidebar */
 .sidebar {
   width: var(--sidebar-collapsed-width);
   background: var(--clay-bg);
@@ -693,7 +715,6 @@ input:checked + .slider:before {
   transform: scale(1);
 }
 
-/* Video Cards */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -782,7 +803,6 @@ input:checked + .slider:before {
   color: var(--secondary-text);
 }
 
-/* Buttons */
 .command-btn {
   background: var(--primary-accent);
   color: white;

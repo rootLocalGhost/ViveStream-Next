@@ -15,8 +15,8 @@ import {
   liveFromStart,
   toggleLiveFromStart,
   clearDownloadHistory,
+  addToast,
 } from "../store";
-
 import "./Downloads.css";
 
 export default function Downloads() {
@@ -24,8 +24,8 @@ export default function Downloads() {
   const [activeTab, setActiveTab] = createSignal<"Active Queue" | "History">(
     "Active Queue",
   );
-  let dropdownRef: HTMLDivElement | undefined;
 
+  let dropdownRef: HTMLDivElement | undefined;
   const qualities = ["720p", "1080p", "1440p", "4K", "Best"];
 
   onMount(() => {
@@ -233,10 +233,25 @@ export default function Downloads() {
                 </button>
 
                 <Show when={task.showLogs}>
-                  <div class="terminal-block">
-                    <For each={task.logs}>
-                      {(log) => <div class="task-log-line">{log}</div>}
-                    </For>
+                  <div class="terminal-wrapper">
+                    <div class="terminal-header-row">
+                      <span class="terminal-title">Console Output</span>
+                      <button
+                        class="task-copy-btn"
+                        onClick={() => {
+                          navigator.clipboard.writeText(task.logs.join("\n"));
+                          addToast("Logs copied to clipboard", "success");
+                        }}
+                        title="Copy Logs"
+                      >
+                        <i class="ph ph-copy"></i> Copy
+                      </button>
+                    </div>
+                    <div class="terminal-block">
+                      <For each={task.logs}>
+                        {(log) => <div class="task-log-line">{log}</div>}
+                      </For>
+                    </div>
                   </div>
                 </Show>
               </div>
