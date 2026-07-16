@@ -175,9 +175,6 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     emit_progress("yt-dlp checksum verified. Proceeding with write.");
     let ytdlp_path = bin_dir.join(target_bin_name);
-    let _perms = fs::metadata(&ytdlp_path)
-        .unwrap_or_else(|_| File::create(&ytdlp_path).unwrap().metadata().unwrap())
-        .permissions();
     File::create(&ytdlp_path)
         .map_err(|e| e.to_string())?
         .write_all(&bytes)
@@ -186,6 +183,9 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     #[cfg(not(target_os = "windows"))]
     {
         use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(&ytdlp_path)
+            .map_err(|e| e.to_string())?
+            .permissions();
         perms.set_mode(0o755);
         fs::set_permissions(&ytdlp_path, perms).map_err(|e| e.to_string())?;
     }
@@ -845,7 +845,15 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
 
     let mut missing_metadata_ids = Vec::new();
     for id in &physical_ids {
-        if conn.query_row("SELECT COUNT(*) FROM Videos WHERE id = ?1 AND title IS NOT NULL AND channel_name IS NOT NULL", [id], |row| row.get::<_, i64>(0)).unwrap_or(0) == 0 {
+        if conn
+            .query_row(
+                "SELECT COUNT(*) FROM Videos WHERE id = ?1 AND title IS NOT NULL AND channel_name IS NOT NULL",
+                [id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap_or(0)
+            == 0
+        {
             missing_metadata_ids.push(id.clone());
         }
     }
