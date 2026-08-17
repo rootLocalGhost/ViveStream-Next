@@ -124,7 +124,15 @@ pub fn run() {
             nuclear_wipe,
             reindex_library,
             update_media_metadata,
-            update_playback_status
+            update_playback_status,
+            update_video_added_at,
+            update_video_details,
+            update_playlist_title,
+            update_playlist_order,
+            upload_artist_avatar,
+            upload_playlist_cover,
+            upload_playlist_banner,
+            delete_video
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
