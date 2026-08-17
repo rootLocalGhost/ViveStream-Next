@@ -5,8 +5,9 @@ import { invoke } from "@tauri-apps/api/core";
 import "@phosphor-icons/web/regular";
 import "@phosphor-icons/web/fill";
 import "./App.css";
-import { sidebarHoverMode, forceSetup } from "./store";
+import { sidebarHoverMode, forceSetup, showShortcutsModal, setShowShortcutsModal } from "./store";
 import NotificationSystem from "./components/NotificationSystem";
+import ShortcutsModal from "./components/ShortcutsModal";
 
 const Home = lazy(() => import("./pages/Home"));
 const Downloads = lazy(() => import("./pages/Downloads"));
@@ -89,6 +90,8 @@ const ImmersiveTitleBar = () => {
   );
 };
 
+import { useNavigate } from "@solidjs/router";
+
 const AppLifecycle: Component<{ children?: any }> = (props) => {
   const [needsSetup, setNeedsSetup] = createSignal<boolean | null>(null);
 
@@ -109,6 +112,10 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
   return (
     <div class="app-wrapper">
       <NotificationSystem />
+      <ShortcutsModal
+        isOpen={showShortcutsModal()}
+        onClose={() => setShowShortcutsModal(false)}
+      />
       <ImmersiveTitleBar />
       <Show
         when={needsSetup() !== null}
@@ -150,6 +157,59 @@ const AppLayout: Component<{ children?: any }> = (props) => {
   const [isPinned, setIsPinned] = createSignal(false);
   const [isHovered, setIsHovered] = createSignal(false);
   const isExpanded = () => isPinned() || isHovered();
+  const navigate = useNavigate();
+
+  onMount(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+
+      // Escape closes shortcuts modal
+      if (e.key === "Escape" && showShortcutsModal()) {
+        e.preventDefault();
+        setShowShortcutsModal(false);
+        return;
+      }
+
+      // Help Shortcut (?) when not in input
+      if (!isInput && (e.key === "?" || (e.shiftKey && e.key === "/"))) {
+        e.preventDefault();
+        setShowShortcutsModal(!showShortcutsModal());
+        return;
+      }
+
+      // Global Navigation (Alt + 1..6)
+      if (e.altKey && !e.ctrlKey && !e.metaKey) {
+        if (e.key === "1") {
+          e.preventDefault();
+          navigate("/");
+        } else if (e.key === "2") {
+          e.preventDefault();
+          navigate("/favourites");
+        } else if (e.key === "3") {
+          e.preventDefault();
+          navigate("/playlists");
+        } else if (e.key === "4") {
+          e.preventDefault();
+          navigate("/artists");
+        } else if (e.key === "5") {
+          e.preventDefault();
+          navigate("/downloads");
+        } else if (e.key === "6") {
+          e.preventDefault();
+          navigate("/settings");
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  });
 
   return (
     <div class="app-container">
