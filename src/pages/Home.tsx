@@ -1,16 +1,20 @@
-import { onMount, For } from "solid-js";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { createSignal, onMount, For } from "solid-js";
+import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
+import VideoCard from "../components/VideoCard";
+import AddToPlaylistModal from "../components/AddToPlaylistModal";
+import { homeVideos, setHomeVideos, VideoEntry } from "../store";
 import "./Home.css";
-import { homeVideos, setHomeVideos } from "../store";
 
 export default function Home() {
   const navigate = useNavigate();
+  const [showAddToModal, setShowAddToModal] = createSignal(false);
+  const [selectedVideoForAdd, setSelectedVideoForAdd] = createSignal<VideoEntry | null>(null);
 
   onMount(async () => {
     try {
-      const data = await invoke<any[]>("get_downloaded_videos");
+      const data = await invoke<VideoEntry[]>("get_downloaded_videos");
       setHomeVideos(data);
     } catch (e) {
       console.error("Failed to load library:", e);
@@ -19,6 +23,16 @@ export default function Home() {
 
   return (
     <div class="page-wrapper home-page">
+      <AddToPlaylistModal
+        isOpen={showAddToModal()}
+        videoId={selectedVideoForAdd()?.id || null}
+        videoTitle={selectedVideoForAdd()?.title}
+        onClose={() => {
+          setShowAddToModal(false);
+          setSelectedVideoForAdd(null);
+        }}
+      />
+
       {homeVideos().length === 0 ? (
         <PremiumPlaceholder
           title="No Media Found"
@@ -29,29 +43,17 @@ export default function Home() {
         <div class="grid">
           <For each={homeVideos()}>
             {(video) => (
-              <div
-                class="video-card"
+              <VideoCard
+                video={video}
                 onClick={() => navigate(`/player/${video.id}`)}
-              >
-                <img
-                  src={convertFileSrc(video.thumbnail_path)}
-                  alt={video.title}
-                  class="video-thumbnail"
-                />
-                <div class="video-info">
-                  <img
-                    src={convertFileSrc(video.avatar_path)}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                    class="avatar-small"
-                  />
-                  <div class="video-text-content">
-                    <h3 class="video-title">{video.title}</h3>
-                    <p class="video-channel">{video.channel}</p>
-                  </div>
-                </div>
-              </div>
+                onAddToPlaylist={(v) => {
+                  setSelectedVideoForAdd(v);
+                  setShowAddToModal(true);
+                }}
+                onDelete={(v) => {
+                  setHomeVideos((prev) => prev.filter((x) => x.id !== v.id));
+                }}
+              />
             )}
           </For>
         </div>
