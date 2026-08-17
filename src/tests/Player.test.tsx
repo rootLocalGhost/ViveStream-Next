@@ -33,6 +33,7 @@ vi.mock("@tauri-apps/api/event", () => ({
 vi.mock("@solidjs/router", () => ({
   useParams: () => ({ id: "video123" }),
   useNavigate: () => vi.fn(),
+  useSearchParams: () => [{}],
 }));
 
 beforeAll(() => {

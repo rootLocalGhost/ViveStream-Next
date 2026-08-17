@@ -6,15 +6,17 @@ import Downloads from "../pages/Downloads";
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd, _args) => {
     if (cmd === "get_video_metadata") {
-      return Promise.resolve([
-        {
-          id: "mock_id_123",
-          title: "Mock Video Title",
-          channel: "Mock Channel",
-          video_path: "/mock/videos/mock_id_123.mp4",
-          thumbnail_path: "/mock/thumbs/mock_id_123.jpg",
-        },
-      ]);
+      return Promise.resolve({
+        entries: [
+          {
+            id: "mock_id_123",
+            title: "Mock Video Title",
+            channel: "Mock Channel",
+            video_path: "/mock/videos/mock_id_123.mp4",
+            thumbnail_path: "/mock/thumbs/mock_id_123.jpg",
+          },
+        ],
+      });
     }
     if (cmd === "download_video") {
       return Promise.resolve();
