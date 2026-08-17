@@ -1,12 +1,16 @@
 import { createSignal, onMount, For } from "solid-js";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
-import "./Favourites.css";
+import VideoCard from "../components/VideoCard";
+import AddToPlaylistModal from "../components/AddToPlaylistModal";
 import { VideoEntry } from "../store";
+import "./Favourites.css";
 
 export default function Favourites() {
   const [videos, setVideos] = createSignal<VideoEntry[]>([]);
+  const [showAddToModal, setShowAddToModal] = createSignal(false);
+  const [selectedVideoForAdd, setSelectedVideoForAdd] = createSignal<VideoEntry | null>(null);
   const navigate = useNavigate();
 
   onMount(async () => {
@@ -20,6 +24,16 @@ export default function Favourites() {
 
   return (
     <div class="page-wrapper favourites-page">
+      <AddToPlaylistModal
+        isOpen={showAddToModal()}
+        videoId={selectedVideoForAdd()?.id || null}
+        videoTitle={selectedVideoForAdd()?.title}
+        onClose={() => {
+          setShowAddToModal(false);
+          setSelectedVideoForAdd(null);
+        }}
+      />
+
       <h2 class="page-title">
         <i class="ph-fill ph-heart"></i> Favourites
       </h2>
@@ -27,36 +41,30 @@ export default function Favourites() {
       {videos().length === 0 ? (
         <PremiumPlaceholder
           title="No Favourites Found"
-          subtitle="You haven't added any media to your favourites yet. Play a video to add it here."
+          subtitle="You haven't added any media to your favourites yet. Click the heart icon on any video to add it here."
           iconName="heart"
         />
       ) : (
         <div class="grid">
           <For each={videos()}>
             {(video) => (
-              <div
-                class="video-card"
+              <VideoCard
+                video={video}
+                initialFavorite={true}
                 onClick={() => navigate(`/player/${video.id}`)}
-              >
-                <img
-                  src={convertFileSrc(video.thumbnail_path)}
-                  alt={video.title}
-                  class="video-thumbnail"
-                />
-                <div class="video-info">
-                  <img
-                    src={convertFileSrc(video.avatar_path)}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                    class="avatar-small"
-                  />
-                  <div class="video-text-content">
-                    <h3 class="video-title">{video.title}</h3>
-                    <p class="video-channel">{video.channel}</p>
-                  </div>
-                </div>
-              </div>
+                onToggleFavorite={(id, isFav) => {
+                  if (!isFav) {
+                    setVideos((prev) => prev.filter((v) => v.id !== id));
+                  }
+                }}
+                onAddToPlaylist={(v) => {
+                  setSelectedVideoForAdd(v);
+                  setShowAddToModal(true);
+                }}
+                onDelete={(v) => {
+                  setVideos((prev) => prev.filter((x) => x.id !== v.id));
+                }}
+              />
             )}
           </For>
         </div>
