@@ -24,6 +24,7 @@ import {
   setForceSetup,
   showConfirmDialog,
   addToast,
+  setShowShortcutsModal,
 } from "../store";
 import "./Settings.css";
 
@@ -239,6 +240,24 @@ export default function Settings() {
             />
             <span class="slider"></span>
           </label>
+        </div>
+
+        <div class="full-divider"></div>
+
+        <div class="flex-row-between">
+          <div>
+            <h3 class="settings-title">Keyboard Shortcuts</h3>
+            <p class="settings-desc">
+              View all playback, media seeking, and app navigation keybindings.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowShortcutsModal(true)}
+            class="command-btn secondary"
+            style="min-width: 140px;"
+          >
+            <i class="ph-fill ph-keyboard"></i> View Cheat Sheet
+          </button>
         </div>
       </div>
 
