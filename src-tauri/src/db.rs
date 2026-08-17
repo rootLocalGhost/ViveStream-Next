@@ -182,8 +182,26 @@ pub async fn get_artists(app: AppHandle) -> Result<Vec<ArtistEntry>, String> {
     tokio::task::spawn_blocking(move || {
         let conn = get_db_connection(&app)?;
         let base_dir = get_base_dir(&app)?;
+        
+        // Auto-sync Artists table from any existing Videos
+        let _ = conn.execute(
+            "INSERT OR IGNORE INTO Artists (name, avatar_path) 
+             SELECT DISTINCT TRIM(channel_name), '' 
+             FROM Videos 
+             WHERE channel_name IS NOT NULL AND TRIM(channel_name) != ''",
+            [],
+        );
+        
+        // Remove artists that have no videos
+        let _ = conn.execute(
+            "DELETE FROM Artists WHERE name NOT IN (
+                SELECT DISTINCT TRIM(channel_name) FROM Videos WHERE channel_name IS NOT NULL AND TRIM(channel_name) != ''
+            )",
+            [],
+        );
+
         let mut stmt = conn
-            .prepare("SELECT name FROM Artists ORDER BY name ASC")
+            .prepare("SELECT name FROM Artists ORDER BY name COLLATE NOCASE ASC")
             .map_err(|e| e.to_string())?;
         let iter = stmt
             .query_map([], |row| {
@@ -211,9 +229,15 @@ pub async fn get_videos_by_artist(app: AppHandle, name: String) -> Result<Vec<Vi
     tokio::task::spawn_blocking(move || {
         let conn = get_db_connection(&app)?;
         let base_dir = get_base_dir(&app)?;
-        let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos WHERE channel_name = ?1 ORDER BY added_at DESC").map_err(|e| e.to_string())?;
+        let trimmed_name = name.trim().to_string();
+        let mut stmt = conn.prepare(
+            "SELECT id, title, channel_name, video_path, thumbnail_path 
+             FROM Videos 
+             WHERE TRIM(channel_name) = ?1 COLLATE NOCASE 
+             ORDER BY added_at DESC"
+        ).map_err(|e| e.to_string())?;
         let iter = stmt
-            .query_map(rusqlite::params![name], |row| map_video_row(row, &base_dir))
+            .query_map(rusqlite::params![trimmed_name], |row| map_video_row(row, &base_dir))
             .map_err(|e| e.to_string())?;
         let mut videos = Vec::new();
         for video in iter {
@@ -361,3 +385,156 @@ pub async fn get_playlist_videos(
     .await
     .map_err(|e| e.to_string())?
 }
+
+#[tauri::command]
+pub async fn update_video_added_at(app: AppHandle, id: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let conn = get_db_connection(&app)?;
+        conn.execute(
+            "UPDATE Videos SET added_at = CURRENT_TIMESTAMP WHERE id = ?1",
+            rusqlite::params![id],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn update_video_details(
+    app: AppHandle,
+    id: String,
+    title: String,
+    channel: String,
+) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let mut conn = get_db_connection(&app)?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        tx.execute(
+            "INSERT OR IGNORE INTO Artists (name, avatar_path) VALUES (?1, ?2)",
+            [&channel, &format!("{}.jpg", channel)],
+        )
+        .map_err(|e| e.to_string())?;
+        tx.execute(
+            "UPDATE Videos SET title = ?1, channel_name = ?2 WHERE id = ?3",
+            rusqlite::params![title, channel, id],
+        )
+        .map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn update_playlist_title(app: AppHandle, id: String, new_title: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let conn = get_db_connection(&app)?;
+        conn.execute(
+            "UPDATE Playlists SET name = ?1 WHERE id = ?2",
+            rusqlite::params![new_title, id],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn update_playlist_order(app: AppHandle, playlist_id: String, video_ids: Vec<String>) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let mut conn = get_db_connection(&app)?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        for (index, video_id) in video_ids.iter().enumerate() {
+            tx.execute(
+                "UPDATE Playlist_Videos SET sort_order = ?1 WHERE playlist_id = ?2 AND video_id = ?3",
+                rusqlite::params![index as i64, playlist_id, video_id],
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn upload_artist_avatar(app: AppHandle, name: String, image_path: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let base_dir = get_base_dir(&app)?;
+        let target_dir = base_dir.join("Avatars");
+        std::fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
+        let target_path = target_dir.join(format!("{}.jpg", name));
+        std::fs::copy(&image_path, &target_path).map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn upload_playlist_cover(app: AppHandle, id: String, image_path: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let base_dir = get_base_dir(&app)?;
+        let target_dir = base_dir.join("PlaylistCovers");
+        std::fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
+        let target_path = target_dir.join(format!("{}.jpg", id));
+        std::fs::copy(&image_path, &target_path).map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn upload_playlist_banner(app: AppHandle, id: String, image_path: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let base_dir = get_base_dir(&app)?;
+        let target_dir = base_dir.join("PlaylistBanners");
+        std::fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
+        let target_path = target_dir.join(format!("{}.jpg", id));
+        std::fs::copy(&image_path, &target_path).map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn delete_video(app: AppHandle, video_id: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let base_dir = get_base_dir(&app)?;
+        let mut conn = get_db_connection(&app)?;
+
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        tx.execute("DELETE FROM Playlist_Videos WHERE video_id = ?1", [&video_id]).map_err(|e| e.to_string())?;
+        tx.execute("DELETE FROM Videos WHERE id = ?1", [&video_id]).map_err(|e| e.to_string())?;
+        tx.execute("DELETE FROM Artists WHERE name NOT IN (SELECT DISTINCT channel_name FROM Videos WHERE channel_name IS NOT NULL)", []).map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+
+        let vid_file_mp4 = base_dir.join("Videos").join(format!("{}.mp4", video_id));
+        let vid_file_m4a = base_dir.join("Videos").join(format!("{}.m4a", video_id));
+        let vid_file_webm = base_dir.join("Videos").join(format!("{}.webm", video_id));
+        let vid_file_mkv = base_dir.join("Videos").join(format!("{}.mkv", video_id));
+        let thumb_file = base_dir.join("Thumbnails").join(format!("{}.jpg", video_id));
+        let desc_file = base_dir.join("Descriptions").join(format!("{}.txt", video_id));
+        let sub_file = base_dir.join("Videos").join(format!("{}.vtt", video_id));
+
+        let _ = std::fs::remove_file(vid_file_mp4);
+        let _ = std::fs::remove_file(vid_file_m4a);
+        let _ = std::fs::remove_file(vid_file_webm);
+        let _ = std::fs::remove_file(vid_file_mkv);
+        let _ = std::fs::remove_file(thumb_file);
+        let _ = std::fs::remove_file(desc_file);
+        let _ = std::fs::remove_file(sub_file);
+
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
