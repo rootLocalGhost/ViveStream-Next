@@ -426,6 +426,50 @@ input:checked + .slider:before {
   color: white;
 }
 
+.primary-btn {
+  background: var(--primary-accent);
+  color: #ffffff;
+  border-radius: calc(var(--clay-radius) - 8px);
+  border: none;
+  padding: 10px 22px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(242, 92, 84, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+}
+
+[data-palette="crimson"] .primary-btn {
+  box-shadow: 0 4px 14px rgba(239, 35, 60, 0.35);
+}
+
+.primary-btn:hover:not(:disabled) {
+  background: var(--primary-accent-dark, #e04b43);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(242, 92, 84, 0.45);
+}
+
+[data-palette="crimson"] .primary-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(239, 35, 60, 0.45);
+}
+
+.primary-btn:active:not(:disabled) {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(242, 92, 84, 0.4);
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .spinIcon {
   animation: spinIcon 1.5s linear infinite;
 }
