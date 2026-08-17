@@ -13,6 +13,12 @@ pub struct VideoEntry {
 }
 
 #[derive(Serialize)]
+pub struct VideoMetadataResponse {
+    pub playlist_title: Option<String>,
+    pub entries: Vec<VideoEntry>,
+}
+
+#[derive(Serialize)]
 pub struct ArtistEntry {
     pub name: String,
     pub avatar_path: String,
