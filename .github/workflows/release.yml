@@ -9,7 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g., 1.0.0). Must match file versions."
+        description: "Tag to release (e.g., 1.8.0). If omitted, automatically reads from VERSION file."
+        required: false
+        type: string
+      previous_tag:
+        description: "Previous tag to calculate changelog from (e.g., v1.7.0). If omitted, auto-detects previous git tag."
         required: false
         type: string
 
@@ -71,12 +75,43 @@ jobs:
 
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Auto-Generate and Push Git Tag
+        shell: bash
+        run: |
+          VERSION="${{ steps.version_check.outputs.app_version }}"
+          TAG_NAME="v$VERSION"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Creating local git tag: $TAG_NAME"
+            git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          else
+            echo "Local tag $TAG_NAME already exists."
+          fi
+
+          echo "Ensuring tag is on remote..."
+          git push origin "$TAG_NAME" || echo "Tag $TAG_NAME already exists on remote or concurrent push succeeded."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Generate Release Notes
         id: generate_notes
         shell: bash
         run: |
           VERSION="${{ steps.version_check.outputs.app_version }}"
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          INPUT_PREV_TAG="${{ github.event.inputs.previous_tag }}"
+
+          if [ -n "$INPUT_PREV_TAG" ]; then
+            PREV_TAG="$INPUT_PREV_TAG"
+            echo "Using manually specified previous tag: $PREV_TAG"
+          else
+            # Try finding previous tag before current release
+            PREV_TAG=$(git describe --tags --abbrev=0 "v$VERSION^" 2>/dev/null || git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            echo "Auto-detected previous tag: $PREV_TAG"
+          fi
+
           if [ -n "$PREV_TAG" ]; then
             LOG_RANGE="$PREV_TAG..HEAD"
           else
@@ -91,7 +126,6 @@ jobs:
 
           while IFS=$'\t' read -r hash subject; do
             [ -z "$hash" ] && continue
-            # Format hash with link if repo info is available
             commit_line="- ${subject} (\`${hash}\`)"
             
             case "$subject" in
@@ -123,6 +157,15 @@ jobs:
 # 🚀 ViveStream Next \`v${VERSION}\`
 
 > *A lightning-fast, native YouTube downloader & sleek local media library.* 🎬✨
+EON
+
+          if [ -n "$PREV_TAG" ]; then
+            cat <<EON >> $GITHUB_OUTPUT
+> 🔍 *Changelog calculated since tag \`${PREV_TAG}\`*
+EON
+          fi
+
+          cat <<EON >> $GITHUB_OUTPUT
 
 ---
 
