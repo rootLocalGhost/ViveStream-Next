@@ -69,6 +69,12 @@ export interface DownloadTask {
   showLogs: boolean;
   progress: number;
   phase: string;
+  targetPlaylistId?: string;
+}
+
+export interface VideoMetadataResponse {
+  playlist_title: string | null;
+  entries: VideoEntry[];
 }
 
 export const {
@@ -116,9 +122,12 @@ export const {
   setIsProcessingQueue,
   homeVideos,
   setHomeVideos,
+  showShortcutsModal,
+  setShowShortcutsModal,
 } = createRoot(() => {
   const [toasts, setToasts] = createSignal<Toast[]>([]);
   const [dialogState, setDialogState] = createSignal<DialogState | null>(null);
+  const [showShortcutsModal, setShowShortcutsModal] = createSignal(false);
 
   const [useAnimatedIcons, setUseAnimatedIcons] =
     createSignal(initialAnimState);
@@ -172,6 +181,8 @@ export const {
     setToasts,
     dialogState,
     setDialogState,
+    showShortcutsModal,
+    setShowShortcutsModal,
     useAnimatedIcons,
     setUseAnimatedIcons,
     sidebarHoverMode,
@@ -436,6 +447,13 @@ const executeDownload = async (task: DownloadTask) => {
       progress: 100,
     });
 
+    if (task.targetPlaylistId) {
+      await invoke("add_video_to_playlist", {
+        playlistId: task.targetPlaylistId,
+        videoId: task.id,
+      });
+    }
+
     setTasks((prev) =>
       prev.map((t) =>
         t.id === task.id
@@ -464,12 +482,23 @@ export const startDownloadQueue = async () => {
   setDownloadUrl("");
 
   try {
-    const metadataList = await invoke<VideoEntry[]>("get_video_metadata", {
+    const response = await invoke<VideoMetadataResponse>("get_video_metadata", {
       url: targetUrl,
       playerClient: playerClient(),
     });
 
-    const newTasks: DownloadTask[] = metadataList.map((meta) => ({
+    let targetPlaylistId: string | undefined = undefined;
+    if (response.playlist_title) {
+        try {
+            const newPlaylist = await invoke<{id: string, name: string}>("create_playlist", { name: response.playlist_title });
+            targetPlaylistId = newPlaylist.id;
+            addToast(`Playlist "${response.playlist_title}" created`, "success");
+        } catch (err) {
+            console.error("Failed to create playlist:", err);
+        }
+    }
+
+    const newTasks: DownloadTask[] = response.entries.map((meta) => ({
       id: meta.id,
       title: meta.title,
       channel: meta.channel,
@@ -479,6 +508,7 @@ export const startDownloadQueue = async () => {
       showLogs: false,
       progress: 0,
       phase: "Queued",
+      targetPlaylistId,
     }));
 
     setTasks((prev) => [...prev, ...newTasks]);
