@@ -40,7 +40,9 @@ export default function Artists() {
             {(artist) => (
               <div
                 class="artist-card"
-                onClick={() => navigate(`/artist/${artist.name}`)}
+                onClick={() =>
+                  navigate(`/artist/${encodeURIComponent(artist.name)}`)
+                }
               >
                 <img
                   src={convertFileSrc(artist.avatar_path)}
