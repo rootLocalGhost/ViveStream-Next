@@ -341,7 +341,7 @@ pub async fn get_video_metadata(
     app: AppHandle,
     url: String,
     player_client: String,
-) -> Result<Vec<VideoEntry>, String> {
+) -> Result<crate::models::VideoMetadataResponse, String> {
     let bin_dir = get_bin_dir(&app)?;
     let base_dir = get_base_dir(&app)?;
     let (ytdlp_path, _, deno_path) = get_binary_paths(&bin_dir);
@@ -396,7 +396,7 @@ pub async fn get_video_metadata(
             "--extractor-args",
             &client_args,
             "--print",
-            "%(id)s|%(uploader)s|%(title)s",
+            "%(id)s\t%(uploader,channel)s\t%(title)s\t%(playlist_title,playlist)s",
             &url,
         ])
         .output()
@@ -411,16 +411,33 @@ pub async fn get_video_metadata(
 
     let out_str = String::from_utf8_lossy(&output.stdout);
     let mut entries = Vec::new();
+    let mut playlist_title: Option<String> = None;
 
     for line in out_str.lines() {
-        let parts: Vec<&str> = line.splitn(3, '|').collect();
-        if parts.len() == 3 {
-            let video_path = vid_dir.join(format!("{}.mp4", parts[0]));
-            let thumbnail_path = thumb_dir.join(format!("{}.jpg", parts[0]));
+        let parts: Vec<&str> = line.split('\t').collect();
+        if parts.len() >= 3 {
+            let id = parts[0].trim();
+            let channel = parts[1].trim();
+            let title = parts[2].trim();
+
+            if id.is_empty() || title.is_empty() {
+                continue;
+            }
+
+            let video_path = vid_dir.join(format!("{}.mp4", id));
+            let thumbnail_path = thumb_dir.join(format!("{}.jpg", id));
+            
+            if playlist_title.is_none() && parts.len() >= 4 {
+                let pl_raw = parts[3].trim();
+                if pl_raw != "NA" && !pl_raw.is_empty() && pl_raw != "None" && pl_raw != "null" {
+                    playlist_title = Some(pl_raw.to_string());
+                }
+            }
+
             entries.push(VideoEntry {
-                id: parts[0].to_string(),
-                channel: parts[1].to_string(),
-                title: parts[2].to_string(),
+                id: id.to_string(),
+                channel: channel.to_string(),
+                title: title.to_string(),
                 video_path: video_path.to_string_lossy().to_string(),
                 thumbnail_path: thumbnail_path.to_string_lossy().to_string(),
                 avatar_path: String::new(),
@@ -433,7 +450,10 @@ pub async fn get_video_metadata(
     if entries.is_empty() {
         Err(format!("Failed to parse metadata"))
     } else {
-        Ok(entries)
+        Ok(crate::models::VideoMetadataResponse {
+            playlist_title,
+            entries,
+        })
     }
 }
 
@@ -486,6 +506,21 @@ pub async fn download_video(
     let temp_path = vid_dir.join(format!("raw_{}.mp4", metadata.id));
     let final_path = PathBuf::from(&metadata.video_path);
     let progress_event = format!("download-progress-{}", metadata.id);
+
+    if final_path.exists() {
+        let _ = app.emit(&progress_event, "File exists locally. Deduplicating...");
+        let mut conn = get_db_connection(&app)?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        tx.execute(
+            "INSERT OR IGNORE INTO Artists (name, avatar_path) VALUES (?1, ?2)",
+            [&metadata.channel, &format!("{}.jpg", metadata.channel)],
+        )
+        .map_err(|e| e.to_string())?;
+        tx.execute("INSERT INTO Videos (id, title, channel_name, video_path, thumbnail_path, is_favorite) VALUES (?1, ?2, ?3, ?4, ?5, 0) ON CONFLICT(id) DO UPDATE SET title = excluded.title, channel_name = excluded.channel_name, video_path = excluded.video_path, thumbnail_path = excluded.thumbnail_path, added_at = CURRENT_TIMESTAMP",
+            (&metadata.id, &metadata.title, &metadata.channel, &metadata.video_path, &metadata.thumbnail_path)).map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
 
     let _ = app.emit(
         &progress_event,
