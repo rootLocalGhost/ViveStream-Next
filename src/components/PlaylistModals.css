@@ -1,0 +1,314 @@
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+  background: var(--clay-bg);
+  border-radius: var(--clay-radius);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), var(--clay-card-shadow);
+  padding: 24px;
+  max-width: 480px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: popIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: var(--app-border);
+  position: relative;
+  max-height: 85vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--primary-text);
+  font-family: var(--font-display);
+}
+
+.modal-title i {
+  color: var(--primary-accent);
+  font-size: 22px;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--secondary-text);
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--primary-text);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  padding-right: 4px;
+  max-height: calc(85vh - 140px);
+}
+
+.modal-input {
+  width: 100%;
+  background: var(--input-bg);
+  border: var(--app-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--primary-text);
+  font-size: 14px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.modal-input:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 100, 108, 255), 0.25);
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  border: none;
+}
+
+.modal-btn.cancel {
+  background: var(--clay-btn-bg);
+  color: var(--secondary-text);
+  box-shadow: var(--clay-btn-shadow);
+}
+
+.modal-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--primary-text);
+}
+
+.modal-btn.primary {
+  background: var(--primary-accent);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb, 100, 108, 255), 0.4);
+}
+
+.modal-btn.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb, 100, 108, 255), 0.5);
+}
+
+.modal-btn.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Add to Playlist specific styles */
+.modal-video-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+}
+
+.modal-video-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+
+.playlist-selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playlist-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--clay-btn-bg);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--clay-btn-shadow);
+}
+
+.playlist-select-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.playlist-select-item.in-playlist {
+  background: rgba(var(--accent-rgb, 100, 108, 255), 0.15);
+  border-color: var(--primary-accent);
+}
+
+.playlist-select-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.playlist-select-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--primary-accent);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.playlist-select-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.playlist-select-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.playlist-select-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-select-count {
+  font-size: 12px;
+  color: var(--secondary-text);
+}
+
+.playlist-select-status {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--secondary-text);
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+}
+
+.playlist-select-item.in-playlist .playlist-select-status {
+  background: var(--primary-accent);
+  color: #fff;
+}
+
+.create-inline-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.create-inline-btn {
+  padding: 8px 14px;
+  background: var(--primary-accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.create-inline-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
