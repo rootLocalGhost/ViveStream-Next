@@ -75,23 +75,120 @@ jobs:
         id: generate_notes
         shell: bash
         run: |
+          VERSION="${{ steps.version_check.outputs.app_version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            LOG_RANGE="$PREV_TAG..HEAD"
+          else
+            LOG_RANGE="-n 30"
+          fi
+
+          FEAT_LOG=""
+          FIX_LOG=""
+          UI_LOG=""
+          PERF_LOG=""
+          OTHER_LOG=""
+
+          while IFS=$'\t' read -r hash subject; do
+            [ -z "$hash" ] && continue
+            # Format hash with link if repo info is available
+            commit_line="- ${subject} (\`${hash}\`)"
+            
+            case "$subject" in
+              feat*|Feat*|add*|Add*)
+                FEAT_LOG="${FEAT_LOG}${commit_line}"$'\n'
+                ;;
+              fix*|Fix*|bug*|Bug*|patch*|Patch*)
+                FIX_LOG="${FIX_LOG}${commit_line}"$'\n'
+                ;;
+              ui*|UI*|style*|Style*|css*|CSS*|design*|Design*)
+                UI_LOG="${UI_LOG}${commit_line}"$'\n'
+                ;;
+              perf*|Perf*|refactor*|Refactor*|core*|Core*|engine*|Engine*)
+                PERF_LOG="${PERF_LOG}${commit_line}"$'\n'
+                ;;
+              *)
+                OTHER_LOG="${OTHER_LOG}${commit_line}"$'\n'
+                ;;
+            esac
+          done < <(git log $LOG_RANGE --pretty=format:"%h%x09%s")
+
+          # If all categorized buckets are empty, fallback to simple log
+          if [ -z "$FEAT_LOG" ] && [ -z "$FIX_LOG" ] && [ -z "$UI_LOG" ] && [ -z "$PERF_LOG" ]; then
+            OTHER_LOG=$(git log $LOG_RANGE --pretty=format:"- %s (\`%h\`)")$'\n'
+          fi
+
           echo "release_body<<EOF" >> $GITHUB_OUTPUT
-          echo "ViveStream v${{ steps.version_check.outputs.app_version }}" >> $GITHUB_OUTPUT
-          echo "==========================================" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "A new version of ViveStream is now available." >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "Security Notice (Unknown Publisher)" >> $GITHUB_OUTPUT
-          echo "---------------------------------" >> $GITHUB_OUTPUT
-          echo "ViveStream is a non-commercial open-source project. We do not purchase corporate code-signing certificates. Your operating system may flag the installer as coming from an Unknown Publisher." >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "- Windows: Click 'More Info' -> 'Run Anyway' in Defender SmartScreen." >> $GITHUB_OUTPUT
-          echo "- Linux: Right-click the binary -> Properties -> Check 'Allow executing file as program'." >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "Changelog" >> $GITHUB_OUTPUT
-          echo "---------" >> $GITHUB_OUTPUT
-          git log -15 --pretty=format:"* %s (%h)" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
+          cat <<EON >> $GITHUB_OUTPUT
+# 🚀 ViveStream Next \`v${VERSION}\`
+
+> *A lightning-fast, native YouTube downloader & sleek local media library.* 🎬✨
+
+---
+
+## 📦 What's New in this Release
+
+EON
+
+          if [ -n "$FEAT_LOG" ]; then
+            cat <<EON >> $GITHUB_OUTPUT
+### ✨ Features & Enhancements
+$FEAT_LOG
+EON
+          fi
+
+          if [ -n "$FIX_LOG" ]; then
+            cat <<EON >> $GITHUB_OUTPUT
+### 🐛 Bug Fixes & Improvements
+$FIX_LOG
+EON
+          fi
+
+          if [ -n "$UI_LOG" ]; then
+            cat <<EON >> $GITHUB_OUTPUT
+### 🎨 UI & Aesthetics Polish
+$UI_LOG
+EON
+          fi
+
+          if [ -n "$PERF_LOG" ]; then
+            cat <<EON >> $GITHUB_OUTPUT
+### ⚡ Performance & Core Engine
+$PERF_LOG
+EON
+          fi
+
+          if [ -n "$OTHER_LOG" ]; then
+            cat <<EON >> $GITHUB_OUTPUT
+### 🛠️ Other Changes & Maintenance
+$OTHER_LOG
+EON
+          fi
+
+          cat <<EON >> $GITHUB_OUTPUT
+---
+
+## 💻 Installation & Downloads
+
+| Platform | Package | Architecture |
+| :--- | :--- | :--- |
+| **🪟 Windows** | \`vivestream-next_${VERSION}_x64-setup.exe\` | \`x86_64\` |
+| **🐧 Linux (Debian/Ubuntu)** | \`vivestream-next_${VERSION}_amd64.deb\` | \`x86_64\` |
+| **🐧 Arch Linux** | \`vivestream-next_${VERSION}_x86_64.pkg.tar.zst\` | \`x86_64\` |
+
+---
+
+> [!TIP]
+> ### 🛡️ Security Notice (Unknown Publisher)
+> **ViveStream** is a non-commercial open-source project. We do not purchase expensive enterprise code-signing certificates. Your operating system may flag the installer as coming from an *Unknown Publisher*.
+>
+> - **🪟 Windows**: Click **"More Info"** ➔ **"Run Anyway"** if Microsoft Defender SmartScreen prompts.
+> - **🐧 Linux**: Right-click the binary ➔ *Properties* ➔ check **"Allow executing file as program"** (or \`chmod +x\`).
+
+---
+
+⌨️ **Pro Tip**: Press <kbd>?</kbd> anywhere in the app to open the interactive **Keyboard Shortcuts Cheat Sheet**! ⭐ If you like ViveStream, consider giving us a star on GitHub!
+EON
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Setup Node
