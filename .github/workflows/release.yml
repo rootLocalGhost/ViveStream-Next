@@ -152,87 +152,71 @@ jobs:
             OTHER_LOG=$(git log $LOG_RANGE --pretty=format:"- %s (\`%h\`)")$'\n'
           fi
 
-          echo "release_body<<EOF" >> $GITHUB_OUTPUT
-          cat <<EON >> $GITHUB_OUTPUT
-# 🚀 ViveStream Next \`v${VERSION}\`
+          EOF_DELIMITER="DELIMITER_$(date +%s)"
+          RELEASE_BODY_FILE=$(mktemp)
 
-> *A lightning-fast, native YouTube downloader & sleek local media library.* 🎬✨
-EON
+          {
+            echo "# 🚀 ViveStream Next \`v${VERSION}\`"
+            echo ""
+            echo "> *A lightning-fast, native YouTube downloader & sleek local media library.* 🎬✨"
+            if [ -n "$PREV_TAG" ]; then
+              echo ""
+              echo "> 🔍 *Changelog calculated since tag \`${PREV_TAG}\`*"
+            fi
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 📦 What's New in this Release"
+            echo ""
+            if [ -n "$FEAT_LOG" ]; then
+              echo "### ✨ Features & Enhancements"
+              echo "$FEAT_LOG"
+            fi
+            if [ -n "$FIX_LOG" ]; then
+              echo "### 🐛 Bug Fixes & Improvements"
+              echo "$FIX_LOG"
+            fi
+            if [ -n "$UI_LOG" ]; then
+              echo "### 🎨 UI & Aesthetics Polish"
+              echo "$UI_LOG"
+            fi
+            if [ -n "$PERF_LOG" ]; then
+              echo "### ⚡ Performance & Core Engine"
+              echo "$PERF_LOG"
+            fi
+            if [ -n "$OTHER_LOG" ]; then
+              echo "### 🛠️ Other Changes & Maintenance"
+              echo "$OTHER_LOG"
+            fi
+            echo "---"
+            echo ""
+            echo "## 💻 Installation & Downloads"
+            echo ""
+            echo "| Platform | Package | Architecture |"
+            echo "| :--- | :--- | :--- |"
+            echo "| **🪟 Windows** | \`vivestream-next_${VERSION}_x64-setup.exe\` | \`x86_64\` |"
+            echo "| **🐧 Linux (Debian/Ubuntu)** | \`vivestream-next_${VERSION}_amd64.deb\` | \`x86_64\` |"
+            echo "| **🐧 Arch Linux** | \`vivestream-next_${VERSION}_x86_64.pkg.tar.zst\` | \`x86_64\` |"
+            echo ""
+            echo "---"
+            echo ""
+            echo "> [!TIP]"
+            echo "> ### 🛡️ Security Notice (Unknown Publisher)"
+            echo "> **ViveStream** is a non-commercial open-source project. We do not purchase expensive enterprise code-signing certificates. Your operating system may flag the installer as coming from an *Unknown Publisher*."
+            echo ">"
+            echo "> - **🪟 Windows**: Click **\"More Info\"** ➔ **\"Run Anyway\"** if Microsoft Defender SmartScreen prompts."
+            echo "> - **🐧 Linux**: Right-click the binary ➔ *Properties* ➔ check **\"Allow executing file as program\"** (or \`chmod +x\`)."
+            echo ""
+            echo "---"
+            echo ""
+            echo "⌨️ **Pro Tip**: Press <kbd>?</kbd> anywhere in the app to open the interactive **Keyboard Shortcuts Cheat Sheet**! ⭐ If you like ViveStream, consider giving us a star on GitHub!"
+          } > "$RELEASE_BODY_FILE"
 
-          if [ -n "$PREV_TAG" ]; then
-            cat <<EON >> $GITHUB_OUTPUT
-> 🔍 *Changelog calculated since tag \`${PREV_TAG}\`*
-EON
-          fi
-
-          cat <<EON >> $GITHUB_OUTPUT
-
----
-
-## 📦 What's New in this Release
-
-EON
-
-          if [ -n "$FEAT_LOG" ]; then
-            cat <<EON >> $GITHUB_OUTPUT
-### ✨ Features & Enhancements
-$FEAT_LOG
-EON
-          fi
-
-          if [ -n "$FIX_LOG" ]; then
-            cat <<EON >> $GITHUB_OUTPUT
-### 🐛 Bug Fixes & Improvements
-$FIX_LOG
-EON
-          fi
-
-          if [ -n "$UI_LOG" ]; then
-            cat <<EON >> $GITHUB_OUTPUT
-### 🎨 UI & Aesthetics Polish
-$UI_LOG
-EON
-          fi
-
-          if [ -n "$PERF_LOG" ]; then
-            cat <<EON >> $GITHUB_OUTPUT
-### ⚡ Performance & Core Engine
-$PERF_LOG
-EON
-          fi
-
-          if [ -n "$OTHER_LOG" ]; then
-            cat <<EON >> $GITHUB_OUTPUT
-### 🛠️ Other Changes & Maintenance
-$OTHER_LOG
-EON
-          fi
-
-          cat <<EON >> $GITHUB_OUTPUT
----
-
-## 💻 Installation & Downloads
-
-| Platform | Package | Architecture |
-| :--- | :--- | :--- |
-| **🪟 Windows** | \`vivestream-next_${VERSION}_x64-setup.exe\` | \`x86_64\` |
-| **🐧 Linux (Debian/Ubuntu)** | \`vivestream-next_${VERSION}_amd64.deb\` | \`x86_64\` |
-| **🐧 Arch Linux** | \`vivestream-next_${VERSION}_x86_64.pkg.tar.zst\` | \`x86_64\` |
-
----
-
-> [!TIP]
-> ### 🛡️ Security Notice (Unknown Publisher)
-> **ViveStream** is a non-commercial open-source project. We do not purchase expensive enterprise code-signing certificates. Your operating system may flag the installer as coming from an *Unknown Publisher*.
->
-> - **🪟 Windows**: Click **"More Info"** ➔ **"Run Anyway"** if Microsoft Defender SmartScreen prompts.
-> - **🐧 Linux**: Right-click the binary ➔ *Properties* ➔ check **"Allow executing file as program"** (or \`chmod +x\`).
-
----
-
-⌨️ **Pro Tip**: Press <kbd>?</kbd> anywhere in the app to open the interactive **Keyboard Shortcuts Cheat Sheet**! ⭐ If you like ViveStream, consider giving us a star on GitHub!
-EON
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "release_body<<$EOF_DELIMITER" >> "$GITHUB_OUTPUT"
+          cat "$RELEASE_BODY_FILE" >> "$GITHUB_OUTPUT"
+          echo "" >> "$GITHUB_OUTPUT"
+          echo "$EOF_DELIMITER" >> "$GITHUB_OUTPUT"
+          rm -f "$RELEASE_BODY_FILE"
 
       - name: Setup Node
         uses: actions/setup-node@v4
