@@ -1,6 +1,6 @@
 [package]
 name = "vivestream-next"
-version = "1.8.3"
+version = "1.8.3-hotfix"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
