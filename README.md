@@ -1,105 +1,168 @@
-<div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px;">
-<img src="./src/assets/Banner.png" alt="ViveStream Banner">
+<div align="center">
 
-![Tauri](https://img.shields.io/badge/Tauri-v2-24C8D6?logo=tauri&logoColor=white)
-![SolidJS](https://img.shields.io/badge/SolidJS-v1-2C4F7C?logo=solid&logoColor=white)
-![Rust](https://img.shields.io/badge/Rust-v1.8-000000?logo=rust&logoColor=white)
-![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial-red)
+<img src="./src/assets/Banner.png" alt="ViveStream Banner" width="100%">
 
-Lightning-fast, native YouTube downloader and local media library. Built on Tauri v2 & SolidJS for maximum performance, hardware acceleration, and a purely tactile claymorphism interface.
+<br/>
+
+[![Tauri](https://img.shields.io/badge/Tauri-v2-24C8D6?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
+[![SolidJS](https://img.shields.io/badge/SolidJS-v1.9-2C4F7C?style=for-the-badge&logo=solid&logoColor=white)](https://solidjs.com/)
+[![Rust](https://img.shields.io/badge/Rust-v1.8+-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial-E63946?style=for-the-badge)](./LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue?style=for-the-badge&logo=linux&logoColor=white)]()
+
+### 🎬 A lightning-fast, native YouTube downloader & sleek local media library.
+
+Built with **Tauri v2**, **SolidJS**, and **Rust** for maximum performance, hardware-accelerated transcoding, and a tactile claymorphic interface.
+
+[Download Latest Release](https://github.com/rootlocalghost/ViveStream-Next/releases) • [Features](#-core-features) • [Keyboard Shortcuts](#-keyboard-shortcuts) • [Developer Guide](#-developer-setup)
 
 </div>
 
-## 🚀 Core Features
+---
 
-- ⚙️ **Smart Hardware Transcoding**
-- 🎯 **Intelligent Quality Selection**
-- 🎨 **Pure Claymorphism UI (Sunset/Crimson)**
-- ⚡ **Flawless Local Playback**
-- 🗄️ **Absolute Privacy**
+## ✨ Key Features
+
+### 🚀 High-Performance Engine
+* **Smart Hardware Transcoding**: Automatic hardware-accelerated transcoding via NVIDIA NVENC, Intel QSV, AMD AMF, and Linux VAAPI (with smooth CPU fallback).
+* **Multi-Fragment Downloads**: Parallel fragment fetching for blazing-fast HLS/DASH downloads.
+* **Concurrent Queue Management**: Configurable parallel download slots (1–5 simultaneous jobs) with real-time progress logging and status tracking.
+* **Browser Cookie Integration**: Automatic cookie extraction from 8+ desktop browsers (Chrome, Firefox, Brave, Edge, Opera, Vivaldi, Chromium, Safari) for restricted or premium media.
+* **Zero-Config Setup Wizard**: Automated initial provisioning and integrity verification for `yt-dlp` and `ffmpeg` binaries.
+
+### 📚 Media Library, Playlists & Artists
+* **Automated Playlist Ingestion**: Paste any YouTube playlist URL to automatically create the playlist locally, download the media, deduplicate existing files, and link them.
+* **Custom Playlists**: Create, reorder, rename, and manage playlists with one-click "Play All" queueing.
+* **Artist & Channel Hub**: Automatically organizes media by artist/channel with avatar caching, subscriber badges, and dedicated channel catalogs.
+* **Interactive Favourites**: Instant one-click bookmarking across all library views.
+* **Metadata Editor**: Edit video titles and channel names directly from the media library.
+
+### 🎥 Cinema Player Experience
+* **Local Streaming**: Instant playback powered by an embedded local HTTP server.
+* **Display Modes**: Toggle between Standard View, **Theater Mode**, **Fullscreen**, and Picture-in-Picture (**Miniplayer**).
+* **Custom Subtitles & Playback Speed**: Multi-track `.vtt` caption rendering and variable playback speeds (0.25x – 2.0x).
+* **On-Screen Display (OSD)**: Sleek glassmorphic OSD badges providing instant visual feedback for seeking, volume, and playback modes.
+* **Smart Context Queue**: Seamlessly plays next items in context of current playlist or artist.
+
+### 🎨 Claymorphism Design & Themes
+* **Vibrant Themes**: Switch between **Sunset** and **Crimson** accent palettes with Dark and Light mode support.
+* **Dynamic Sidebar**: Collapsible navigation with optional auto-expand on hover.
+* **Toast & Modal Dialogs**: Responsive notifications and tactile confirmations.
+* **100% Private & Local**: No telemetry, no tracking, no external server lock-in.
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+Press <kbd>?</kbd> or <kbd>Shift</kbd> + <kbd>/</kbd> anywhere in the application to view the interactive cheat sheet:
+
+### 🎬 Player Controls
+| Shortcut | Action |
+| :--- | :--- |
+| <kbd>Space</kbd> or <kbd>K</kbd> | **Play / Pause** |
+| <kbd>M</kbd> | **Mute / Unmute** |
+| <kbd>F</kbd> | **Toggle Fullscreen** |
+| <kbd>T</kbd> | **Toggle Theater Mode** |
+| <kbd>I</kbd> | **Toggle Miniplayer (PiP)** |
+| <kbd>←</kbd> / <kbd>→</kbd> | **Seek Backward / Forward 5s** |
+| <kbd>J</kbd> / <kbd>L</kbd> | **Seek Backward / Forward 10s** |
+| <kbd>↑</kbd> / <kbd>↓</kbd> | **Volume Up / Down (5%)** |
+| <kbd>N</kbd> / <kbd>P</kbd> | **Next / Previous Media in Queue** |
+| <kbd>C</kbd> | **Toggle Captions / Subtitles** |
+| <kbd>R</kbd> | **Toggle Repeat / Loop** |
+| <kbd>0</kbd> – <kbd>9</kbd> | **Seek to Percentage (0% – 90%)** |
+| <kbd>&lt;</kbd> / <kbd>&gt;</kbd> | **Decrease / Increase Playback Speed** |
+
+### 🧭 Global Navigation
+| Shortcut | Destination |
+| :--- | :--- |
+| <kbd>Alt</kbd> + <kbd>1</kbd> | **Home** |
+| <kbd>Alt</kbd> + <kbd>2</kbd> | **Favourites** |
+| <kbd>Alt</kbd> + <kbd>3</kbd> | **Playlists** |
+| <kbd>Alt</kbd> + <kbd>4</kbd> | **Artists** |
+| <kbd>Alt</kbd> + <kbd>5</kbd> | **Downloads** |
+| <kbd>Alt</kbd> + <kbd>6</kbd> | **Settings** |
+| <kbd>?</kbd> | **Open Shortcuts Cheat Sheet** |
+| <kbd>Esc</kbd> | **Close Modals / Exit Fullscreen** |
 
 ---
 
 ## 📦 Installation
 
 ### 🐧 Arch Linux / Manjaro (Recommended)
-
 ```bash
 wget https://raw.githubusercontent.com/rootlocalghost/ViveStream-Next/main/PKGBUILD
 makepkg -si
-
 ```
 
-### 🪟 Windows & Debian/Ubuntu
+### 🪟 Windows & 🐧 Debian/Ubuntu
+Download the latest pre-compiled installer (`.exe` for Windows, `.deb` for Debian/Ubuntu, or `.pkg.tar.zst` for Arch) directly from the **[Releases](https://github.com/rootlocalghost/ViveStream-Next/releases)** page.
 
-Download the latest `.exe` or `.deb` installer directly from the **[Releases](https://www.google.com/search?q=https://github.com/rootlocalghost/ViveStream-Next/releases)** page.
+> [!TIP]
+> **Security Notice (Unknown Publisher):**
+> ViveStream is a free, non-commercial open-source project. Because we do not purchase corporate code-signing certificates:
+> - **Windows Defender SmartScreen:** Click **"More Info"** ➔ **"Run Anyway"**.
+> - **Linux:** Right-click the binary ➔ **Properties** ➔ Check **"Allow executing file as program"** (or `chmod +x`).
 
-> ⚠️ **Important Security Prompt:** ViveStream is a free, non-commercial open-source project. Because we do not monetize users, we do not pay the extortionate fees for corporate Microsoft/Apple code-signing certificates.
->
-> - **Windows Defender SmartScreen:** Click **More Info** ➔ **Run Anyway**.
-> - **Linux:** Right-click the binary ➔ **Properties** ➔ Check **Allow executing file as program**.
-
-#### 🗑️ Uninstallation & App Data Wipe
-
-Because core engines (`yt-dlp`/`ffmpeg`) and video files are downloaded at runtime, OS uninstallers will leave them behind.
-
-- **Fix:** Before uninstalling the app from your OS, open ViveStream, go to **Settings ➔ Danger Zone**, and execute a **Nuclear Wipe** to safely destroy all gigabytes of media and app data.
+### 🗑️ Complete App Data Wipe (Optional)
+Because core engines (`yt-dlp`/`ffmpeg`) and downloaded media are stored locally at runtime:
+* Before uninstalling, you can navigate to **Settings ➔ Danger Zone** and select **Nuclear Wipe** to safely delete all media files and database storage.
 
 ---
 
 ## 💻 Developer Setup
 
-To compile the application from source, you need **[Bun](https://www.google.com/search?q=https://bun.sh/)**, **[Rust & Cargo](https://www.google.com/search?q=https://rustup.rs/)**, and your OS build tools.
-_(Arch Linux users: `sudo pacman -S base-devel webkit2gtk-4.1 curl wget unzip`)_
+### Prerequisites
+* **[Bun](https://bun.sh/)** (v1.0+)
+* **[Rust & Cargo](https://rustup.rs/)** (v1.80+)
+* **C Build Tools & WebKitGTK** *(Linux only)*:
+  ```bash
+  # Debian/Ubuntu
+  sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+  
+  # Arch Linux
+  sudo pacman -S base-devel webkit2gtk-4.1 curl wget unzip
+  ```
+
+### Build Steps
 
 1. **Clone the repository:**
-
-```bash
-git clone https://github.com/rootlocalghost/ViveStream-Next.git
-cd ViveStream-Next
-```
+   ```bash
+   git clone https://github.com/rootlocalghost/ViveStream-Next.git
+   cd ViveStream-Next
+   ```
 
 2. **Install dependencies:**
-
-```bash
-bun install
-# or
-bun run init
-```
+   ```bash
+   bun install
+   ```
 
 3. **Run in Development Mode:**
+   ```bash
+   bun start
+   ```
 
-```bash
-bun start
-```
+4. **Run Automated Tests:**
+   ```bash
+   # Frontend tests (Vitest)
+   bun run test
 
-Note: If you experience a blank/white screen on Linux Wayland (Hyprland), force XWayland rendering by running: `WEBKIT_DISABLE_DMABUF_RENDERER=1 GDK_BACKEND=x11 bun run tauri dev`
+   # Backend tests (Cargo)
+   cargo test --manifest-path src-tauri/Cargo.toml
+   ```
 
-4. **Build for Production:**
-
-```bash
-bun run tauri build
-```
+5. **Build for Production:**
+   ```bash
+   bun run tauri build
+   ```
 
 ---
-
-## 🤝 Contributing
-
-Contributions are always welcome. Keep the architecture light and the dependencies strictly minimized.
-
-1. Fork the repo.
-2. Create your feature branch (`git checkout -b feature/Optimization`).
-3. Commit your changes (`git commit -m 'feat: Added Optimization'`).
-4. Push to the branch (`git push origin feature/Optimization`).
-5. Open a Pull Request.
 
 ## ⚖️ License
 
 **PolyForm Noncommercial License 1.0.0**
 
-This project is free to use, modify, and build upon for personal, educational, and non-commercial purposes.
-**You may not use this software for any commercial purpose.** This includes, but is not limited to: selling the software, locking features behind a paywall, incorporating it into a business product, or distributing it with advertisements.
+This project is free to use, modify, and build upon for personal, educational, and non-commercial purposes. **You may not use this software for any commercial purpose.**
 
-See the [`LICENSE`](./LICENSE) file for the full text.
+See the [`LICENSE`](./LICENSE) file for details.
 
-_Disclaimer: This tool is intended for personal archival of media you have the right to download. The developers are not responsible for how users utilize this software._
+*Disclaimer: This tool is intended for personal media archival and offline viewing of content you have the right to access. The developers are not responsible for how users utilize this software.*
