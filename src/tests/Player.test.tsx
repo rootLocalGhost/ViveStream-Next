@@ -40,6 +40,8 @@ beforeAll(() => {
   HTMLVideoElement.prototype.play = vi.fn().mockReturnValue(Promise.resolve());
   HTMLVideoElement.prototype.pause = vi.fn();
   HTMLVideoElement.prototype.load = vi.fn();
+  HTMLVideoElement.prototype.requestPictureInPicture = vi.fn().mockResolvedValue({} as any);
+  document.exitPictureInPicture = vi.fn().mockResolvedValue({} as any);
   global.fetch = vi.fn(() =>
     Promise.resolve({
       ok: true,
@@ -68,5 +70,21 @@ describe("Player Component", () => {
       "src",
       "http://127.0.0.1:1422/Videos/video123.mp4",
     );
+  });
+
+  it("should pause and clean up video stream on unmount", async () => {
+    const { unmount } = render(() => <Player />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Test Video")).toBeInTheDocument();
+    });
+
+    const videoElement = document.querySelector("video");
+    expect(videoElement).toBeInTheDocument();
+
+    unmount();
+
+    expect(HTMLVideoElement.prototype.pause).toHaveBeenCalled();
+    expect(HTMLVideoElement.prototype.load).toHaveBeenCalled();
   });
 });

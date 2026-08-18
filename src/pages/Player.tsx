@@ -3,6 +3,8 @@ import {
   onMount,
   onCleanup,
   createEffect,
+  untrack,
+  on,
   For,
   Show,
 } from "solid-js";
@@ -55,16 +57,41 @@ export default function Player() {
   let playerContainerRef: HTMLDivElement | undefined;
   let settingsMenuRef: HTMLDivElement | undefined;
   let ccMenuRef: HTMLDivElement | undefined;
-  let controlsTimeout: number;
-  let unlistenPlay: UnlistenFn;
-  let unlistenPause: UnlistenFn;
-  let unlistenNext: UnlistenFn;
-  let unlistenPrev: UnlistenFn;
+  let controlsTimeout: number | undefined;
+  let unlistenPlay: UnlistenFn | undefined;
+  let unlistenPause: UnlistenFn | undefined;
+  let unlistenNext: UnlistenFn | undefined;
+  let unlistenPrev: UnlistenFn | undefined;
+  let currentLoadingId: string | null = null;
+
+  const cleanupMediaPlayback = () => {
+    if (videoRef) {
+      videoRef.pause();
+      videoRef.removeAttribute("src");
+      videoRef.load();
+    }
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture().catch(() => {});
+    }
+    invoke("update_playback_status", { playing: false }).catch(() => {});
+  };
 
   const loadVideoData = async (targetId?: string) => {
     if (!targetId) return;
+    currentLoadingId = targetId;
+
+    // Immediately halt previous media playback and release mismatched PiP
+    if (videoRef) {
+      videoRef.pause();
+      setIsPlaying(false);
+    }
+    if (document.pictureInPictureElement && document.pictureInPictureElement !== videoRef) {
+      document.exitPictureInPicture().catch(() => {});
+    }
+
     try {
       const db = await invoke<VideoEntry[]>("get_downloaded_videos");
+      if (currentLoadingId !== targetId) return;
       let currentVideo = db.find((v) => v.id === targetId);
 
       if (currentVideo) {
@@ -75,43 +102,49 @@ export default function Player() {
         const favStatus = await invoke<boolean>("check_favorite", {
           id: targetId,
         });
+        if (currentLoadingId !== targetId) return;
         setIsFavorite(favStatus);
 
         try {
           const descRes = await fetch(
             `http://127.0.0.1:1422/Descriptions/${targetId}.txt`,
           );
-          if (descRes.ok) {
-            setDescription(await descRes.text());
-          } else {
-            setDescription("No description available.");
+          if (currentLoadingId === targetId) {
+            if (descRes.ok) {
+              setDescription(await descRes.text());
+            } else {
+              setDescription("No description available.");
+            }
           }
         } catch {
-          setDescription("No description available.");
+          if (currentLoadingId === targetId) {
+            setDescription("No description available.");
+          }
         }
 
         let queueVideos = db;
         const context = searchParams.context;
         if (context === "artist" && searchParams.name) {
-            queueVideos = await invoke<VideoEntry[]>("get_videos_by_artist", { name: searchParams.name });
+          queueVideos = await invoke<VideoEntry[]>("get_videos_by_artist", { name: searchParams.name });
         } else if (context === "playlist" && searchParams.id) {
-            queueVideos = await invoke<VideoEntry[]>("get_playlist_videos", { playlistId: searchParams.id });
+          queueVideos = await invoke<VideoEntry[]>("get_playlist_videos", { playlistId: searchParams.id });
         }
+        if (currentLoadingId !== targetId) return;
 
         const qIndex = queueVideos.findIndex((v) => v.id === targetId);
         if (qIndex !== -1) {
-            const nextVideos: VideoEntry[] = [];
-            for (let i = 1; i <= 15; i++) {
+          const nextVideos: VideoEntry[] = [];
+          for (let i = 1; i <= 15; i++) {
             if (queueVideos[(qIndex + i) % queueVideos.length]) {
-                nextVideos.push(queueVideos[(qIndex + i) % queueVideos.length]);
+              nextVideos.push(queueVideos[(qIndex + i) % queueVideos.length]);
             }
-            }
+          }
 
-            const uniqueQueue = Array.from(
+          const uniqueQueue = Array.from(
             new Set(nextVideos.map((a) => a.id)),
-            ).map((id) => nextVideos.find((a) => a.id === id)!);
+          ).map((id) => nextVideos.find((a) => a.id === id)!);
 
-            setQueue(uniqueQueue.filter((v) => v.id !== targetId));
+          setQueue(uniqueQueue.filter((v) => v.id !== targetId));
         }
       }
     } catch (e) {
@@ -259,16 +292,19 @@ export default function Player() {
   };
 
   const togglePiP = async () => {
-    if (videoRef) {
-      try {
-        if (document.pictureInPictureElement) {
-          await document.exitPictureInPicture();
-        } else {
+    try {
+      if (document.pictureInPictureElement) {
+        const currentPip = document.pictureInPictureElement;
+        await document.exitPictureInPicture();
+        // If the active PiP belonged to a different/stale video element, enter PiP on our current videoRef
+        if (currentPip !== videoRef && videoRef) {
           await videoRef.requestPictureInPicture();
         }
-      } catch (err) {
-        console.error("PiP failed", err);
+      } else if (videoRef) {
+        await videoRef.requestPictureInPicture();
       }
+    } catch (err) {
+      console.error("PiP failed", err);
     }
   };
 
@@ -536,8 +572,16 @@ export default function Player() {
     }
   };
 
+  const handleClickOutside = (e: MouseEvent) => {
+    if (settingsMenuRef && !settingsMenuRef.contains(e.target as Node)) {
+      setShowSettingsMenu(false);
+    }
+    if (ccMenuRef && !ccMenuRef.contains(e.target as Node)) {
+      setShowCCMenu(false);
+    }
+  };
+
   onMount(async () => {
-    await loadVideoData(params.id);
     unlistenPlay = await listen("media-play", () => handlePlay());
     unlistenPause = await listen("media-pause", () => handlePause());
     unlistenNext = await listen("media-next", () => handleVideoEnd());
@@ -546,45 +590,52 @@ export default function Player() {
     });
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     window.addEventListener("keydown", handleKeyDown);
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (settingsMenuRef && !settingsMenuRef.contains(e.target as Node)) {
-        setShowSettingsMenu(false);
-      }
-      if (ccMenuRef && !ccMenuRef.contains(e.target as Node)) {
-        setShowCCMenu(false);
-      }
-    };
     document.addEventListener("mousedown", handleClickOutside);
-
-    onCleanup(() => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-      if (unlistenPlay) unlistenPlay();
-      if (unlistenPause) unlistenPause();
-      if (unlistenNext) unlistenNext();
-      if (unlistenPrev) unlistenPrev();
-    });
   });
 
-  createEffect(() => {
-    loadVideoData(params.id);
+  onCleanup(() => {
+    window.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("mousedown", handleClickOutside);
+    document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    if (controlsTimeout) clearTimeout(controlsTimeout);
+    if (osdTimeout) clearTimeout(osdTimeout);
+    if (unlistenPlay) unlistenPlay();
+    if (unlistenPause) unlistenPause();
+    if (unlistenNext) unlistenNext();
+    if (unlistenPrev) unlistenPrev();
+    cleanupMediaPlayback();
   });
 
-  createEffect(() => {
-    if (video() && videoRef) {
-      invoke("update_media_metadata", {
-        title: video()!.title,
-        artist: video()!.channel,
-      });
-      videoRef.currentTime = 0;
-      videoRef.volume = volume();
-      videoRef.muted = isMuted();
-      videoRef.playbackRate = playbackRate();
-      handlePlay();
-    }
-  });
+  createEffect(
+    on(
+      () => params.id,
+      (targetId) => {
+        if (targetId) {
+          loadVideoData(targetId);
+        }
+      }
+    )
+  );
+
+  createEffect(
+    on(
+      () => video()?.id,
+      (currentId) => {
+        if (currentId && video() && videoRef) {
+          invoke("update_media_metadata", {
+            title: video()!.title,
+            artist: video()!.channel,
+          }).catch(() => {});
+          videoRef.currentTime = 0;
+          videoRef.volume = untrack(volume);
+          videoRef.muted = untrack(isMuted);
+          videoRef.playbackRate = untrack(playbackRate);
+          handlePlay();
+        }
+      },
+      { defer: true }
+    )
+  );
 
   const seekProgress = () =>
     duration() > 0 ? (currentTime() / duration()) * 100 : 0;
