@@ -1,5 +1,5 @@
 name: Release
-run-name: "ViveStream Release"
+run-name: "ViveStream Release ${{ inputs.tag && format('({0})', inputs.tag) || '' }}"
 
 on:
   workflow_run:
@@ -16,6 +16,16 @@ on:
         description: "Previous tag to calculate changelog from (e.g., v1.7.0). If omitted, auto-detects previous git tag."
         required: false
         type: string
+      draft:
+        description: "Publish as a draft release?"
+        required: false
+        type: boolean
+        default: true
+      prerelease:
+        description: "Mark as a pre-release?"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -250,8 +260,8 @@ jobs:
           tagName: v${{ steps.version_check.outputs.app_version }}
           releaseName: "ViveStream v${{ steps.version_check.outputs.app_version }}"
           releaseBody: ${{ steps.generate_notes.outputs.release_body }}
-          releaseDraft: true
-          prerelease: false
+          releaseDraft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || true }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
 
       - name: Generate Arch Linux Package (.pkg.tar.zst)
         if: matrix.os == 'ubuntu-22.04'
