@@ -132,7 +132,10 @@ pub fn run() {
             upload_artist_avatar,
             upload_playlist_cover,
             upload_playlist_banner,
-            delete_video
+            delete_video,
+            get_download_history,
+            clear_download_history_db,
+            delete_download_history_item
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
