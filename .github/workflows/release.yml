@@ -32,9 +32,6 @@ permissions:
   id-token: write # Required for OIDC token generation (Artifact Attestations)
   attestations: write # Required to write the attestation to GitHub
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   release:
     name: Build and Release App
@@ -310,6 +307,8 @@ jobs:
       - name: Attest Build Provenance (Linux)
         if: matrix.os == 'ubuntu-22.04'
         uses: actions/attest-build-provenance@v2
+        continue-on-error: true
+        timeout-minutes: 5
         with:
           subject-path: |
             src-tauri/target/release/bundle/deb/*.deb
@@ -318,5 +317,7 @@ jobs:
       - name: Attest Build Provenance (Windows)
         if: matrix.os == 'windows-latest'
         uses: actions/attest-build-provenance@v2
+        continue-on-error: true
+        timeout-minutes: 5
         with:
           subject-path: "src-tauri/target/release/bundle/nsis/*.exe"
