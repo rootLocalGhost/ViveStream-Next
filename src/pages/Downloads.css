@@ -168,23 +168,46 @@
 
 .downloads-page .clear-history-btn {
   position: absolute;
-  right: 0;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: var(--secondary-text);
   background: var(--clay-bg);
   box-shadow: var(--clay-btn-shadow);
-  border-radius: 50%;
-  border: none;
-  padding: 12px;
+  border: var(--app-border, 1px solid rgba(255, 255, 255, 0.08));
+  border-radius: var(--clay-btn-radius, 20px);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.downloads-page .clear-history-btn i {
+  font-size: 15px;
+  color: var(--secondary-text);
+  transition: color 0.2s;
 }
 
 .downloads-page .clear-history-btn:hover {
-  color: var(--primary-accent);
-  transform: translateY(-2px);
+  color: #ff4757;
+  border-color: rgba(255, 71, 87, 0.4);
+  background: rgba(255, 71, 87, 0.1);
+  transform: translateY(-50%) translateY(-2px);
+  box-shadow: 0 4px 14px rgba(255, 71, 87, 0.25);
+}
+
+.downloads-page .clear-history-btn:hover i {
+  color: #ff4757;
 }
 
 .downloads-page .clear-history-btn:active {
   box-shadow: var(--clay-btn-active);
-  transform: var(--btn-active-transform);
+  transform: translateY(-50%) var(--btn-active-transform);
 }
 
 .downloads-page .empty-queue-state {
