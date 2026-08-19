@@ -20,4 +20,18 @@ describe("Downloads Component", () => {
 
     fireEvent.mouseDown(document.body);
   });
+
+  it("should switch between Active Queue and History tabs", async () => {
+    render(() => <Downloads />);
+
+    const historyTabBtn = screen.getByRole("button", { name: /History/i });
+    expect(historyTabBtn).toBeInTheDocument();
+
+    fireEvent.click(historyTabBtn);
+    expect(screen.getByText(/No download history yet/i)).toBeInTheDocument();
+
+    const queueTabBtn = screen.getByRole("button", { name: /Active Queue/i });
+    fireEvent.click(queueTabBtn);
+    expect(screen.getByText(/Your download queue is empty/i)).toBeInTheDocument();
+  });
 });
