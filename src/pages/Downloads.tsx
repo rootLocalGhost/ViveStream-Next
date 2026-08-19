@@ -1,4 +1,5 @@
-import { onMount, onCleanup, For, Show, createSignal } from "solid-js";
+import { onMount, onCleanup, For, Show, createSignal, createMemo } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 import {
   downloadUrl,
   setDownloadUrl,
@@ -16,19 +17,40 @@ import {
   toggleLiveFromStart,
   clearDownloadHistory,
   addToast,
+  isFetchingInfo,
+  fetchingUrl,
+  downloadHistory,
+  fetchDownloadHistory,
+  clearDatabaseHistory,
+  deleteHistoryItem,
+  retryDownload,
+  cancelDownload,
+  removeTaskFromQueue,
+  setDialogState,
 } from "../store";
 import "./Downloads.css";
 
 export default function Downloads() {
+  let navigate: (path: string) => void;
+  try {
+    navigate = useNavigate();
+  } catch {
+    navigate = (path: string) => {
+      window.location.href = path;
+    };
+  }
+
   const [dropdownOpen, setDropdownOpen] = createSignal(false);
   const [activeTab, setActiveTab] = createSignal<"Active Queue" | "History">(
-    "Active Queue",
+    "Active Queue"
   );
 
   let dropdownRef: HTMLDivElement | undefined;
   const qualities = ["720p", "1080p", "1440p", "4K", "Best"];
 
   onMount(() => {
+    fetchDownloadHistory();
+
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef && !dropdownRef.contains(e.target as Node)) {
         setDropdownOpen(false);
@@ -36,12 +58,63 @@ export default function Downloads() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     onCleanup(() =>
-      document.removeEventListener("mousedown", handleClickOutside),
+      document.removeEventListener("mousedown", handleClickOutside)
     );
   });
 
+  // Summary Metrics for Active Queue
+  const queueSummary = createMemo(() => {
+    const all = tasks();
+    return {
+      total: all.length,
+      active: all.filter((t) => t.status === "downloading").length,
+      pending: all.filter((t) => t.status === "pending").length,
+      done: all.filter((t) => t.status === "done").length,
+      failed: all.filter((t) => t.status === "error" || t.status === "cancelled").length,
+    };
+  });
+
+  const hasClearableQueue = createMemo(() => {
+    return tasks().some(
+      (t) => t.status === "done" || t.status === "error" || t.status === "cancelled"
+    );
+  });
+
+  const handleClearClick = () => {
+    if (activeTab() === "Active Queue") {
+      clearDownloadHistory();
+      addToast("Cleared completed items from queue", "success");
+    } else {
+      setDialogState({
+        title: "Clear Download History?",
+        message:
+          "Are you sure you want to permanently clear all download history records? (Your downloaded media files will remain intact).",
+        confirmText: "Clear History",
+        cancelText: "Cancel",
+        isDestructive: true,
+        onConfirm: () => clearDatabaseHistory(),
+      });
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div class="page-wrapper downloads-page">
+      {/* URL Input & Options Bar */}
       <div class="clay-input-group">
         <div class="clay-input-row">
           <i class="ph ph-link"></i>
@@ -50,11 +123,17 @@ export default function Downloads() {
             placeholder="Paste video or playlist URL..."
             value={downloadUrl()}
             onInput={(e) => setDownloadUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !isProcessingQueue() && downloadUrl()) {
+                startDownloadQueue();
+              }
+            }}
           />
           <button
             class="dl-action-btn"
             onClick={startDownloadQueue}
             disabled={isProcessingQueue() || !downloadUrl()}
+            title="Download Video/Playlist"
           >
             <i
               class={
@@ -143,6 +222,7 @@ export default function Downloads() {
         </div>
       </div>
 
+      {/* Tabs Header & Dynamic Clear Button */}
       <div class="tabs-header">
         <div class="tabs-controls">
           <button
@@ -150,115 +230,400 @@ export default function Downloads() {
             onClick={() => setActiveTab("Active Queue")}
           >
             Active Queue
+            <Show when={tasks().length > 0}>
+              <span class="tab-badge">{tasks().length}</span>
+            </Show>
           </button>
           <button
             class={`tab-btn ${activeTab() === "History" ? "active" : ""}`}
-            onClick={() => setActiveTab("History")}
+            onClick={() => {
+              setActiveTab("History");
+              fetchDownloadHistory();
+            }}
           >
             History
+            <Show when={(downloadHistory() || []).length > 0}>
+              <span class="tab-badge secondary">{(downloadHistory() || []).length}</span>
+            </Show>
           </button>
         </div>
+
         <button
           class="clear-history-btn"
-          onClick={clearDownloadHistory}
-          title="Clear Done & Failed from Queue"
+          onClick={handleClearClick}
+          disabled={
+            activeTab() === "Active Queue"
+              ? !hasClearableQueue()
+              : (downloadHistory() || []).length === 0
+          }
+          title={
+            activeTab() === "Active Queue"
+              ? "Clear Completed & Failed from Queue"
+              : "Clear Database Download History"
+          }
         >
           <i class="ph-fill ph-trash"></i>
-          <span>Clear History</span>
+          <span>
+            {activeTab() === "Active Queue" ? "Clear Completed" : "Clear History"}
+          </span>
         </button>
       </div>
 
-      <Show when={tasks().length === 0}>
-        <div class="empty-queue-state">
-          <i class="ph-fill ph-tray empty-icon"></i>
-          <span class="empty-message">Your download queue is empty.</span>
-        </div>
-      </Show>
+      {/* ACTIVE QUEUE TAB */}
+      <Show when={activeTab() === "Active Queue"}>
+        {/* Dynamic Summary Bar */}
+        <Show when={tasks().length > 0 || isFetchingInfo()}>
+          <div class="queue-summary-bar">
+            <div class="summary-chip total">
+              <i class="ph ph-stack"></i> Total: <b>{queueSummary().total}</b>
+            </div>
+            <div class="summary-chip active">
+              <i class="ph ph-spinner spinIcon"></i> Active: <b>{queueSummary().active}</b>
+            </div>
+            <div class="summary-chip pending">
+              <i class="ph ph-clock"></i> Queued: <b>{queueSummary().pending}</b>
+            </div>
+            <div class="summary-chip done">
+              <i class="ph-fill ph-check-circle"></i> Done: <b>{queueSummary().done}</b>
+            </div>
+            <div class="summary-chip failed">
+              <i class="ph-fill ph-warning-circle"></i> Failed: <b>{queueSummary().failed}</b>
+            </div>
+          </div>
+        </Show>
 
-      <Show when={tasks().length > 0}>
-        <div class="download-task-list">
-          <For each={tasks()}>
-            {(task) => (
-              <div
-                class={`download-task-card ${task.status === "error" ? "error" : ""}`}
-              >
-                <div class="download-task-row">
-                  <img
-                    src={`https://i.ytimg.com/vi/${task.id}/hqdefault.jpg`}
-                    class="task-thumbnail"
-                  />
-                  <div class="task-meta">
-                    <h4 class="task-title">{task.title}</h4>
-                    <p class="task-channel">{task.channel}</p>
+        {/* Fetching Info Placeholder */}
+        <Show when={isFetchingInfo()}>
+          <div class="fetching-placeholder-card">
+            <div class="placeholder-icon-box">
+              <i class="ph ph-spinner spinIcon"></i>
+            </div>
+            <div class="placeholder-info">
+              <h4>Fetching Video Information...</h4>
+              <p class="placeholder-url">{fetchingUrl()}</p>
+            </div>
+            <div class="placeholder-shimmer"></div>
+          </div>
+        </Show>
 
-                    <div class="task-progress">
-                      <div
-                        class={`progress-fill ${task.status === "done" ? "done" : task.status === "error" ? "error" : task.phase.includes("Transcoding") ? "transcoding" : ""}`}
-                        style={{ width: `${task.progress}%` }}
-                      ></div>
+        {/* Empty State */}
+        <Show when={tasks().length === 0 && !isFetchingInfo()}>
+          <div class="empty-queue-state">
+            <i class="ph-fill ph-tray empty-icon"></i>
+            <span class="empty-message">Your download queue is empty.</span>
+            <p class="empty-subtext">Paste a YouTube URL above to queue downloads.</p>
+          </div>
+        </Show>
+
+        {/* Task Cards Grid */}
+        <Show when={tasks().length > 0}>
+          <div class="download-task-list">
+            <For each={tasks()}>
+              {(task) => (
+                <div
+                  class={`download-task-card ${
+                    task.status === "error"
+                      ? "error"
+                      : task.status === "done"
+                        ? "done"
+                        : task.status === "cancelled"
+                          ? "cancelled"
+                          : ""
+                  }`}
+                >
+                  <div class="download-task-row">
+                    <div class="task-thumb-wrapper">
+                      <img
+                        src={`https://i.ytimg.com/vi/${task.id}/hqdefault.jpg`}
+                        class="task-thumbnail"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
+                        }}
+                      />
+                      <Show when={task.dlType}>
+                        <span class="task-type-badge">{task.dlType}</span>
+                      </Show>
                     </div>
 
-                    <div class="task-stats">
-                      <Show when={task.status === "pending"}>
-                        <span class="task-state pending">
-                          <i class="ph ph-clock"></i> {task.phase}
-                        </span>
-                      </Show>
-                      <Show when={task.status === "downloading"}>
-                        <span class="task-state downloading">
-                          <i class="ph ph-spinner spinIcon"></i> {task.phase}
-                        </span>
-                      </Show>
-                      <Show when={task.status === "done"}>
-                        <span class="task-state done">
-                          <i class="ph-fill ph-check-circle"></i> Complete
-                        </span>
-                      </Show>
-                      <Show when={task.status === "error"}>
-                        <span class="task-state error">
-                          <i class="ph-fill ph-warning-circle"></i> Failed
-                        </span>
-                      </Show>
+                    <div class="task-meta">
+                      <h4 class="task-title" title={task.title}>
+                        {task.title}
+                      </h4>
+                      <p class="task-channel">{task.channel}</p>
+
+                      {/* Progress Bar */}
+                      <div class="task-progress">
+                        <div
+                          class={`progress-fill ${
+                            task.status === "done"
+                              ? "done"
+                              : task.status === "error"
+                                ? "error"
+                                : task.phase.includes("Transcoding")
+                                  ? "transcoding"
+                                  : ""
+                          }`}
+                          style={{ width: `${task.progress}%` }}
+                        ></div>
+                      </div>
+
+                      {/* Stats & Progress Details */}
+                      <div class="task-stats">
+                        <div class="task-state-box">
+                          <Show when={task.status === "pending"}>
+                            <span class="task-state pending">
+                              <i class="ph ph-clock"></i> {task.phase || "Queued"}
+                            </span>
+                          </Show>
+                          <Show when={task.status === "downloading"}>
+                            <span class="task-state downloading">
+                              <i class="ph ph-spinner spinIcon"></i> {task.phase || "Downloading"}
+                            </span>
+                          </Show>
+                          <Show when={task.status === "done"}>
+                            <span class="task-state done">
+                              <i class="ph-fill ph-check-circle"></i> Complete
+                            </span>
+                          </Show>
+                          <Show when={task.status === "error"}>
+                            <span class="task-state error">
+                              <i class="ph-fill ph-warning-circle"></i> Failed
+                            </span>
+                          </Show>
+                          <Show when={task.status === "cancelled"}>
+                            <span class="task-state cancelled">
+                              <i class="ph ph-x-circle"></i> Cancelled
+                            </span>
+                          </Show>
+                        </div>
+
+                        <div class="task-metrics">
+                          <Show when={task.speed}>
+                            <span class="metric-badge speed" title="Speed">
+                              <i class="ph ph-gauge"></i> {task.speed}
+                            </span>
+                          </Show>
+                          <Show when={task.eta && task.status === "downloading"}>
+                            <span class="metric-badge eta" title="Estimated Time Remaining">
+                              <i class="ph ph-timer"></i> {task.eta}
+                            </span>
+                          </Show>
+                          <Show when={task.status === "downloading"}>
+                            <span class="metric-badge pct">{Math.round(task.progress)}%</span>
+                          </Show>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <button
-                  onClick={() =>
-                    updateTask(task.id, { showLogs: !task.showLogs })
-                  }
-                  class={`task-toggle-btn ${task.showLogs ? "active" : ""} ${task.status === "error" ? "btn-error-glow" : ""}`}
-                >
-                  <i class="ph ph-terminal-window"></i>{" "}
-                  {task.showLogs ? "Hide Logs" : "Show Logs"}
-                </button>
+                  {/* Task Card Actions Bar */}
+                  <div class="task-card-footer">
+                    <div class="task-control-actions">
+                      <Show when={task.status === "error" || task.status === "cancelled"}>
+                        <button
+                          class="task-ctrl-btn retry-btn"
+                          onClick={() => retryDownload(task.id)}
+                          title="Retry Download"
+                        >
+                          <i class="ph ph-arrow-counter-clockwise"></i> Retry
+                        </button>
+                      </Show>
 
-                <Show when={task.showLogs}>
-                  <div class="terminal-wrapper">
-                    <div class="terminal-header-row">
-                      <span class="terminal-title">Console Output</span>
+                      <Show when={task.status === "pending" || task.status === "downloading"}>
+                        <button
+                          class="task-ctrl-btn cancel-btn"
+                          onClick={() => cancelDownload(task.id)}
+                          title="Cancel Download"
+                        >
+                          <i class="ph ph-x"></i> Cancel
+                        </button>
+                      </Show>
+
+                      <Show when={task.status === "done"}>
+                        <button
+                          class="task-ctrl-btn play-btn"
+                          onClick={() => navigate(`/player/${task.id}`)}
+                          title="Play Video"
+                        >
+                          <i class="ph-fill ph-play"></i> Play
+                        </button>
+                      </Show>
+
                       <button
-                        class="task-copy-btn"
-                        onClick={() => {
-                          navigator.clipboard.writeText(task.logs.join("\n"));
-                          addToast("Logs copied to clipboard", "success");
-                        }}
-                        title="Copy Logs"
+                        class="task-ctrl-btn remove-btn"
+                        onClick={() => removeTaskFromQueue(task.id)}
+                        title="Remove from queue"
                       >
-                        <i class="ph ph-copy"></i> Copy
+                        <i class="ph ph-trash"></i>
                       </button>
                     </div>
-                    <div class="terminal-block">
-                      <For each={task.logs}>
-                        {(log) => <div class="task-log-line">{log}</div>}
-                      </For>
-                    </div>
+
+                    <button
+                      onClick={() =>
+                        updateTask(task.id, { showLogs: !task.showLogs })
+                      }
+                      class={`task-toggle-btn ${task.showLogs ? "active" : ""} ${
+                        task.status === "error" ? "btn-error-glow" : ""
+                      }`}
+                    >
+                      <i class="ph ph-terminal-window"></i>{" "}
+                      {task.showLogs ? "Hide Logs" : "Show Logs"}
+                    </button>
                   </div>
-                </Show>
-              </div>
-            )}
-          </For>
-        </div>
+
+                  {/* Expandable Logs Drawer */}
+                  <Show when={task.showLogs}>
+                    <div class="terminal-wrapper">
+                      <div class="terminal-header-row">
+                        <span class="terminal-title">Console Output</span>
+                        <button
+                          class="task-copy-btn"
+                          onClick={() => {
+                            navigator.clipboard.writeText(task.logs.join("\n"));
+                            addToast("Logs copied to clipboard", "success");
+                          }}
+                          title="Copy Logs"
+                        >
+                          <i class="ph ph-copy"></i> Copy
+                        </button>
+                      </div>
+                      <div class="terminal-block">
+                        <For each={task.logs}>
+                          {(log) => <div class="task-log-line">{log}</div>}
+                        </For>
+                      </div>
+                    </div>
+                  </Show>
+                </div>
+              )}
+            </For>
+          </div>
+        </Show>
+      </Show>
+
+      {/* HISTORY TAB */}
+      <Show when={activeTab() === "History"}>
+        <Show when={(downloadHistory() || []).length === 0}>
+          <div class="empty-queue-state">
+            <i class="ph-fill ph-clock-counter-clockwise empty-icon"></i>
+            <span class="empty-message">No download history yet.</span>
+            <p class="empty-subtext">Completed and attempted downloads will be logged here.</p>
+          </div>
+        </Show>
+
+        <Show when={(downloadHistory() || []).length > 0}>
+          <div class="history-list">
+            <For each={downloadHistory() || []}>
+              {(item) => (
+                <div class={`history-card ${item.status}`}>
+                  <div
+                    class={`history-thumb-container ${item.status === "done" ? "clickable" : ""}`}
+                    onClick={() => {
+                      if (item.status === "done") {
+                        navigate(`/player/${item.video_id}`);
+                      }
+                    }}
+                  >
+                    <img
+                      src={`https://i.ytimg.com/vi/${item.video_id}/hqdefault.jpg`}
+                      class="history-thumbnail"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
+                      }}
+                    />
+                    <Show when={item.status === "done"}>
+                      <div class="history-play-overlay">
+                        <i class="ph-fill ph-play"></i>
+                      </div>
+                    </Show>
+                  </div>
+
+                  <div class="history-content">
+                    <div class="history-main-info">
+                      <h4 class="history-title" title={item.title}>
+                        {item.title}
+                      </h4>
+                      <p class="history-channel">{item.channel}</p>
+                    </div>
+
+                    <div class="history-meta-row">
+                      <div class="history-badges">
+                        <span class={`history-status-chip ${item.status}`}>
+                          <Show when={item.status === "done"}>
+                            <i class="ph-fill ph-check-circle"></i> Completed
+                          </Show>
+                          <Show when={item.status === "error"}>
+                            <i class="ph-fill ph-warning-circle"></i> Failed
+                          </Show>
+                          <Show when={item.status === "cancelled"}>
+                            <i class="ph ph-x-circle"></i> Cancelled
+                          </Show>
+                        </span>
+
+                        <span class="history-type-chip">{item.dl_type || "Video"}</span>
+
+                        <span class="history-date">
+                          <i class="ph ph-calendar-blank"></i> {formatDate(item.created_at)}
+                        </span>
+                      </div>
+
+                      <div class="history-actions">
+                        <Show when={item.status === "done"}>
+                          <button
+                            class="history-action-btn play"
+                            onClick={() => navigate(`/player/${item.video_id}`)}
+                            title="Play Video"
+                          >
+                            <i class="ph-fill ph-play"></i> Play
+                          </button>
+                        </Show>
+
+                        <button
+                          class="history-action-btn reuse"
+                          onClick={() => {
+                            setDownloadUrl(item.url);
+                            setActiveTab("Active Queue");
+                            addToast("URL inserted into queue input", "info");
+                          }}
+                          title="Reuse URL in Download Input"
+                        >
+                          <i class="ph ph-arrow-clockwise"></i> Reuse URL
+                        </button>
+
+                        <button
+                          class="history-action-btn icon-only copy"
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.url);
+                            addToast("URL copied to clipboard", "success");
+                          }}
+                          title="Copy Original URL"
+                        >
+                          <i class="ph ph-copy"></i>
+                        </button>
+
+                        <button
+                          class="history-action-btn icon-only delete"
+                          onClick={() => deleteHistoryItem(item.id)}
+                          title="Delete History Record"
+                        >
+                          <i class="ph ph-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <Show when={item.error_msg}>
+                      <div class="history-error-row" title={item.error_msg}>
+                        <i class="ph ph-warning"></i> {item.error_msg}
+                      </div>
+                    </Show>
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        </Show>
       </Show>
     </div>
   );
