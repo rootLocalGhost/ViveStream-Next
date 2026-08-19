@@ -388,9 +388,13 @@ pub async fn get_video_metadata(
     let output = cmd
         .current_dir(&bin_dir)
         .env("PATH", &new_path)
+        .env("PYTHONIOENCODING", "utf-8")
+        .env("PYTHONUTF8", "1")
         .args([
             "--force-ipv4",
             "--flat-playlist",
+            "--encoding",
+            "utf-8",
             "--js-runtimes",
             &format!("deno:{}", deno_path.to_str().unwrap()),
             "--extractor-args",
@@ -459,6 +463,70 @@ pub async fn get_video_metadata(
 
 #[tauri::command]
 pub async fn download_video(
+    app: AppHandle,
+    url: String,
+    metadata: VideoEntry,
+    quality: String,
+    dl_type: String,
+    cookies: String,
+    speed_limit: String,
+    concurrent_fragments: u8,
+    auto_subs: bool,
+    dl_subs: bool,
+    sponsorblock: bool,
+    live_from_start: bool,
+    player_client: String,
+) -> Result<(), String> {
+    let res = download_video_inner(
+        app.clone(),
+        url.clone(),
+        metadata.clone(),
+        quality,
+        dl_type.clone(),
+        cookies,
+        speed_limit,
+        concurrent_fragments,
+        auto_subs,
+        dl_subs,
+        sponsorblock,
+        live_from_start,
+        player_client,
+    )
+    .await;
+
+    if let Ok(conn) = get_db_connection(&app) {
+        match &res {
+            Ok(_) => {
+                let _ = crate::db::record_history_entry(
+                    &conn,
+                    &metadata.id,
+                    &metadata.title,
+                    &metadata.channel,
+                    &url,
+                    "done",
+                    &dl_type,
+                    None,
+                );
+            }
+            Err(e) => {
+                let _ = crate::db::record_history_entry(
+                    &conn,
+                    &metadata.id,
+                    &metadata.title,
+                    &metadata.channel,
+                    &url,
+                    "error",
+                    &dl_type,
+                    Some(e),
+                );
+            }
+        }
+    }
+
+    res
+}
+
+async fn download_video_inner(
     app: AppHandle,
     url: String,
     metadata: VideoEntry,
@@ -643,6 +711,8 @@ pub async fn download_video(
     let mut child = yt_cmd
         .current_dir(&bin_dir)
         .env("PATH", &new_path)
+        .env("PYTHONIOENCODING", "utf-8")
+        .env("PYTHONUTF8", "1")
         .args(&yt_args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -906,8 +976,11 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
 
             cmd.current_dir(&bin_dir);
             cmd.env("PATH", &new_path);
+            cmd.env("PYTHONIOENCODING", "utf-8");
+            cmd.env("PYTHONUTF8", "1");
             cmd.arg("--force-ipv4");
             cmd.arg("--flat-playlist");
+            cmd.args(["--encoding", "utf-8"]);
             cmd.args([
                 "--js-runtimes",
                 &format!("deno:{}", deno_path.to_str().unwrap()),
