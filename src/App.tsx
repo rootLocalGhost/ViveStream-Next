@@ -169,10 +169,21 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           target.tagName === "SELECT" ||
           target.isContentEditable);
 
-      // Escape closes shortcuts modal
-      if (e.key === "Escape" && showShortcutsModal()) {
-        e.preventDefault();
-        setShowShortcutsModal(false);
+      // Escape closes shortcuts modal or navigates back in whole app
+      if (e.key === "Escape") {
+        if (showShortcutsModal()) {
+          e.preventDefault();
+          setShowShortcutsModal(false);
+          return;
+        }
+        if (isInput) {
+          target?.blur();
+          return;
+        }
+        if (!document.fullscreenElement) {
+          e.preventDefault();
+          navigate(-1);
+        }
         return;
       }
 
@@ -183,24 +194,26 @@ const AppLayout: Component<{ children?: any }> = (props) => {
         return;
       }
 
-      // Global Navigation (Alt + 1..6)
-      if (e.altKey && !e.ctrlKey && !e.metaKey) {
-        if (e.key === "1") {
+      // Global Navigation (Shift + 1..6 or Shift + H/F/P/A/D/S)
+      if (!isInput && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const key = e.key.toLowerCase();
+        const code = e.code;
+        if (code === "Digit1" || key === "1" || key === "!" || key === "h") {
           e.preventDefault();
           navigate("/");
-        } else if (e.key === "2") {
+        } else if (code === "Digit2" || key === "2" || key === "@" || key === "f") {
           e.preventDefault();
           navigate("/favourites");
-        } else if (e.key === "3") {
+        } else if (code === "Digit3" || key === "3" || key === "#" || key === "p") {
           e.preventDefault();
           navigate("/playlists");
-        } else if (e.key === "4") {
+        } else if (code === "Digit4" || key === "4" || key === "$" || key === "a") {
           e.preventDefault();
           navigate("/artists");
-        } else if (e.key === "5") {
+        } else if (code === "Digit5" || key === "5" || key === "%" || key === "d") {
           e.preventDefault();
           navigate("/downloads");
-        } else if (e.key === "6") {
+        } else if (code === "Digit6" || key === "6" || key === "^" || key === "s") {
           e.preventDefault();
           navigate("/settings");
         }
