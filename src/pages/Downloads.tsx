@@ -163,7 +163,8 @@ export default function Downloads() {
           onClick={clearDownloadHistory}
           title="Clear Done & Failed from Queue"
         >
-          <i class="ph ph-trash"></i>
+          <i class="ph-fill ph-trash"></i>
+          <span>Clear History</span>
         </button>
       </div>
 
