@@ -3,11 +3,14 @@ run-name: "ViveStream Tests"
 
 on:
   push:
-    paths:
-      - "VERSION"
+    branches:
+      - main
+      - master
+      - dev
   pull_request:
-    paths:
-      - "VERSION"
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 permissions:
@@ -15,34 +18,46 @@ permissions:
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc
-      - name: Install Rust dependencies (Ubuntu)
+
+      - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
       - name: Install Frontend Dependencies
         run: bun install
+
+      - name: Verify Version Synchronization
+        run: bun run version:verify
+
       - name: Run Frontend Tests
         run: bun run test
+
       - name: Run Backend Tests
         run: cargo test
         working-directory: src-tauri

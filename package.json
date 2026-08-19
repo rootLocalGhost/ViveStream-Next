@@ -12,6 +12,12 @@
     "cleanup": "cd src-tauri && cargo clean && rm -rf target gen && cd .. && rm -rf node_modules dist pkg PKGBUILD.1",
     "init": "cd src-tauri && cargo build && cd .. && bun install && vite build",
     "test": "vitest run",
+    "version:verify": "bun ./scripts/verify-versions.js",
+    "bump": "bun ./scripts/bump.js",
+    "bump:patch": "bun ./scripts/bump.js patch",
+    "bump:minor": "bun ./scripts/bump.js minor",
+    "bump:major": "bun ./scripts/bump.js major",
+    "release:tag": "bun ./scripts/bump.js --tag",
     "format": "prettier -w -u . && cd src-tauri && cargo fmt --all"
   },
   "license": "Polyform Noncommercial License 1.0.0",
