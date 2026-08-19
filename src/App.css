@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Tiro+Bangla:ital@0;1&display=swap");
+
 @font-face {
   font-family: "Poppins";
   src: url("./assets/fonts/Poppins.ttf") format("truetype");
@@ -12,8 +14,8 @@
 }
 
 :root {
-  --font-display: "MajorMonoDisplay", monospace;
-  --font-body: "Poppins", sans-serif;
+  --font-display: "MajorMonoDisplay", "Tiro Bangla", "Hind Siliguri", monospace;
+  --font-body: "Poppins", "Tiro Bangla", "Hind Siliguri", "Noto Sans Bengali", "Segoe UI", sans-serif;
   --primary-accent: #f25c54;
   --primary-accent-dark: #e04b43;
   --sidebar-collapsed-width: 72px;
