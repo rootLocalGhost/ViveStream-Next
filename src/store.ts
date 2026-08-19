@@ -64,12 +64,28 @@ export interface DownloadTask {
   title: string;
   channel: string;
   metadata: VideoEntry;
-  status: "pending" | "downloading" | "done" | "error";
+  status: "pending" | "downloading" | "done" | "error" | "cancelled";
   logs: string[];
   showLogs: boolean;
   progress: number;
   phase: string;
+  speed?: string;
+  eta?: string;
+  url?: string;
+  dlType?: string;
   targetPlaylistId?: string;
+}
+
+export interface DownloadHistoryEntry {
+  id: string;
+  video_id: string;
+  title: string;
+  channel: string;
+  url: string;
+  status: string;
+  dl_type: string;
+  error_msg?: string;
+  created_at: string;
 }
 
 export interface VideoMetadataResponse {
@@ -120,6 +136,12 @@ export const {
   setTasks,
   isProcessingQueue,
   setIsProcessingQueue,
+  isFetchingInfo,
+  setIsFetchingInfo,
+  fetchingUrl,
+  setFetchingUrl,
+  downloadHistory,
+  setDownloadHistory,
   homeVideos,
   setHomeVideos,
   showShortcutsModal,
@@ -128,6 +150,9 @@ export const {
   const [toasts, setToasts] = createSignal<Toast[]>([]);
   const [dialogState, setDialogState] = createSignal<DialogState | null>(null);
   const [showShortcutsModal, setShowShortcutsModal] = createSignal(false);
+  const [isFetchingInfo, setIsFetchingInfo] = createSignal(false);
+  const [fetchingUrl, setFetchingUrl] = createSignal("");
+  const [downloadHistory, setDownloadHistory] = createSignal<DownloadHistoryEntry[]>([]);
 
   const [useAnimatedIcons, setUseAnimatedIcons] =
     createSignal(initialAnimState);
@@ -221,6 +246,12 @@ export const {
     setTasks,
     isProcessingQueue,
     setIsProcessingQueue,
+    isFetchingInfo,
+    setIsFetchingInfo,
+    fetchingUrl,
+    setFetchingUrl,
+    downloadHistory,
+    setDownloadHistory,
     homeVideos,
     setHomeVideos,
   };
@@ -347,10 +378,66 @@ export const updateTask = (id: string, updates: Partial<DownloadTask>) => {
   setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
 };
 
+export const removeTaskFromQueue = (id: string) => {
+  setTasks((prev) => prev.filter((t) => t.id !== id));
+};
+
+export const cancelDownload = (id: string) => {
+  updateTask(id, {
+    status: "cancelled",
+    phase: "Cancelled",
+    logs: ["Download cancelled by user."],
+  });
+  processQueue();
+};
+
+export const retryDownload = (id: string) => {
+  updateTask(id, {
+    status: "pending",
+    progress: 0,
+    phase: "Queued",
+    logs: ["Retrying download..."],
+  });
+  processQueue();
+};
+
 export const clearDownloadHistory = () => {
   setTasks((prev) =>
-    prev.filter((t) => t.status !== "done" && t.status !== "error"),
+    prev.filter((t) => t.status !== "done" && t.status !== "error" && t.status !== "cancelled"),
   );
+};
+
+export const fetchDownloadHistory = async () => {
+  try {
+    const records = await invoke<DownloadHistoryEntry[]>("get_download_history");
+    if (Array.isArray(records)) {
+      setDownloadHistory(records);
+    }
+  } catch (err) {
+    console.error("Failed to fetch download history:", err);
+  }
+};
+
+export const clearDatabaseHistory = async () => {
+  try {
+    await invoke("clear_download_history_db");
+    setDownloadHistory([]);
+    addToast("Download history cleared", "success");
+  } catch (err) {
+    console.error("Failed to clear download history:", err);
+    addToast(`Failed to clear history: ${err}`, "error");
+  }
+};
+
+export const deleteHistoryItem = async (id: string) => {
+  try {
+    await invoke("delete_download_history_item", { id });
+    setDownloadHistory((prev) => prev.filter((item) => item.id !== id));
+    addToast("History record removed", "success");
+  } catch (err) {
+    console.error("Failed to delete history item:", err);
+    addToast(`Failed to delete record: ${err}`, "error");
+  }
 };
 
 const processQueue = () => {
@@ -395,14 +482,24 @@ const executeDownload = async (task: DownloadTask) => {
 
           let newProgress = t.progress;
           let newPhase = t.phase;
+          let newSpeed = t.speed;
+          let newEta = t.eta;
 
           const cleanLog = log.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "");
 
           if (cleanLog.includes("[download]") && cleanLog.includes("%")) {
-            const match = cleanLog.match(/\[download\][^0-9]*([\d\.]+)%/);
+            const match = cleanLog.match(/\[download\]\s*([\d\.]+)%/);
             if (match) {
               newProgress = parseFloat(match[1]);
               newPhase = "Downloading";
+            }
+            const speedMatch = cleanLog.match(/at\s+([^\s]+(?:[kMG]?i?B\/s|B\/s))/);
+            if (speedMatch) {
+              newSpeed = speedMatch[1];
+            }
+            const etaMatch = cleanLog.match(/ETA\s+([\d:]+)/);
+            if (etaMatch) {
+              newEta = etaMatch[1];
             }
           } else if (
             cleanLog.includes("Attempting encoder:") ||
@@ -419,6 +516,8 @@ const executeDownload = async (task: DownloadTask) => {
             logs: [...t.logs, log],
             progress: newProgress,
             phase: newPhase,
+            speed: newSpeed,
+            eta: newEta,
           };
         }),
       );
@@ -430,7 +529,7 @@ const executeDownload = async (task: DownloadTask) => {
       url: `https://www.youtube.com/watch?v=${task.id}`,
       metadata: task.metadata,
       quality: downloadQuality(),
-      dlType: downloadType(),
+      dlType: task.dlType || downloadType(),
       cookies: browserCookies(),
       speedLimit: speedLimit(),
       concurrentFragments: concurrentFragments(),
@@ -470,6 +569,7 @@ const executeDownload = async (task: DownloadTask) => {
     );
   } finally {
     unlisten();
+    fetchDownloadHistory();
     processQueue();
   }
 };
@@ -479,6 +579,8 @@ export const startDownloadQueue = async () => {
   if (!targetUrl) return;
 
   setIsProcessingQueue(true);
+  setIsFetchingInfo(true);
+  setFetchingUrl(targetUrl);
   setDownloadUrl("");
 
   try {
@@ -498,6 +600,7 @@ export const startDownloadQueue = async () => {
         }
     }
 
+    const currentDlType = downloadType();
     const newTasks: DownloadTask[] = response.entries.map((meta) => ({
       id: meta.id,
       title: meta.title,
@@ -508,6 +611,8 @@ export const startDownloadQueue = async () => {
       showLogs: false,
       progress: 0,
       phase: "Queued",
+      url: targetUrl,
+      dlType: currentDlType,
       targetPlaylistId,
     }));
 
@@ -517,5 +622,8 @@ export const startDownloadQueue = async () => {
     console.error("Queue Initialization Error:", e);
     addToast(`Failed to initialize download: ${e}`, "error");
     setIsProcessingQueue(false);
+  } finally {
+    setIsFetchingInfo(false);
+    setFetchingUrl("");
   }
 };
