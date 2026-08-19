@@ -109,64 +109,73 @@ export default function VideoCard(props: VideoCardProps) {
       </div>
 
       <div class="video-info">
-        <Show when={props.showAvatar !== false}>
-          <img
-            src={convertFileSrc(props.video.avatar_path)}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-            class="avatar-small"
-          />
-        </Show>
-        <div class="video-text-content">
-          <h3 class="video-title" title={props.video.title}>
-            {props.video.title}
-          </h3>
-          <div class="video-meta-row">
-            <p class="video-channel">{props.video.channel}</p>
-            <div class="video-card-actions">
-              {/* Favorite Button */}
+        <h3 class="video-title" title={props.video.title}>
+          {props.video.title}
+        </h3>
+        <div class="video-meta-row">
+          <div class="video-channel-group">
+            <Show when={props.showAvatar !== false}>
+              <img
+                src={
+                  props.video.avatar_path
+                    ? convertFileSrc(props.video.avatar_path)
+                    : `http://127.0.0.1:1422/Avatars/${encodeURIComponent(props.video.channel)}.jpg`
+                }
+                onError={(e) => {
+                  if (!e.currentTarget.src.includes("127.0.0.1:1422/Avatars")) {
+                    e.currentTarget.src = `http://127.0.0.1:1422/Avatars/${encodeURIComponent(props.video.channel)}.jpg`;
+                  } else {
+                    e.currentTarget.style.display = "none";
+                  }
+                }}
+                class="avatar-small"
+              />
+            </Show>
+            <p class="video-channel" title={props.video.channel}>{props.video.channel}</p>
+          </div>
+
+          <div class="video-card-actions">
+            {/* Favorite Button */}
+            <button
+              class={`card-action-btn fav-btn ${isFavorite() ? "is-fav" : ""}`}
+              onClick={handleToggleFavorite}
+              title={isFavorite() ? "Remove from Favourites" : "Add to Favourites"}
+            >
+              <i class={`ph-fill ${isFavorite() ? "ph-heart" : "ph-heart"}`}></i>
+            </button>
+
+            {/* Add to Playlist Button */}
+            <Show when={props.onAddToPlaylist}>
               <button
-                class={`card-action-btn fav-btn ${isFavorite() ? "is-fav" : ""}`}
-                onClick={handleToggleFavorite}
-                title={isFavorite() ? "Remove from Favourites" : "Add to Favourites"}
+                class="card-action-btn playlist-btn"
+                onClick={handleAddToPlaylist}
+                title="Add to Playlist"
               >
-                <i class={`ph-fill ${isFavorite() ? "ph-heart" : "ph-heart"}`}></i>
+                <i class="ph-fill ph-list-plus"></i>
               </button>
+            </Show>
 
-              {/* Add to Playlist Button */}
-              <Show when={props.onAddToPlaylist}>
-                <button
-                  class="card-action-btn playlist-btn"
-                  onClick={handleAddToPlaylist}
-                  title="Add to Playlist"
-                >
-                  <i class="ph-fill ph-list-plus"></i>
-                </button>
-              </Show>
+            {/* Remove from Playlist Button */}
+            <Show when={props.onRemoveFromPlaylist}>
+              <button
+                class="card-action-btn remove-pl-btn"
+                onClick={handleRemoveFromPlaylist}
+                title="Remove from this Playlist"
+              >
+                <i class="ph-fill ph-minus-circle"></i>
+              </button>
+            </Show>
 
-              {/* Remove from Playlist Button */}
-              <Show when={props.onRemoveFromPlaylist}>
-                <button
-                  class="card-action-btn remove-pl-btn"
-                  onClick={handleRemoveFromPlaylist}
-                  title="Remove from this Playlist"
-                >
-                  <i class="ph-fill ph-minus-circle"></i>
-                </button>
-              </Show>
-
-              {/* Delete Button */}
-              <Show when={props.onDelete}>
-                <button
-                  class="card-action-btn delete-btn"
-                  onClick={handleDelete}
-                  title="Delete permanently"
-                >
-                  <i class="ph-fill ph-trash"></i>
-                </button>
-              </Show>
-            </div>
+            {/* Delete Button */}
+            <Show when={props.onDelete}>
+              <button
+                class="card-action-btn delete-btn"
+                onClick={handleDelete}
+                title="Delete permanently"
+              >
+                <i class="ph-fill ph-trash"></i>
+              </button>
+            </Show>
           </div>
         </div>
       </div>
