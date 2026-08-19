@@ -37,3 +37,16 @@ pub struct BinaryCheckStatus {
     pub ffmpeg_exists: bool,
     pub bin_folder: std::path::PathBuf,
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct DownloadHistoryEntry {
+    pub id: String,
+    pub video_id: String,
+    pub title: String,
+    pub channel: String,
+    pub url: String,
+    pub status: String,
+    pub dl_type: String,
+    pub error_msg: Option<String>,
+    pub created_at: String,
+}
