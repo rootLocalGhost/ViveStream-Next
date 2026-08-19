@@ -43,9 +43,8 @@ export default function Playlists() {
   const fetchPlaylists = async () => {
     try {
       const data = await invoke<Playlist[]>("get_playlists");
-      setPlaylists(data);
 
-      // Preload counts and first thumbnails for each playlist
+      // Preload counts and first thumbnails for each playlist before updating state
       const counts: Record<string, number> = {};
       const thumbs: Record<string, string> = {};
 
@@ -67,6 +66,7 @@ export default function Playlists() {
 
       setCountsMap(counts);
       setFirstThumbMap(thumbs);
+      setPlaylists(data);
     } catch (e) {
       console.error("Failed to load playlists:", e);
     }
@@ -318,12 +318,24 @@ export default function Playlists() {
                       <img
                         src={getCoverSrc(playlist)}
                         class="playlist-cover-img"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
+                        onLoad={(e) => {
+                          e.currentTarget.style.display = "block";
                           const fallback = e.currentTarget.parentElement?.querySelector(
                             ".playlist-cover-placeholder"
                           ) as HTMLElement | null;
-                          if (fallback) fallback.style.display = "flex";
+                          if (fallback) fallback.style.display = "none";
+                        }}
+                        onError={(e) => {
+                          const autoThumb = firstThumbMap()[playlist.id];
+                          if (autoThumb && !e.currentTarget.src.includes(encodeURIComponent(autoThumb))) {
+                            e.currentTarget.src = convertFileSrc(autoThumb);
+                          } else {
+                            e.currentTarget.style.display = "none";
+                            const fallback = e.currentTarget.parentElement?.querySelector(
+                              ".playlist-cover-placeholder"
+                            ) as HTMLElement | null;
+                            if (fallback) fallback.style.display = "flex";
+                          }
                         }}
                       />
                       <div
