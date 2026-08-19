@@ -1,4 +1,4 @@
-use crate::models::{ArtistEntry, Playlist, VideoEntry};
+use crate::models::{ArtistEntry, DownloadHistoryEntry, Playlist, VideoEntry};
 use crate::system::get_base_dir;
 use rusqlite::Connection;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -44,6 +44,17 @@ pub fn init_db(app: &AppHandle) -> Result<(), String> {
             PRIMARY KEY (playlist_id, video_id),
             FOREIGN KEY(playlist_id) REFERENCES Playlists(id) ON DELETE CASCADE,
             FOREIGN KEY(video_id) REFERENCES Videos(id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS DownloadHistory (
+            id TEXT PRIMARY KEY,
+            video_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            channel_name TEXT,
+            url TEXT NOT NULL,
+            status TEXT NOT NULL,
+            dl_type TEXT DEFAULT 'Video',
+            error_msg TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         ",
     )
@@ -532,6 +543,88 @@ pub async fn delete_video(app: AppHandle, video_id: String) -> Result<(), String
         let _ = std::fs::remove_file(desc_file);
         let _ = std::fs::remove_file(sub_file);
 
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+pub fn record_history_entry(
+    conn: &rusqlite::Connection,
+    video_id: &str,
+    title: &str,
+    channel: &str,
+    url: &str,
+    status: &str,
+    dl_type: &str,
+    error_msg: Option<&str>,
+) -> Result<(), rusqlite::Error> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    let history_id = format!("{}_{}", video_id, now);
+    conn.execute(
+        "INSERT INTO DownloadHistory (id, video_id, title, channel_name, url, status, dl_type, error_msg, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, CURRENT_TIMESTAMP)",
+        rusqlite::params![history_id, video_id, title, channel, url, status, dl_type, error_msg],
+    )?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_download_history(app: AppHandle) -> Result<Vec<DownloadHistoryEntry>, String> {
+    tokio::task::spawn_blocking(move || {
+        let conn = get_db_connection(&app)?;
+        let mut stmt = conn
+            .prepare("SELECT id, video_id, title, channel_name, url, status, dl_type, error_msg, created_at FROM DownloadHistory ORDER BY created_at DESC LIMIT 100")
+            .map_err(|e| e.to_string())?;
+
+        let rows = stmt
+            .query_map([], |row| {
+                Ok(DownloadHistoryEntry {
+                    id: row.get(0)?,
+                    video_id: row.get(1)?,
+                    title: row.get(2)?,
+                    channel: row.get(3).unwrap_or_default(),
+                    url: row.get(4)?,
+                    status: row.get(5)?,
+                    dl_type: row.get(6).unwrap_or_else(|_| "Video".to_string()),
+                    error_msg: row.get(7).ok(),
+                    created_at: row.get(8)?,
+                })
+            })
+            .map_err(|e| e.to_string())?;
+
+        let mut history = Vec::new();
+        for r in rows {
+            if let Ok(entry) = r {
+                history.push(entry);
+            }
+        }
+        Ok(history)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn clear_download_history_db(app: AppHandle) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let conn = get_db_connection(&app)?;
+        conn.execute("DELETE FROM DownloadHistory", [])
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn delete_download_history_item(app: AppHandle, id: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let conn = get_db_connection(&app)?;
+        conn.execute("DELETE FROM DownloadHistory WHERE id = ?1", rusqlite::params![id])
+            .map_err(|e| e.to_string())?;
         Ok(())
     })
     .await
