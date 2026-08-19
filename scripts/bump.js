@@ -98,10 +98,18 @@ function main() {
   console.log("✔ Updated src-tauri/Cargo.toml");
   console.log("✔ Updated src-tauri/tauri.conf.json");
 
+  // Synchronize Cargo.lock
+  try {
+    execSync("cargo check", { cwd: path.join(rootDir, "src-tauri"), stdio: "ignore" });
+    console.log("✔ Updated src-tauri/Cargo.lock");
+  } catch {
+    // If cargo is unavailable, continue
+  }
+
   if (shouldGitCommit) {
     try {
       console.log("\n📦 Creating Git commit...");
-      execSync(`git add VERSION package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json`, {
+      execSync(`git add VERSION package.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json`, {
         cwd: rootDir,
         stdio: "inherit",
       });
