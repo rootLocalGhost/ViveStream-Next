@@ -213,6 +213,8 @@ jobs:
             echo "⌨️ **Pro Tip**: Press <kbd>?</kbd> anywhere in the app to open the interactive **Keyboard Shortcuts Cheat Sheet**! ⭐ If you like ViveStream, consider giving us a star on GitHub!"
           } > "$RELEASE_BODY_FILE"
 
+          cp "$RELEASE_BODY_FILE" RELEASE_NOTES.md
+
           EOF_DELIMITER="DELIMITER_$(date +%s)"
           echo "release_body<<$EOF_DELIMITER" >> "$GITHUB_OUTPUT"
           cat "$RELEASE_BODY_FILE" >> "$GITHUB_OUTPUT"
@@ -233,11 +235,11 @@ jobs:
           fi
 
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Release $TAG_NAME already exists, updating draft notes..."
-            gh release edit "$TAG_NAME" --title "ViveStream v$VERSION" --notes "${{ steps.generate_notes.outputs.release_body }}" --draft $PRERELEASE_FLAG
+            echo "Release $TAG_NAME already exists, updating release notes..."
+            gh release edit "$TAG_NAME" --title "ViveStream v$VERSION" --notes-file RELEASE_NOTES.md $PRERELEASE_FLAG
           else
             echo "Creating draft release for $TAG_NAME..."
-            gh release create "$TAG_NAME" --title "ViveStream v$VERSION" --notes "${{ steps.generate_notes.outputs.release_body }}" --draft $PRERELEASE_FLAG
+            gh release create "$TAG_NAME" --title "ViveStream v$VERSION" --notes-file RELEASE_NOTES.md --draft $PRERELEASE_FLAG
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
