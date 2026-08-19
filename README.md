@@ -75,14 +75,14 @@ Press <kbd>?</kbd> or <kbd>Shift</kbd> + <kbd>/</kbd> anywhere in the applicatio
 ### 🧭 Global Navigation
 | Shortcut | Destination |
 | :--- | :--- |
-| <kbd>Alt</kbd> + <kbd>1</kbd> | **Home** |
-| <kbd>Alt</kbd> + <kbd>2</kbd> | **Favourites** |
-| <kbd>Alt</kbd> + <kbd>3</kbd> | **Playlists** |
-| <kbd>Alt</kbd> + <kbd>4</kbd> | **Artists** |
-| <kbd>Alt</kbd> + <kbd>5</kbd> | **Downloads** |
-| <kbd>Alt</kbd> + <kbd>6</kbd> | **Settings** |
+| <kbd>Shift</kbd> + <kbd>1</kbd> or <kbd>H</kbd> | **Home** |
+| <kbd>Shift</kbd> + <kbd>2</kbd> or <kbd>F</kbd> | **Favourites** |
+| <kbd>Shift</kbd> + <kbd>3</kbd> or <kbd>P</kbd> | **Playlists** |
+| <kbd>Shift</kbd> + <kbd>4</kbd> or <kbd>A</kbd> | **Artists** |
+| <kbd>Shift</kbd> + <kbd>5</kbd> or <kbd>D</kbd> | **Downloads** |
+| <kbd>Shift</kbd> + <kbd>6</kbd> or <kbd>S</kbd> | **Settings** |
+| <kbd>Esc</kbd> | **Go Back / Close Modals** |
 | <kbd>?</kbd> | **Open Shortcuts Cheat Sheet** |
-| <kbd>Esc</kbd> | **Close Modals / Exit Fullscreen** |
 
 ---
 
