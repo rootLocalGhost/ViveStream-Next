@@ -1,0 +1,240 @@
+.miniplayer-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 350px;
+  max-width: calc(100vw - 48px);
+  z-index: 1000;
+  animation: miniplayerSlideIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes miniplayerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.miniplayer-card {
+  background: var(--clay-bg);
+  border-radius: 20px;
+  box-shadow: var(--clay-card-shadow);
+  overflow: hidden;
+  border: 1px solid var(--border-color, transparent);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.miniplayer-card:hover {
+  transform: translateY(-4px);
+}
+
+.miniplayer-media-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000000;
+  overflow: hidden;
+}
+
+.miniplayer-video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.miniplayer-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 0.3) 40%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.miniplayer-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.miniplayer-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.miniplayer-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 3px 8px;
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+}
+
+.miniplayer-badge i {
+  color: var(--primary-accent);
+}
+
+.miniplayer-top-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.miniplayer-icon-btn {
+  background: rgba(18, 18, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.miniplayer-icon-btn:hover {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: #ffffff;
+  transform: scale(1.12);
+  box-shadow: 0 4px 16px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.4);
+}
+
+.miniplayer-icon-btn.close-btn:hover {
+  background: #ff4757;
+  border-color: #ff4757;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(255, 71, 87, 0.4);
+}
+
+.miniplayer-center-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.miniplayer-ctrl-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 4px;
+}
+
+.miniplayer-ctrl-btn:hover {
+  color: var(--primary-accent);
+  transform: scale(1.2);
+}
+
+.miniplayer-ctrl-btn.play-btn {
+  font-size: 26px;
+  background: rgba(255, 255, 255, 0.15);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+
+.miniplayer-ctrl-btn.play-btn:hover {
+  background: var(--primary-accent);
+  color: white;
+}
+
+.miniplayer-bottom-slider {
+  width: 100%;
+}
+
+.mini-slider {
+  height: 4px;
+}
+
+.mini-slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+}
+
+.miniplayer-meta-bar {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--clay-bg);
+}
+
+.miniplayer-text-wrap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.miniplayer-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.miniplayer-channel {
+  font-size: 11px;
+  color: var(--secondary-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.miniplayer-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--secondary-text);
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 600px) {
+  .miniplayer-container {
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: 100%;
+  }
+}
