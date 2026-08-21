@@ -164,7 +164,30 @@
 }
 
 .settings-page .setting-input:focus {
-  outline: 2px solid rgba(242, 92, 84, 0.3);
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.05),
+    0 0 0 2px var(--primary-accent);
+}
+
+@media (max-width: 768px) {
+  .settings-page .flex-row-between {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .settings-page .setting-input {
+    width: 100%;
+  }
+
+  .settings-page .setting-slider {
+    width: 100%;
+  }
+
+  .settings-desc {
+    max-width: 100%;
+  }
 }
 
 [data-palette="crimson"] .settings-page .setting-input:focus {
