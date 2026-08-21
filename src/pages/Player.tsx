@@ -11,7 +11,36 @@ import {
 import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { VideoEntry, setShowShortcutsModal } from "../store";
+import {
+  VideoEntry,
+  setShowShortcutsModal,
+  activeVideo,
+  setActiveVideo,
+  isPlaying,
+  setIsPlaying,
+  currentTime,
+  setCurrentTime,
+  duration,
+  setDuration,
+  volume,
+  setVolume,
+  isMuted,
+  setIsMuted,
+  playbackRate,
+  setPlaybackRate,
+  isLooping,
+  setIsLooping,
+  subtitlesEnabled,
+  setSubtitlesEnabled,
+  playerQueue,
+  setPlayerQueue,
+  miniplayerDismissed,
+  setMiniplayerDismissed,
+  theaterMode,
+  setTheaterMode,
+  setPlayerContextParams,
+  setGlobalVideoRef,
+} from "../store";
 import "./Player.css";
 
 const formatTime = (timeInSeconds: number) => {
@@ -27,26 +56,19 @@ const formatTime = (timeInSeconds: number) => {
 export default function Player() {
   const params = useParams();
   const navigate = useNavigate();
-  const [video, setVideo] = createSignal<VideoEntry | null>(null);
-  const [queue, setQueue] = createSignal<VideoEntry[]>([]);
+  const [video, setVideo] = createSignal<VideoEntry | null>(
+    activeVideo()?.id === params.id ? activeVideo() : null
+  );
+  const [queue, setQueue] = createSignal<VideoEntry[]>(playerQueue());
   const [description, setDescription] = createSignal<string>("");
   const [descExpanded, setDescExpanded] = createSignal(false);
-  const [theaterMode, setTheaterMode] = createSignal(false);
   const [isFullscreen, setIsFullscreen] = createSignal(false);
   const [showControls, setShowControls] = createSignal(true);
-  const [isPlaying, setIsPlaying] = createSignal(true);
-  const [isMuted, setIsMuted] = createSignal(false);
-  const [volume, setVolume] = createSignal(1);
   const [isVolumeHovered, setIsVolumeHovered] = createSignal(false);
-  const [currentTime, setCurrentTime] = createSignal(0);
-  const [duration, setDuration] = createSignal(0);
   const [isSeeking, setIsSeeking] = createSignal(false);
   const [isFavorite, setIsFavorite] = createSignal(false);
   const [showSettingsMenu, setShowSettingsMenu] = createSignal(false);
   const [showCCMenu, setShowCCMenu] = createSignal(false);
-  const [playbackRate, setPlaybackRate] = createSignal(1.0);
-  const [isLooping, setIsLooping] = createSignal(false);
-  const [subtitlesEnabled, setSubtitlesEnabled] = createSignal(false);
   
   const [searchParams] = useSearchParams();
   const [isEditingMeta, setIsEditingMeta] = createSignal(false);
@@ -56,7 +78,9 @@ export default function Player() {
   let videoRef: HTMLVideoElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
   let settingsMenuRef: HTMLDivElement | undefined;
+  let settingsBtnRef: HTMLButtonElement | undefined;
   let ccMenuRef: HTMLDivElement | undefined;
+  let ccBtnRef: HTMLButtonElement | undefined;
   let controlsTimeout: number | undefined;
   let unlistenPlay: UnlistenFn | undefined;
   let unlistenPause: UnlistenFn | undefined;
@@ -64,29 +88,27 @@ export default function Player() {
   let unlistenPrev: UnlistenFn | undefined;
   let currentLoadingId: string | null = null;
 
-  const cleanupMediaPlayback = () => {
-    if (videoRef) {
-      videoRef.pause();
-      videoRef.removeAttribute("src");
-      videoRef.load();
+  const toggleMiniplayerMode = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/");
     }
-    if (document.pictureInPictureElement) {
-      document.exitPictureInPicture().catch(() => {});
-    }
-    invoke("update_playback_status", { playing: false }).catch(() => {});
   };
 
   const loadVideoData = async (targetId?: string) => {
     if (!targetId) return;
     currentLoadingId = targetId;
+    setMiniplayerDismissed(false);
+    setPlayerContextParams({
+      context: searchParams.context,
+      id: searchParams.id,
+      name: searchParams.name,
+    });
 
-    // Immediately halt previous media playback and release mismatched PiP
-    if (videoRef) {
-      videoRef.pause();
-      setIsPlaying(false);
-    }
-    if (document.pictureInPictureElement && document.pictureInPictureElement !== videoRef) {
-      document.exitPictureInPicture().catch(() => {});
+    // Instant sync if already in memory
+    if (activeVideo()?.id === targetId) {
+      setVideo(activeVideo());
     }
 
     try {
@@ -95,9 +117,19 @@ export default function Player() {
       let currentVideo = db.find((v) => v.id === targetId);
 
       if (currentVideo) {
+        const isSameVideo = activeVideo()?.id === targetId;
+        
+        if (!isSameVideo) {
+          setCurrentTime(0);
+          setIsPlaying(true);
+          if (videoRef) {
+            videoRef.currentTime = 0;
+          }
+        }
+
         setVideo(currentVideo);
+        setActiveVideo(currentVideo);
         setDescExpanded(false);
-        setSubtitlesEnabled(false);
 
         const favStatus = await invoke<boolean>("check_favorite", {
           id: targetId,
@@ -144,7 +176,9 @@ export default function Player() {
             new Set(nextVideos.map((a) => a.id)),
           ).map((id) => nextVideos.find((a) => a.id === id)!);
 
-          setQueue(uniqueQueue.filter((v) => v.id !== targetId));
+          const filteredQueue = uniqueQueue.filter((v) => v.id !== targetId);
+          setQueue(filteredQueue);
+          setPlayerQueue(filteredQueue);
         }
       }
     } catch (e) {
@@ -397,11 +431,10 @@ export default function Player() {
       return;
     }
 
-    // I: Toggle Miniplayer (PiP)
+    // I: Toggle Custom Miniplayer
     if (e.key === "i" || e.key === "I") {
       e.preventDefault();
-      togglePiP();
-      showOsd("ph-picture-in-picture", "Miniplayer");
+      toggleMiniplayerMode();
       return;
     }
 
@@ -573,15 +606,44 @@ export default function Player() {
   };
 
   const handleClickOutside = (e: MouseEvent) => {
-    if (settingsMenuRef && !settingsMenuRef.contains(e.target as Node)) {
+    const target = e.target as Node;
+    if (
+      settingsMenuRef &&
+      !settingsMenuRef.contains(target) &&
+      (!settingsBtnRef || !settingsBtnRef.contains(target))
+    ) {
       setShowSettingsMenu(false);
     }
-    if (ccMenuRef && !ccMenuRef.contains(e.target as Node)) {
+    if (
+      ccMenuRef &&
+      !ccMenuRef.contains(target) &&
+      (!ccBtnRef || !ccBtnRef.contains(target))
+    ) {
       setShowCCMenu(false);
     }
   };
 
   onMount(async () => {
+    if (videoRef) {
+      setGlobalVideoRef(videoRef);
+      videoRef.volume = untrack(volume);
+      videoRef.muted = untrack(isMuted);
+      videoRef.playbackRate = untrack(playbackRate);
+      if (activeVideo()?.id === params.id) {
+        const savedTime = untrack(currentTime);
+        if (savedTime > 0) {
+          videoRef.currentTime = savedTime;
+        }
+        if (untrack(isPlaying)) {
+          handlePlay();
+        }
+      } else {
+        videoRef.currentTime = 0;
+        setCurrentTime(0);
+        setIsPlaying(true);
+        handlePlay();
+      }
+    }
     unlistenPlay = await listen("media-play", () => handlePlay());
     unlistenPause = await listen("media-pause", () => handlePause());
     unlistenNext = await listen("media-next", () => handleVideoEnd());
@@ -603,7 +665,10 @@ export default function Player() {
     if (unlistenPause) unlistenPause();
     if (unlistenNext) unlistenNext();
     if (unlistenPrev) unlistenPrev();
-    cleanupMediaPlayback();
+    if (videoRef) {
+      setCurrentTime(videoRef.currentTime);
+      setIsPlaying(!videoRef.paused);
+    }
   });
 
   createEffect(
@@ -622,14 +687,23 @@ export default function Player() {
       () => video()?.id,
       (currentId) => {
         if (currentId && video() && videoRef) {
+          setGlobalVideoRef(videoRef);
           invoke("update_media_metadata", {
             title: video()!.title,
             artist: video()!.channel,
           }).catch(() => {});
-          videoRef.currentTime = 0;
           videoRef.volume = untrack(volume);
           videoRef.muted = untrack(isMuted);
           videoRef.playbackRate = untrack(playbackRate);
+          
+          if (activeVideo()?.id === currentId && untrack(currentTime) > 0) {
+            videoRef.currentTime = untrack(currentTime);
+          } else {
+            videoRef.currentTime = 0;
+            setCurrentTime(0);
+          }
+          
+          setIsPlaying(true);
           handlePlay();
         }
       },
@@ -669,6 +743,7 @@ export default function Player() {
               class="player-video-element"
               ref={videoRef}
               preload="auto"
+              autoplay
               onEnded={handleVideoEnd}
               onPlay={() => {
                 invoke("update_playback_status", { playing: true });
@@ -678,7 +753,17 @@ export default function Player() {
                 invoke("update_playback_status", { playing: false });
                 setIsPlaying(false);
               }}
-              onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+              onLoadedMetadata={(e) => {
+                setDuration(e.currentTarget.duration);
+                if (isPlaying()) {
+                  handlePlay();
+                }
+              }}
+              onCanPlay={() => {
+                if (isPlaying()) {
+                  handlePlay();
+                }
+              }}
               onTimeUpdate={(e) => {
                 if (!isSeeking()) setCurrentTime(e.currentTarget.currentTime);
               }}
@@ -861,8 +946,9 @@ export default function Player() {
                   </div>
 
                   <button
+                    ref={ccBtnRef}
                     class={`control-btn ${subtitlesEnabled() ? "active" : ""}`}
-                    title="Subtitles/CC"
+                    title="Subtitles/CC (C)"
                     onClick={() => {
                       setShowCCMenu(!showCCMenu());
                       setShowSettingsMenu(false);
@@ -872,6 +958,7 @@ export default function Player() {
                   </button>
 
                   <button
+                    ref={settingsBtnRef}
                     class="control-btn"
                     title="Settings"
                     onClick={() => {
@@ -880,6 +967,14 @@ export default function Player() {
                     }}
                   >
                     <i class="ph-fill ph-gear"></i>
+                  </button>
+
+                  <button
+                    class="control-btn"
+                    title="Miniplayer (I)"
+                    onClick={toggleMiniplayerMode}
+                  >
+                    <i class="ph-fill ph-picture-in-picture"></i>
                   </button>
 
                   <button
@@ -920,25 +1015,66 @@ export default function Player() {
             <Show 
                 when={isEditingMeta()}
                 fallback={
-                    <div class="flex-row-gap" style="align-items: center;">
+                    <div class="player-title-row">
                         <h1 class="player-title">{video()!.title}</h1>
-                        <button class="control-btn" onClick={() => { setEditTitle(video()!.title); setEditChannel(video()!.channel); setIsEditingMeta(true); }}>
+                        <button
+                            class="player-meta-edit-btn"
+                            onClick={() => { setEditTitle(video()!.title); setEditChannel(video()!.channel); setIsEditingMeta(true); }}
+                            title="Edit Title & Artist"
+                        >
                             <i class="ph-fill ph-pencil-simple"></i>
                         </button>
                     </div>
                 }
             >
-                <div class="flex-row-gap" style="align-items: center; margin-bottom: 12px;">
-                    <div class="flex-col-gap">
-                        <input class="command-input" value={editTitle()} onInput={(e) => setEditTitle(e.target.value)} placeholder="Title" />
-                        <input class="command-input" value={editChannel()} onInput={(e) => setEditChannel(e.target.value)} placeholder="Artist" />
+                <div class="player-meta-edit-card">
+                    <div class="player-meta-edit-header">
+                        <i class="ph-fill ph-pencil-simple"></i>
+                        <span>Edit Video Details</span>
                     </div>
-                    <button class="control-btn" onClick={handleSaveMetadata} title="Save">
-                        <i class="ph-fill ph-check"></i>
-                    </button>
-                    <button class="control-btn" onClick={() => setIsEditingMeta(false)} title="Cancel">
-                        <i class="ph-fill ph-x"></i>
-                    </button>
+                    <div class="player-meta-edit-fields">
+                        <div class="player-meta-input-group">
+                            <label class="player-meta-label">Title</label>
+                            <div class="player-meta-input-wrapper">
+                                <i class="ph ph-video"></i>
+                                <input
+                                    class="player-meta-input"
+                                    value={editTitle()}
+                                    onInput={(e) => setEditTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleSaveMetadata();
+                                        if (e.key === "Escape") setIsEditingMeta(false);
+                                    }}
+                                    placeholder="Video title..."
+                                    autofocus
+                                />
+                            </div>
+                        </div>
+                        <div class="player-meta-input-group">
+                            <label class="player-meta-label">Channel / Artist</label>
+                            <div class="player-meta-input-wrapper">
+                                <i class="ph ph-user"></i>
+                                <input
+                                    class="player-meta-input"
+                                    value={editChannel()}
+                                    onInput={(e) => setEditChannel(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleSaveMetadata();
+                                        if (e.key === "Escape") setIsEditingMeta(false);
+                                    }}
+                                    placeholder="Artist or channel..."
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="player-meta-edit-actions">
+                        <button class="primary-btn player-meta-save-btn" onClick={handleSaveMetadata}>
+                            <i class="ph-bold ph-check"></i> Save Changes
+                        </button>
+                        <button class="clay-btn player-meta-cancel-btn" onClick={() => setIsEditingMeta(false)}>
+                            <i class="ph-bold ph-x"></i> Cancel
+                        </button>
+                    </div>
                 </div>
             </Show>
 
