@@ -258,3 +258,152 @@
 .setup-loading-screen .spinIcon {
   font-size: 24px;
 }
+
+/* Custom Complete Screen Styles */
+.setup-complete-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  animation: slideUpFade 0.5s ease-out forwards;
+}
+
+.setup-success-badge {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--clay-bg);
+  box-shadow: var(--clay-card-shadow);
+}
+
+.setup-success-glow {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(39, 201, 63, 0.4) 0%, transparent 70%);
+  animation: pulseGlowSuccess 2.5s ease-in-out infinite;
+}
+
+@keyframes pulseGlowSuccess {
+  0%, 100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+.setup-success-icon {
+  font-size: 56px;
+  color: #27c93f;
+  z-index: 1;
+  filter: drop-shadow(0 4px 12px rgba(39, 201, 63, 0.4));
+}
+
+.setup-complete-title {
+  color: var(--primary-text);
+  font-size: 32px;
+  letter-spacing: 4px;
+}
+
+.setup-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .setup-status-grid {
+    grid-template-columns: 1fr;
+  }
+  .setup-content-card {
+    padding: 28px 20px;
+  }
+}
+
+.setup-status-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--clay-bg);
+  box-shadow: var(--clay-inset-shadow);
+  padding: 14px 18px;
+  border-radius: 20px;
+}
+
+.setup-status-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(39, 201, 63, 0.15);
+  color: #27c93f;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: var(--clay-btn-shadow);
+}
+
+.setup-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setup-status-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--primary-text);
+}
+
+.setup-status-desc {
+  font-size: 12px;
+  color: var(--secondary-text);
+}
+
+.setup-launch-btn {
+  width: 100%;
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-top: 8px;
+}
+
+.setup-launch-btn i {
+  font-size: 22px;
+}
+
+.setup-log-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--secondary-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.setup-log-toggle:hover {
+  color: var(--primary-accent);
+}
+
+.setup-terminal-compact {
+  width: 100%;
+  max-height: 160px;
+}
+
+.setup-terminal-compact .setup-terminal {
+  height: 140px;
+  padding: 16px;
+}
+
