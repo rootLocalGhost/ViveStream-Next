@@ -146,6 +146,32 @@ export const {
   setHomeVideos,
   showShortcutsModal,
   setShowShortcutsModal,
+  activeVideo,
+  setActiveVideo,
+  isPlaying,
+  setIsPlaying,
+  currentTime,
+  setCurrentTime,
+  duration,
+  setDuration,
+  volume,
+  setVolume,
+  isMuted,
+  setIsMuted,
+  playbackRate,
+  setPlaybackRate,
+  isLooping,
+  setIsLooping,
+  subtitlesEnabled,
+  setSubtitlesEnabled,
+  playerQueue,
+  setPlayerQueue,
+  miniplayerDismissed,
+  setMiniplayerDismissed,
+  theaterMode,
+  setTheaterMode,
+  playerContextParams,
+  setPlayerContextParams,
 } = createRoot(() => {
   const [toasts, setToasts] = createSignal<Toast[]>([]);
   const [dialogState, setDialogState] = createSignal<DialogState | null>(null);
@@ -201,6 +227,24 @@ export const {
   const [isProcessingQueue, setIsProcessingQueue] = createSignal(false);
   const [homeVideos, setHomeVideos] = createSignal<VideoEntry[]>([]);
 
+  const [activeVideo, setActiveVideo] = createSignal<VideoEntry | null>(null);
+  const [isPlaying, setIsPlaying] = createSignal(false);
+  const [currentTime, setCurrentTime] = createSignal(0);
+  const [duration, setDuration] = createSignal(0);
+  const [volume, setVolume] = createSignal(1);
+  const [isMuted, setIsMuted] = createSignal(false);
+  const [playbackRate, setPlaybackRate] = createSignal(1.0);
+  const [isLooping, setIsLooping] = createSignal(false);
+  const [subtitlesEnabled, setSubtitlesEnabled] = createSignal(false);
+  const [playerQueue, setPlayerQueue] = createSignal<VideoEntry[]>([]);
+  const [miniplayerDismissed, setMiniplayerDismissed] = createSignal(false);
+  const [theaterMode, setTheaterMode] = createSignal(false);
+  const [playerContextParams, setPlayerContextParams] = createSignal<{
+    context?: string;
+    id?: string;
+    name?: string;
+  }>({});
+
   return {
     toasts,
     setToasts,
@@ -254,8 +298,117 @@ export const {
     setDownloadHistory,
     homeVideos,
     setHomeVideos,
+    activeVideo,
+    setActiveVideo,
+    isPlaying,
+    setIsPlaying,
+    currentTime,
+    setCurrentTime,
+    duration,
+    setDuration,
+    volume,
+    setVolume,
+    isMuted,
+    setIsMuted,
+    playbackRate,
+    setPlaybackRate,
+    isLooping,
+    setIsLooping,
+    subtitlesEnabled,
+    setSubtitlesEnabled,
+    playerQueue,
+    setPlayerQueue,
+    miniplayerDismissed,
+    setMiniplayerDismissed,
+    theaterMode,
+    setTheaterMode,
+    playerContextParams,
+    setPlayerContextParams,
   };
 });
+
+let globalVideoRef: HTMLVideoElement | null = null;
+
+export const setGlobalVideoRef = (el: HTMLVideoElement | null) => {
+  globalVideoRef = el;
+};
+
+export const getGlobalVideoRef = () => globalVideoRef;
+
+export const toggleGlobalPlay = () => {
+  if (globalVideoRef) {
+    if (isPlaying()) {
+      globalVideoRef.pause();
+      setIsPlaying(false);
+    } else {
+      globalVideoRef.play().then(() => setIsPlaying(true)).catch(() => {});
+    }
+  }
+};
+
+export const pauseGlobalPlay = () => {
+  if (globalVideoRef) {
+    globalVideoRef.pause();
+    setIsPlaying(false);
+  }
+};
+
+export const resumeGlobalPlay = () => {
+  if (globalVideoRef) {
+    globalVideoRef.play().then(() => setIsPlaying(true)).catch(() => {});
+  }
+};
+
+export const seekGlobalPlay = (time: number) => {
+  if (globalVideoRef) {
+    globalVideoRef.currentTime = time;
+    setCurrentTime(time);
+  }
+};
+
+export const setGlobalVolume = (val: number) => {
+  setVolume(val);
+  if (globalVideoRef) {
+    globalVideoRef.volume = val;
+    if (val > 0 && isMuted()) {
+      globalVideoRef.muted = false;
+      setIsMuted(false);
+    } else if (val === 0 && !isMuted()) {
+      globalVideoRef.muted = true;
+      setIsMuted(true);
+    }
+  }
+};
+
+export const toggleGlobalMute = () => {
+  if (globalVideoRef) {
+    globalVideoRef.muted = !globalVideoRef.muted;
+    setIsMuted(globalVideoRef.muted);
+    if (!globalVideoRef.muted && volume() === 0) {
+      setVolume(0.5);
+      globalVideoRef.volume = 0.5;
+    }
+  }
+};
+
+export const toggleGlobalPiP = async () => {
+  try {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    } else if (globalVideoRef) {
+      await globalVideoRef.requestPictureInPicture();
+    }
+  } catch (err) {
+    console.error("PiP error:", err);
+  }
+};
+
+export const closeGlobalMiniplayer = () => {
+  pauseGlobalPlay();
+  setActiveVideo(null);
+  setMiniplayerDismissed(true);
+  invoke("update_playback_status", { playing: false }).catch(() => {});
+};
 
 export const addToast = (
   message: string,
