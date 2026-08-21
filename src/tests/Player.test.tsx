@@ -72,7 +72,7 @@ describe("Player Component", () => {
     );
   });
 
-  it("should pause and clean up video stream on unmount", async () => {
+  it("should preserve playback state on unmount for miniplayer persistence", async () => {
     const { unmount } = render(() => <Player />);
 
     await waitFor(() => {
@@ -84,7 +84,13 @@ describe("Player Component", () => {
 
     unmount();
 
-    expect(HTMLVideoElement.prototype.pause).toHaveBeenCalled();
-    expect(HTMLVideoElement.prototype.load).toHaveBeenCalled();
+    // In store, activeVideo is preserved so miniplayer continues
+    const { activeVideo, closeGlobalMiniplayer } = await import("../store");
+    expect(activeVideo()).not.toBeNull();
+    expect(activeVideo()?.title).toBe("Test Video");
+
+    // Closing miniplayer pauses and clears active video
+    closeGlobalMiniplayer();
+    expect(activeVideo()).toBeNull();
   });
 });
