@@ -8,6 +8,7 @@ import "./App.css";
 import { sidebarHoverMode, forceSetup, showShortcutsModal, setShowShortcutsModal } from "./store";
 import NotificationSystem from "./components/NotificationSystem";
 import ShortcutsModal from "./components/ShortcutsModal";
+import Miniplayer from "./components/Miniplayer";
 
 const Home = lazy(() => import("./pages/Home"));
 const Downloads = lazy(() => import("./pages/Downloads"));
@@ -117,6 +118,7 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
         onClose={() => setShowShortcutsModal(false)}
       />
       <ImmersiveTitleBar />
+      <Miniplayer />
       <Show
         when={needsSetup() !== null}
         fallback={
@@ -127,7 +129,7 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
       >
         <Show
           when={needsSetup() === false && !forceSetup()}
-          fallback={<Setup />}
+          fallback={<Setup onComplete={() => { setNeedsSetup(false); setForceSetup(false); }} />}
         >
           {props.children}
         </Show>
@@ -192,6 +194,20 @@ const AppLayout: Component<{ children?: any }> = (props) => {
         e.preventDefault();
         setShowShortcutsModal(!showShortcutsModal());
         return;
+      }
+
+      // Miniplayer Toggle (I) when not in player page
+      if (!isInput && (e.key === "i" || e.key === "I") && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (!location.pathname.startsWith("/player")) {
+          const vid = activeVideo();
+          if (vid) {
+            e.preventDefault();
+            const params = playerContextParams();
+            const qs = new URLSearchParams(params as Record<string, string>).toString();
+            navigate(`/player/${vid.id}${qs ? `?${qs}` : ""}`);
+            return;
+          }
+        }
       }
 
       // Global Navigation (Shift + 1..6 or Shift + H/F/P/A/D/S)
