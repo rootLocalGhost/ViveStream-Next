@@ -763,11 +763,11 @@ input:checked + .slider:before {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
   padding-top: 10px;
   padding-bottom: 40px;
-  padding-right: 20px;
+  padding-right: 10px;
 }
 
 .video-card {
@@ -884,3 +884,95 @@ input:checked + .slider:before {
   cursor: not-allowed;
   border: none;
 }
+
+/* ==========================================================================
+   Comprehensive Responsive Styles
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .page-wrapper {
+    padding: 20px 16px 36px 20px;
+  }
+
+  .page-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  .page-title i {
+    font-size: 26px;
+  }
+
+  .clay-card {
+    padding: 14px;
+  }
+
+  .clay-btn {
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --sidebar-collapsed-width: 60px;
+    --sidebar-expanded-width: 200px;
+  }
+
+  .page-wrapper {
+    padding: 14px 10px 30px 14px;
+  }
+
+  .main-content {
+    margin-left: var(--sidebar-collapsed-width);
+  }
+
+  .sidebar {
+    width: var(--sidebar-collapsed-width);
+  }
+
+  .sidebar-header {
+    height: 60px;
+    padding-left: 14px;
+  }
+
+  .sidebar a {
+    height: 44px;
+    padding-left: 10px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-right: 0;
+  }
+
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .page-title i {
+    font-size: 22px;
+  }
+
+  .flex-row-between {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .custom-select-wrapper {
+    min-width: 130px;
+  }
+
+  .custom-select-trigger {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .command-btn {
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+}
+
