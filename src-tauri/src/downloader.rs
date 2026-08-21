@@ -10,7 +10,6 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Instant;
 use tauri::{AppHandle, Emitter};
-use tauri_plugin_dialog::DialogExt;
 
 pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
@@ -325,13 +324,7 @@ pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
 
     let _ = fs::remove_file(temp_path);
     emit_progress("Engines extracted perfectly.");
-
-    app.dialog()
-        .message("Deployment complete. ViveStream will now restart to initialize engines.")
-        .kind(tauri_plugin_dialog::MessageDialogKind::Info)
-        .show(move |_| {
-            app.restart();
-        });
+    emit_progress("[COMPLETE]");
 
     Ok(())
 }
@@ -430,7 +423,7 @@ pub async fn get_video_metadata(
 
             let video_path = vid_dir.join(format!("{}.mp4", id));
             let thumbnail_path = thumb_dir.join(format!("{}.jpg", id));
-            
+
             if playlist_title.is_none() && parts.len() >= 4 {
                 let pl_raw = parts[3].trim();
                 if pl_raw != "NA" && !pl_raw.is_empty() && pl_raw != "None" && pl_raw != "null" {
