@@ -19,8 +19,48 @@ use tauri::{
     Emitter, Manager,
 };
 
+#[cfg(target_os = "linux")]
+fn suppress_ayatana_warnings() {
+    unsafe {
+        extern "C" fn dummy_log_handler(
+            _log_domain: *const std::os::raw::c_char,
+            _log_level: i32,
+            _message: *const std::os::raw::c_char,
+            _user_data: *mut std::ffi::c_void,
+        ) {}
+
+        extern "C" {
+            fn g_log_set_handler(
+                log_domain: *const std::os::raw::c_char,
+                log_levels: i32,
+                log_func: Option<
+                    unsafe extern "C" fn(
+                        *const std::os::raw::c_char,
+                        i32,
+                        *const std::os::raw::c_char,
+                        *mut std::ffi::c_void,
+                    ),
+                >,
+                user_data: *mut std::ffi::c_void,
+            ) -> u32;
+        }
+
+        if let Ok(domain) = std::ffi::CString::new("libayatana-appindicator") {
+            g_log_set_handler(
+                domain.as_ptr(),
+                0xFF,
+                Some(dummy_log_handler),
+                std::ptr::null_mut(),
+            );
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    suppress_ayatana_warnings();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_sql::Builder::default().build())
         .setup(|app| {
