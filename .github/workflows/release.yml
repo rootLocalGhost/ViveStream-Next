@@ -318,25 +318,32 @@ jobs:
           SIZE=$(du -sb . | awk '{print $1}')
 
           cat <<EOT > .PKGINFO
-          pkgname = vivestream-next-bin
-          pkgbase = vivestream-next-bin
-          pkgver = ${{ needs.prepare.outputs.app_version }}-1
-          pkgdesc = A lightning-fast, natively integrated YouTube downloader and local media library.
-          url = https://github.com/rootlocalghost/ViveStream-Next
-          builddate = $(date +%s)
-          packager = ViveStream CI <noreply@github.com>
-          size = $SIZE
-          arch = x86_64
-          license = custom:PolyForm Noncommercial 1.0.0
-          depend = webkit2gtk-4.1
-          depend = yt-dlp
-          depend = ffmpeg
-          depend = intel-media-driver
-          depend = libva-utils
-          EOT
+pkgname = vivestream-next-bin
+pkgbase = vivestream-next-bin
+pkgver = ${{ needs.prepare.outputs.app_version }}-1
+pkgdesc = A lightning-fast, natively integrated YouTube downloader and local media library.
+url = https://github.com/rootlocalghost/ViveStream-Next
+builddate = $(date +%s)
+packager = ViveStream CI <noreply@github.com>
+size = $SIZE
+arch = x86_64
+license = custom:PolyForm Noncommercial 1.0.0
+depend = webkit2gtk-4.1
+depend = gst-plugins-good
+depend = gst-plugins-base
+depend = gst-plugins-bad
+depend = gst-plugins-ugly
+depend = gst-libav
+depend = yt-dlp
+depend = ffmpeg
+depend = intel-media-driver
+depend = libva-utils
+provides = vivestream-next
+conflict = vivestream-next
+EOT
 
           ARCH_PKG_NAME="vivestream-next_${{ needs.prepare.outputs.app_version }}_x86_64.pkg.tar.zst"
-          tar -c --zstd -f "../$ARCH_PKG_NAME" .
+          tar --owner=0 --group=0 --numeric-owner -c --zstd -f "../$ARCH_PKG_NAME" .PKGINFO usr
 
           gh release upload ${{ needs.prepare.outputs.tag_name }} "../$ARCH_PKG_NAME" --clobber
         env:
