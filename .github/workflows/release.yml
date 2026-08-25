@@ -106,6 +106,7 @@ jobs:
         id: generate_notes
         shell: bash
         run: |
+          git fetch --tags --force || true
           VERSION="${{ steps.version_check.outputs.app_version }}"
           INPUT_PREV_TAG="${{ github.event.inputs.previous_tag }}"
 
@@ -115,10 +116,11 @@ jobs:
             PREV_TAG=$(git describe --tags --abbrev=0 "v$VERSION^" 2>/dev/null || git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           fi
 
-          if [ -n "$PREV_TAG" ]; then
+          if [ -n "$PREV_TAG" ] && git rev-parse --verify "$PREV_TAG" >/dev/null 2>&1; then
             LOG_RANGE="$PREV_TAG..HEAD"
           else
             LOG_RANGE="-n 30"
+            PREV_TAG=""
           fi
 
           FEAT_LOG=""
