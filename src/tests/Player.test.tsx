@@ -95,4 +95,29 @@ describe("Player Component", () => {
     closeGlobalMiniplayer();
     expect(activeVideo()).toBeNull();
   });
+
+  it("does not toggle fullscreen when Ctrl+F or Cmd+F is pressed", async () => {
+    const { container } = render(() => <Player />);
+    await waitFor(() => {
+      expect(screen.getByText("Test Video")).toBeInTheDocument();
+    });
+
+    const playerContainer = container.querySelector(".player-video-wrapper");
+    const requestFullscreenMock = vi.fn();
+    if (playerContainer) {
+      playerContainer.requestFullscreen = requestFullscreenMock;
+    }
+
+    // Fire Ctrl + F
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "f", ctrlKey: true, bubbles: true })
+    );
+    expect(requestFullscreenMock).not.toHaveBeenCalled();
+
+    // Fire Meta + F (Cmd + F)
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "F", metaKey: true, bubbles: true })
+    );
+    expect(requestFullscreenMock).not.toHaveBeenCalled();
+  });
 });
