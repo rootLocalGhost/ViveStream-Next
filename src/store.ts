@@ -102,6 +102,14 @@ export const {
   setUseAnimatedIcons,
   sidebarHoverMode,
   setSidebarHoverMode,
+  alwaysShowSearchBar,
+  setAlwaysShowSearchBar,
+  showFpsCounter,
+  setShowFpsCounter,
+  isSearchOpen,
+  setIsSearchOpen,
+  globalSearchQuery,
+  setGlobalSearchQuery,
   appTheme,
   setAppTheme,
   appPalette,
@@ -186,6 +194,14 @@ export const {
     createSignal(initialAnimState);
   const [sidebarHoverMode, setSidebarHoverMode] =
     createSignal(initialHoverState);
+  const [alwaysShowSearchBar, setAlwaysShowSearchBar] = createSignal(
+    getBool("alwaysShowSearchBar", false),
+  );
+  const [showFpsCounter, setShowFpsCounter] = createSignal(
+    getBool("showFpsCounter", false),
+  );
+  const [isSearchOpen, setIsSearchOpen] = createSignal(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = createSignal("");
   const [appTheme, setAppTheme] = createSignal(initialTheme);
   const [appPalette, setAppPalette] = createSignal(initialPalette);
 
@@ -258,6 +274,14 @@ export const {
     setUseAnimatedIcons,
     sidebarHoverMode,
     setSidebarHoverMode,
+    alwaysShowSearchBar,
+    setAlwaysShowSearchBar,
+    showFpsCounter,
+    setShowFpsCounter,
+    isSearchOpen,
+    setIsSearchOpen,
+    globalSearchQuery,
+    setGlobalSearchQuery,
     appTheme,
     setAppTheme,
     appPalette,
@@ -458,6 +482,18 @@ export const toggleSidebarHoverMode = (val: boolean) => {
   setSidebarHoverMode(val);
   if (isBrowser)
     window.localStorage.setItem("sidebarHoverMode", val.toString());
+};
+
+export const toggleAlwaysShowSearchBar = (val: boolean) => {
+  setAlwaysShowSearchBar(val);
+  if (isBrowser)
+    window.localStorage.setItem("alwaysShowSearchBar", val.toString());
+};
+
+export const toggleShowFpsCounter = (val: boolean) => {
+  setShowFpsCounter(val);
+  if (isBrowser)
+    window.localStorage.setItem("showFpsCounter", val.toString());
 };
 
 export const toggleAppTheme = (theme: "light" | "dark") => {
