@@ -9,7 +9,7 @@ vi.mock("@tauri-apps/api/core", () => ({
     if (cmd === "check_binaries") {
       return Promise.resolve({ ytdlp_exists: true, ffmpeg_exists: true });
     }
-    if (cmd === "get_downloaded_videos") {
+    if (cmd === "get_downloaded_videos" || cmd === "get_playlists" || cmd === "get_artists") {
       return Promise.resolve([]);
     }
     return Promise.resolve();
