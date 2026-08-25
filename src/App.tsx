@@ -1,19 +1,27 @@
 import { lazy, Component, createSignal, onMount, Show } from "solid-js";
-import { Router, Route, A } from "@solidjs/router";
+import { Router, Route, A, useNavigate } from "@solidjs/router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import "@phosphor-icons/web/regular";
 import "@phosphor-icons/web/fill";
 import "./App.css";
+import GlobalSearch from "./components/GlobalSearch";
 import {
   sidebarHoverMode,
   forceSetup,
+  setForceSetup,
   showShortcutsModal,
   setShowShortcutsModal,
+  isSearchOpen,
+  setIsSearchOpen,
+  setGlobalSearchQuery,
+  activeVideo,
+  playerContextParams,
 } from "./store";
 import NotificationSystem from "./components/NotificationSystem";
 import ShortcutsModal from "./components/ShortcutsModal";
 import Miniplayer from "./components/Miniplayer";
+import FPSCounter from "./components/FPSCounter";
 
 const Home = lazy(() => import("./pages/Home"));
 const Downloads = lazy(() => import("./pages/Downloads"));
@@ -96,23 +104,25 @@ const ImmersiveTitleBar = () => {
   );
 };
 
-import { useNavigate } from "@solidjs/router";
-
 const AppLifecycle: Component<{ children?: any }> = (props) => {
-  const [needsSetup, setNeedsSetup] = createSignal<boolean | null>(null);
+  const [needsSetup, setNeedsSetup] = createSignal<boolean | null>(false);
 
-  onMount(async () => {
-    try {
-      const status = await invoke<{
-        ytdlp_exists: boolean;
-        ffmpeg_exists: boolean;
-      }>("check_binaries");
-      if (status.ytdlp_exists && status.ffmpeg_exists) setNeedsSetup(false);
-      else setNeedsSetup(true);
-    } catch (e) {
-      console.error("Core engine validation failure:", e);
-      setNeedsSetup(true);
-    }
+  onMount(() => {
+    invoke<{
+      ytdlp_exists: boolean;
+      ffmpeg_exists: boolean;
+    }>("check_binaries")
+      .then((status) => {
+        if (status && status.ytdlp_exists && status.ffmpeg_exists) {
+          setNeedsSetup(false);
+        } else {
+          setNeedsSetup(true);
+        }
+      })
+      .catch((e) => {
+        console.error("Core engine validation failure:", e);
+        setNeedsSetup(true);
+      });
   });
 
   return (
@@ -122,7 +132,9 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
         isOpen={showShortcutsModal()}
         onClose={() => setShowShortcutsModal(false)}
       />
+      <FPSCounter />
       <ImmersiveTitleBar />
+      <GlobalSearch />
       <Miniplayer />
       <Show
         when={needsSetup() !== null}
@@ -183,11 +195,16 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           target.tagName === "SELECT" ||
           target.isContentEditable);
 
-      // Escape closes shortcuts modal or navigates back in whole app
+      // Escape closes shortcuts modal or search bar
       if (e.key === "Escape") {
         if (showShortcutsModal()) {
           e.preventDefault();
           setShowShortcutsModal(false);
+          return;
+        }
+        if (isSearchOpen()) {
+          e.preventDefault();
+          setIsSearchOpen(false);
           return;
         }
         if (isInput) {
@@ -198,6 +215,37 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           e.preventDefault();
           navigate(-1);
         }
+        return;
+      }
+
+      // Ctrl + F search hotkey
+      if (!isInput && (e.ctrlKey || e.metaKey) && (e.key === "f" || e.key === "F")) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+        return;
+      }
+
+      // / search hotkey (when not in input)
+      if (!isInput && e.key === "/" && !e.shiftKey) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+        return;
+      }
+
+      // Type anywhere to search (Linux style app behavior)
+      if (
+        !isInput &&
+        !location.pathname.startsWith("/player") &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey &&
+        !e.shiftKey &&
+        e.key.length === 1 &&
+        e.key >= " " &&
+        e.key <= "~"
+      ) {
+        setIsSearchOpen(true);
+        setGlobalSearchQuery((prev) => prev + e.key);
         return;
       }
 
