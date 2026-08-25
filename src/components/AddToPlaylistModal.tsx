@@ -18,8 +18,12 @@ interface AddToPlaylistModalProps {
 
 export default function AddToPlaylistModal(props: AddToPlaylistModalProps) {
   const [playlists, setPlaylists] = createSignal<Playlist[]>([]);
-  const [playlistVideosMap, setPlaylistVideosMap] = createSignal<Record<string, number>>({});
-  const [inPlaylistMap, setInPlaylistMap] = createSignal<Record<string, boolean>>({});
+  const [playlistVideosMap, setPlaylistVideosMap] = createSignal<
+    Record<string, number>
+  >({});
+  const [inPlaylistMap, setInPlaylistMap] = createSignal<
+    Record<string, boolean>
+  >({});
   const [newPlaylistName, setNewPlaylistName] = createSignal("");
   const [isCreating, setIsCreating] = createSignal(false);
   const [isLoading, setIsLoading] = createSignal(false);
@@ -148,7 +152,10 @@ export default function AddToPlaylistModal(props: AddToPlaylistModalProps) {
           <div class="modal-body">
             <Show when={props.videoTitle}>
               <div class="modal-video-preview">
-                <i class="ph-fill ph-film-strip" style="color: var(--primary-accent); font-size: 20px;"></i>
+                <i
+                  class="ph-fill ph-film-strip"
+                  style="color: var(--primary-accent); font-size: 20px;"
+                ></i>
                 <span class="modal-video-title">{props.videoTitle}</span>
               </div>
             </Show>
@@ -168,7 +175,14 @@ export default function AddToPlaylistModal(props: AddToPlaylistModalProps) {
                 class="create-inline-btn"
                 disabled={!newPlaylistName().trim() || isCreating()}
               >
-                <Show when={isCreating()} fallback={<><i class="ph-fill ph-plus"></i> Create</>}>
+                <Show
+                  when={isCreating()}
+                  fallback={
+                    <>
+                      <i class="ph-fill ph-plus"></i> Create
+                    </>
+                  }
+                >
                   <i class="ph ph-spinner spinIcon"></i>
                 </Show>
               </button>
@@ -178,7 +192,10 @@ export default function AddToPlaylistModal(props: AddToPlaylistModalProps) {
               when={!isLoading()}
               fallback={
                 <div style="display: flex; justify-content: center; padding: 20px;">
-                  <i class="ph ph-spinner spinIcon" style="font-size: 24px; color: var(--primary-accent);"></i>
+                  <i
+                    class="ph ph-spinner spinIcon"
+                    style="font-size: 24px; color: var(--primary-accent);"
+                  ></i>
                 </div>
               }
             >
@@ -202,14 +219,18 @@ export default function AddToPlaylistModal(props: AddToPlaylistModalProps) {
                               <i class="ph-fill ph-playlist"></i>
                             </div>
                             <div class="playlist-select-details">
-                              <span class="playlist-select-name">{pl.name}</span>
+                              <span class="playlist-select-name">
+                                {pl.name}
+                              </span>
                               <span class="playlist-select-count">
                                 {count()} video{count() !== 1 ? "s" : ""}
                               </span>
                             </div>
                           </div>
                           <div class="playlist-select-status">
-                            <i class={`ph-fill ${isIn() ? "ph-check-circle" : "ph-plus"}`}></i>
+                            <i
+                              class={`ph-fill ${isIn() ? "ph-check-circle" : "ph-plus"}`}
+                            ></i>
                           </div>
                         </div>
                       );

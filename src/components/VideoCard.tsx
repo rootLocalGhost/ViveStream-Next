@@ -20,13 +20,17 @@ export interface VideoCardProps {
 }
 
 export default function VideoCard(props: VideoCardProps) {
-  const [isFavorite, setIsFavorite] = createSignal(props.initialFavorite ?? false);
+  const [isFavorite, setIsFavorite] = createSignal(
+    props.initialFavorite ?? false,
+  );
   const [isDeleting, setIsDeleting] = createSignal(false);
 
   onMount(async () => {
     if (props.initialFavorite === undefined) {
       try {
-        const fav = await invoke<boolean>("check_favorite", { id: props.video.id });
+        const fav = await invoke<boolean>("check_favorite", {
+          id: props.video.id,
+        });
         setIsFavorite(fav);
       } catch {
         // Ignore check favorite failure
@@ -46,7 +50,7 @@ export default function VideoCard(props: VideoCardProps) {
       props.onToggleFavorite?.(props.video.id, newStatus);
       addToast(
         newStatus ? "Added to Favourites" : "Removed from Favourites",
-        newStatus ? "success" : "info"
+        newStatus ? "success" : "info",
       );
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
@@ -71,7 +75,7 @@ export default function VideoCard(props: VideoCardProps) {
     const confirmed = await showConfirmDialog(
       `Are you sure you want to permanently delete "${props.video.title}" from your library?`,
       "Delete Video",
-      "warning"
+      "warning",
     );
 
     if (!confirmed) return;
@@ -131,7 +135,9 @@ export default function VideoCard(props: VideoCardProps) {
                 class="avatar-small"
               />
             </Show>
-            <p class="video-channel" title={props.video.channel}>{props.video.channel}</p>
+            <p class="video-channel" title={props.video.channel}>
+              {props.video.channel}
+            </p>
           </div>
 
           <div class="video-card-actions">
@@ -139,9 +145,13 @@ export default function VideoCard(props: VideoCardProps) {
             <button
               class={`card-action-btn fav-btn ${isFavorite() ? "is-fav" : ""}`}
               onClick={handleToggleFavorite}
-              title={isFavorite() ? "Remove from Favourites" : "Add to Favourites"}
+              title={
+                isFavorite() ? "Remove from Favourites" : "Add to Favourites"
+              }
             >
-              <i class={`ph-fill ${isFavorite() ? "ph-heart" : "ph-heart"}`}></i>
+              <i
+                class={`ph-fill ${isFavorite() ? "ph-heart" : "ph-heart"}`}
+              ></i>
             </button>
 
             {/* Add to Playlist Button */}

@@ -193,16 +193,16 @@ pub async fn get_artists(app: AppHandle) -> Result<Vec<ArtistEntry>, String> {
     tokio::task::spawn_blocking(move || {
         let conn = get_db_connection(&app)?;
         let base_dir = get_base_dir(&app)?;
-        
+
         // Auto-sync Artists table from any existing Videos
         let _ = conn.execute(
-            "INSERT OR IGNORE INTO Artists (name, avatar_path) 
-             SELECT DISTINCT TRIM(channel_name), '' 
-             FROM Videos 
+            "INSERT OR IGNORE INTO Artists (name, avatar_path)
+             SELECT DISTINCT TRIM(channel_name), ''
+             FROM Videos
              WHERE channel_name IS NOT NULL AND TRIM(channel_name) != ''",
             [],
         );
-        
+
         // Remove artists that have no videos
         let _ = conn.execute(
             "DELETE FROM Artists WHERE name NOT IN (
@@ -241,14 +241,18 @@ pub async fn get_videos_by_artist(app: AppHandle, name: String) -> Result<Vec<Vi
         let conn = get_db_connection(&app)?;
         let base_dir = get_base_dir(&app)?;
         let trimmed_name = name.trim().to_string();
-        let mut stmt = conn.prepare(
-            "SELECT id, title, channel_name, video_path, thumbnail_path 
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, title, channel_name, video_path, thumbnail_path 
              FROM Videos 
              WHERE TRIM(channel_name) = ?1 COLLATE NOCASE 
-             ORDER BY added_at DESC"
-        ).map_err(|e| e.to_string())?;
+             ORDER BY added_at DESC",
+            )
+            .map_err(|e| e.to_string())?;
         let iter = stmt
-            .query_map(rusqlite::params![trimmed_name], |row| map_video_row(row, &base_dir))
+            .query_map(rusqlite::params![trimmed_name], |row| {
+                map_video_row(row, &base_dir)
+            })
             .map_err(|e| e.to_string())?;
         let mut videos = Vec::new();
         for video in iter {
@@ -440,7 +444,11 @@ pub async fn update_video_details(
 }
 
 #[tauri::command]
-pub async fn update_playlist_title(app: AppHandle, id: String, new_title: String) -> Result<(), String> {
+pub async fn update_playlist_title(
+    app: AppHandle,
+    id: String,
+    new_title: String,
+) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let conn = get_db_connection(&app)?;
         conn.execute(
@@ -455,7 +463,11 @@ pub async fn update_playlist_title(app: AppHandle, id: String, new_title: String
 }
 
 #[tauri::command]
-pub async fn update_playlist_order(app: AppHandle, playlist_id: String, video_ids: Vec<String>) -> Result<(), String> {
+pub async fn update_playlist_order(
+    app: AppHandle,
+    playlist_id: String,
+    video_ids: Vec<String>,
+) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let mut conn = get_db_connection(&app)?;
         let tx = conn.transaction().map_err(|e| e.to_string())?;
@@ -474,7 +486,11 @@ pub async fn update_playlist_order(app: AppHandle, playlist_id: String, video_id
 }
 
 #[tauri::command]
-pub async fn upload_artist_avatar(app: AppHandle, name: String, image_path: String) -> Result<(), String> {
+pub async fn upload_artist_avatar(
+    app: AppHandle,
+    name: String,
+    image_path: String,
+) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let base_dir = get_base_dir(&app)?;
         let target_dir = base_dir.join("Avatars");
@@ -488,7 +504,11 @@ pub async fn upload_artist_avatar(app: AppHandle, name: String, image_path: Stri
 }
 
 #[tauri::command]
-pub async fn upload_playlist_cover(app: AppHandle, id: String, image_path: String) -> Result<(), String> {
+pub async fn upload_playlist_cover(
+    app: AppHandle,
+    id: String,
+    image_path: String,
+) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let base_dir = get_base_dir(&app)?;
         let target_dir = base_dir.join("PlaylistCovers");
@@ -502,7 +522,11 @@ pub async fn upload_playlist_cover(app: AppHandle, id: String, image_path: Strin
 }
 
 #[tauri::command]
-pub async fn upload_playlist_banner(app: AppHandle, id: String, image_path: String) -> Result<(), String> {
+pub async fn upload_playlist_banner(
+    app: AppHandle,
+    id: String,
+    image_path: String,
+) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let base_dir = get_base_dir(&app)?;
         let target_dir = base_dir.join("PlaylistBanners");
@@ -623,11 +647,13 @@ pub async fn clear_download_history_db(app: AppHandle) -> Result<(), String> {
 pub async fn delete_download_history_item(app: AppHandle, id: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let conn = get_db_connection(&app)?;
-        conn.execute("DELETE FROM DownloadHistory WHERE id = ?1", rusqlite::params![id])
-            .map_err(|e| e.to_string())?;
+        conn.execute(
+            "DELETE FROM DownloadHistory WHERE id = ?1",
+            rusqlite::params![id],
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     })
     .await
     .map_err(|e| e.to_string())?
 }
-

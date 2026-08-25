@@ -13,8 +13,11 @@ export default function ArtistPage() {
   const navigate = useNavigate();
   const [videos, setVideos] = createSignal<VideoEntry[]>([]);
   const [showAddToModal, setShowAddToModal] = createSignal(false);
-  const [selectedVideoForAdd, setSelectedVideoForAdd] = createSignal<VideoEntry | null>(null);
-  const [avatarTimestamp, setAvatarTimestamp] = createSignal<number>(Date.now());
+  const [selectedVideoForAdd, setSelectedVideoForAdd] =
+    createSignal<VideoEntry | null>(null);
+  const [avatarTimestamp, setAvatarTimestamp] = createSignal<number>(
+    Date.now(),
+  );
 
   const artistName = () => {
     try {
@@ -73,7 +76,7 @@ export default function ArtistPage() {
 
   const getArtistAvatarSrc = () => {
     return `http://127.0.0.1:1422/Avatars/${encodeURIComponent(
-      artistName()
+      artistName(),
     )}.jpg?t=${avatarTimestamp()}`;
   };
 
@@ -88,7 +91,7 @@ export default function ArtistPage() {
     const vids = videos();
     if (vids.length > 0) {
       navigate(
-        `/player/${vids[0].id}?context=artist&name=${encodeURIComponent(artistName())}`
+        `/player/${vids[0].id}?context=artist&name=${encodeURIComponent(artistName())}`,
       );
     }
   };
@@ -134,10 +137,13 @@ export default function ArtistPage() {
                 class="artist-hero-avatar"
                 onError={(e) => {
                   if (videos().length > 0 && videos()[0].avatar_path) {
-                    e.currentTarget.src = convertFileSrc(videos()[0].avatar_path);
+                    e.currentTarget.src = convertFileSrc(
+                      videos()[0].avatar_path,
+                    );
                   } else {
                     e.currentTarget.src = "";
-                    e.currentTarget.className = "ph-fill ph-user artist-hero-avatar placeholder";
+                    e.currentTarget.className =
+                      "ph-fill ph-user artist-hero-avatar placeholder";
                   }
                 }}
               />
@@ -156,8 +162,8 @@ export default function ArtistPage() {
 
               <div class="artist-hero-stats">
                 <span>
-                  <i class="ph ph-film-strip"></i> {videos().length}{" "}
-                  Video{videos().length !== 1 ? "s" : ""}
+                  <i class="ph ph-film-strip"></i> {videos().length} Video
+                  {videos().length !== 1 ? "s" : ""}
                 </span>
               </div>
 
@@ -169,10 +175,7 @@ export default function ArtistPage() {
                 >
                   <i class="ph-fill ph-play"></i> Play All
                 </button>
-                <button
-                  class="secondary-btn"
-                  onClick={handleAvatarUpload}
-                >
+                <button class="secondary-btn" onClick={handleAvatarUpload}>
                   <i class="ph ph-upload"></i> Upload Avatar
                 </button>
               </div>
@@ -197,8 +200,8 @@ export default function ArtistPage() {
                 onClick={() =>
                   navigate(
                     `/player/${video.id}?context=artist&name=${encodeURIComponent(
-                      artistName()
-                    )}`
+                      artistName(),
+                    )}`,
                   )
                 }
                 onAddToPlaylist={(v) => {

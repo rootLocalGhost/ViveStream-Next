@@ -164,10 +164,12 @@ video::cue {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top,
-      rgba(0, 0, 0, 0.85) 0%,
-      rgba(0, 0, 0, 0.4) 60%,
-      transparent 100%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.4) 60%,
+    transparent 100%
+  );
   padding: 40px 20px 16px 20px;
   display: flex;
   flex-direction: column;
@@ -453,8 +455,10 @@ video::cue {
   height: 6px;
   border-radius: 6px;
   background-color: rgba(255, 255, 255, 0.2);
-  background-image: linear-gradient(var(--primary-accent),
-      var(--primary-accent));
+  background-image: linear-gradient(
+    var(--primary-accent),
+    var(--primary-accent)
+  );
   background-size: var(--progress, 0%) 100%;
   background-repeat: no-repeat;
   cursor: pointer;
@@ -604,7 +608,9 @@ video::cue {
   font-size: 20px;
   font-weight: 700;
   font-family: var(--font-display);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.3);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.7),
+    0 0 24px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.3);
   pointer-events: none;
   z-index: 25;
   animation: osdPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);

@@ -61,7 +61,8 @@ export default function CreatePlaylistModal(props: CreatePlaylistModalProps) {
 
           <form onSubmit={handleSubmit} class="modal-body">
             <p style="margin: 0; color: var(--secondary-text); font-size: 13px;">
-              Enter a name for your new playlist. You can add videos to it anytime.
+              Enter a name for your new playlist. You can add videos to it
+              anytime.
             </p>
             <input
               type="text"

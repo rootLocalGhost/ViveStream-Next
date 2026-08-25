@@ -24,7 +24,9 @@
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.15);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.15);
   overflow: hidden;
   animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -111,7 +113,9 @@
   color: var(--primary-text);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   box-sizing: border-box;
 }
 

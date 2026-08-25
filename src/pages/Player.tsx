@@ -57,7 +57,7 @@ export default function Player() {
   const params = useParams();
   const navigate = useNavigate();
   const [video, setVideo] = createSignal<VideoEntry | null>(
-    activeVideo()?.id === params.id ? activeVideo() : null
+    activeVideo()?.id === params.id ? activeVideo() : null,
   );
   const [queue, setQueue] = createSignal<VideoEntry[]>(playerQueue());
   const [description, setDescription] = createSignal<string>("");
@@ -69,7 +69,7 @@ export default function Player() {
   const [isFavorite, setIsFavorite] = createSignal(false);
   const [showSettingsMenu, setShowSettingsMenu] = createSignal(false);
   const [showCCMenu, setShowCCMenu] = createSignal(false);
-  
+
   const [searchParams] = useSearchParams();
   const [isEditingMeta, setIsEditingMeta] = createSignal(false);
   const [editTitle, setEditTitle] = createSignal("");
@@ -118,7 +118,7 @@ export default function Player() {
 
       if (currentVideo) {
         const isSameVideo = activeVideo()?.id === targetId;
-        
+
         if (!isSameVideo) {
           setCurrentTime(0);
           setIsPlaying(true);
@@ -157,9 +157,13 @@ export default function Player() {
         let queueVideos = db;
         const context = searchParams.context;
         if (context === "artist" && searchParams.name) {
-          queueVideos = await invoke<VideoEntry[]>("get_videos_by_artist", { name: searchParams.name });
+          queueVideos = await invoke<VideoEntry[]>("get_videos_by_artist", {
+            name: searchParams.name,
+          });
         } else if (context === "playlist" && searchParams.id) {
-          queueVideos = await invoke<VideoEntry[]>("get_playlist_videos", { playlistId: searchParams.id });
+          queueVideos = await invoke<VideoEntry[]>("get_playlist_videos", {
+            playlistId: searchParams.id,
+          });
         }
         if (currentLoadingId !== targetId) return;
 
@@ -194,7 +198,11 @@ export default function Player() {
         title: editTitle().trim(),
         channel: editChannel().trim(),
       });
-      setVideo({ ...video()!, title: editTitle().trim(), channel: editChannel().trim() });
+      setVideo({
+        ...video()!,
+        title: editTitle().trim(),
+        channel: editChannel().trim(),
+      });
       setIsEditingMeta(false);
     } catch (e) {
       console.error("Failed to update metadata", e);
@@ -405,7 +413,7 @@ export default function Player() {
       toggleMute();
       showOsd(
         isMuted() ? "ph-speaker-high" : "ph-speaker-slash",
-        isMuted() ? `${Math.round(volume() * 100)}%` : "Muted"
+        isMuted() ? `${Math.round(volume() * 100)}%` : "Muted",
       );
       handleMouseMove();
       return;
@@ -417,7 +425,7 @@ export default function Player() {
       toggleFullscreen();
       showOsd(
         isFullscreen() ? "ph-corners-in" : "ph-corners-out",
-        isFullscreen() ? "Exit Fullscreen" : "Fullscreen"
+        isFullscreen() ? "Exit Fullscreen" : "Fullscreen",
       );
       return;
     }
@@ -521,7 +529,7 @@ export default function Player() {
       }
       showOsd(
         newVol === 0 ? "ph-speaker-slash" : "ph-speaker-low",
-        `${Math.round(newVol * 100)}%`
+        `${Math.round(newVol * 100)}%`,
       );
       handleMouseMove();
       return;
@@ -549,7 +557,7 @@ export default function Player() {
       toggleCC();
       showOsd(
         "ph-subtitles",
-        !subtitlesEnabled() ? "Captions On" : "Captions Off"
+        !subtitlesEnabled() ? "Captions On" : "Captions Off",
       );
       return;
     }
@@ -564,13 +572,7 @@ export default function Player() {
     }
 
     // 0 - 9: Jump to percentage
-    if (
-      e.key >= "0" &&
-      e.key <= "9" &&
-      !e.ctrlKey &&
-      !e.altKey &&
-      !e.metaKey
-    ) {
+    if (e.key >= "0" && e.key <= "9" && !e.ctrlKey && !e.altKey && !e.metaKey) {
       e.preventDefault();
       if (videoRef && duration() > 0) {
         const fraction = parseInt(e.key, 10) / 10;
@@ -598,7 +600,11 @@ export default function Player() {
       const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
       const idx = speeds.indexOf(playbackRate());
       const newIdx =
-        idx < speeds.length - 1 ? (idx === -1 ? 4 : idx + 1) : speeds.length - 1;
+        idx < speeds.length - 1
+          ? idx === -1
+            ? 4
+            : idx + 1
+          : speeds.length - 1;
       changeSpeed(speeds[newIdx]);
       showOsd("ph-gauge", `${speeds[newIdx]}x`);
       return;
@@ -678,8 +684,8 @@ export default function Player() {
         if (targetId) {
           loadVideoData(targetId);
         }
-      }
-    )
+      },
+    ),
   );
 
   createEffect(
@@ -695,20 +701,20 @@ export default function Player() {
           videoRef.volume = untrack(volume);
           videoRef.muted = untrack(isMuted);
           videoRef.playbackRate = untrack(playbackRate);
-          
+
           if (activeVideo()?.id === currentId && untrack(currentTime) > 0) {
             videoRef.currentTime = untrack(currentTime);
           } else {
             videoRef.currentTime = 0;
             setCurrentTime(0);
           }
-          
+
           setIsPlaying(true);
           handlePlay();
         }
       },
-      { defer: true }
-    )
+      { defer: true },
+    ),
   );
 
   const seekProgress = () =>
@@ -980,7 +986,9 @@ export default function Player() {
                   <button
                     class="control-btn"
                     onClick={() => setTheaterMode(!theaterMode())}
-                    title={theaterMode() ? "Default view (T)" : "Theater mode (T)"}
+                    title={
+                      theaterMode() ? "Default view (T)" : "Theater mode (T)"
+                    }
                   >
                     <i
                       class={
@@ -1012,70 +1020,80 @@ export default function Player() {
           </div>
 
           <div class="player-meta-block">
-            <Show 
-                when={isEditingMeta()}
-                fallback={
-                    <div class="player-title-row">
-                        <h1 class="player-title">{video()!.title}</h1>
-                        <button
-                            class="player-meta-edit-btn"
-                            onClick={() => { setEditTitle(video()!.title); setEditChannel(video()!.channel); setIsEditingMeta(true); }}
-                            title="Edit Title & Artist"
-                        >
-                            <i class="ph-fill ph-pencil-simple"></i>
-                        </button>
-                    </div>
-                }
-            >
-                <div class="player-meta-edit-card">
-                    <div class="player-meta-edit-header">
-                        <i class="ph-fill ph-pencil-simple"></i>
-                        <span>Edit Video Details</span>
-                    </div>
-                    <div class="player-meta-edit-fields">
-                        <div class="player-meta-input-group">
-                            <label class="player-meta-label">Title</label>
-                            <div class="player-meta-input-wrapper">
-                                <i class="ph ph-video"></i>
-                                <input
-                                    class="player-meta-input"
-                                    value={editTitle()}
-                                    onInput={(e) => setEditTitle(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleSaveMetadata();
-                                        if (e.key === "Escape") setIsEditingMeta(false);
-                                    }}
-                                    placeholder="Video title..."
-                                    autofocus
-                                />
-                            </div>
-                        </div>
-                        <div class="player-meta-input-group">
-                            <label class="player-meta-label">Channel / Artist</label>
-                            <div class="player-meta-input-wrapper">
-                                <i class="ph ph-user"></i>
-                                <input
-                                    class="player-meta-input"
-                                    value={editChannel()}
-                                    onInput={(e) => setEditChannel(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleSaveMetadata();
-                                        if (e.key === "Escape") setIsEditingMeta(false);
-                                    }}
-                                    placeholder="Artist or channel..."
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <div class="player-meta-edit-actions">
-                        <button class="primary-btn player-meta-save-btn" onClick={handleSaveMetadata}>
-                            <i class="ph-bold ph-check"></i> Save Changes
-                        </button>
-                        <button class="clay-btn player-meta-cancel-btn" onClick={() => setIsEditingMeta(false)}>
-                            <i class="ph-bold ph-x"></i> Cancel
-                        </button>
-                    </div>
+            <Show
+              when={isEditingMeta()}
+              fallback={
+                <div class="player-title-row">
+                  <h1 class="player-title">{video()!.title}</h1>
+                  <button
+                    class="player-meta-edit-btn"
+                    onClick={() => {
+                      setEditTitle(video()!.title);
+                      setEditChannel(video()!.channel);
+                      setIsEditingMeta(true);
+                    }}
+                    title="Edit Title & Artist"
+                  >
+                    <i class="ph-fill ph-pencil-simple"></i>
+                  </button>
                 </div>
+              }
+            >
+              <div class="player-meta-edit-card">
+                <div class="player-meta-edit-header">
+                  <i class="ph-fill ph-pencil-simple"></i>
+                  <span>Edit Video Details</span>
+                </div>
+                <div class="player-meta-edit-fields">
+                  <div class="player-meta-input-group">
+                    <label class="player-meta-label">Title</label>
+                    <div class="player-meta-input-wrapper">
+                      <i class="ph ph-video"></i>
+                      <input
+                        class="player-meta-input"
+                        value={editTitle()}
+                        onInput={(e) => setEditTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveMetadata();
+                          if (e.key === "Escape") setIsEditingMeta(false);
+                        }}
+                        placeholder="Video title..."
+                        autofocus
+                      />
+                    </div>
+                  </div>
+                  <div class="player-meta-input-group">
+                    <label class="player-meta-label">Channel / Artist</label>
+                    <div class="player-meta-input-wrapper">
+                      <i class="ph ph-user"></i>
+                      <input
+                        class="player-meta-input"
+                        value={editChannel()}
+                        onInput={(e) => setEditChannel(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveMetadata();
+                          if (e.key === "Escape") setIsEditingMeta(false);
+                        }}
+                        placeholder="Artist or channel..."
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="player-meta-edit-actions">
+                  <button
+                    class="primary-btn player-meta-save-btn"
+                    onClick={handleSaveMetadata}
+                  >
+                    <i class="ph-bold ph-check"></i> Save Changes
+                  </button>
+                  <button
+                    class="clay-btn player-meta-cancel-btn"
+                    onClick={() => setIsEditingMeta(false)}
+                  >
+                    <i class="ph-bold ph-x"></i> Cancel
+                  </button>
+                </div>
+              </div>
             </Show>
 
             <div class="flex-row-between player-meta-row">
@@ -1093,7 +1111,7 @@ export default function Player() {
                     class="player-channel"
                     onClick={() =>
                       navigate(
-                        `/artist/${encodeURIComponent(video()!.channel)}`
+                        `/artist/${encodeURIComponent(video()!.channel)}`,
                       )
                     }
                   >
@@ -1148,7 +1166,9 @@ export default function Player() {
             <div
               class="queue-item"
               onClick={() => {
-                const qs = new URLSearchParams(searchParams as Record<string, string>).toString();
+                const qs = new URLSearchParams(
+                  searchParams as Record<string, string>,
+                ).toString();
                 navigate(`/player/${qVideo.id}${qs ? `?${qs}` : ""}`);
               }}
             >

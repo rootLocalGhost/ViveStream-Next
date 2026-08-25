@@ -21,7 +21,9 @@
   border: var(--app-border, none);
   padding: 10px;
   cursor: pointer;
-  transition: transform 0.2s var(--transition-smooth), box-shadow 0.2s;
+  transition:
+    transform 0.2s var(--transition-smooth),
+    box-shadow 0.2s;
   position: relative;
   overflow: hidden;
 }
@@ -59,7 +61,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(var(--accent-rgb, 100, 108, 255), 0.2), rgba(0, 0, 0, 0.6));
+  background: linear-gradient(
+    135deg,
+    rgba(var(--accent-rgb, 100, 108, 255), 0.2),
+    rgba(0, 0, 0, 0.6)
+  );
   color: var(--primary-accent);
   font-size: 40px;
 }

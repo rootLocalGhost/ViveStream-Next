@@ -67,7 +67,9 @@
   gap: 4px;
   flex-shrink: 0;
   opacity: 0.85;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .video-card:hover .video-card-actions {

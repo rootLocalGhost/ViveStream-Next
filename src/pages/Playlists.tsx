@@ -18,23 +18,32 @@ interface Playlist {
 export default function Playlists() {
   const navigate = useNavigate();
   const [playlists, setPlaylists] = createSignal<Playlist[]>([]);
-  const [activePlaylist, setActivePlaylist] = createSignal<Playlist | null>(null);
+  const [activePlaylist, setActivePlaylist] = createSignal<Playlist | null>(
+    null,
+  );
   const [playlistVideos, setPlaylistVideos] = createSignal<VideoEntry[]>([]);
   const [countsMap, setCountsMap] = createSignal<Record<string, number>>({});
-  const [firstThumbMap, setFirstThumbMap] = createSignal<Record<string, string>>({});
+  const [firstThumbMap, setFirstThumbMap] = createSignal<
+    Record<string, string>
+  >({});
 
   const [editingTitle, setEditingTitle] = createSignal(false);
   const [tempTitle, setTempTitle] = createSignal("");
   const [draggedIndex, setDraggedIndex] = createSignal<number | null>(null);
 
   // Cache busting timestamps for uploaded assets
-  const [coverTimestamps, setCoverTimestamps] = createSignal<Record<string, number>>({});
-  const [bannerTimestamps, setBannerTimestamps] = createSignal<Record<string, number>>({});
+  const [coverTimestamps, setCoverTimestamps] = createSignal<
+    Record<string, number>
+  >({});
+  const [bannerTimestamps, setBannerTimestamps] = createSignal<
+    Record<string, number>
+  >({});
 
   // Modals state
   const [showCreateModal, setShowCreateModal] = createSignal(false);
   const [showAddToModal, setShowAddToModal] = createSignal(false);
-  const [selectedVideoForAdd, setSelectedVideoForAdd] = createSignal<VideoEntry | null>(null);
+  const [selectedVideoForAdd, setSelectedVideoForAdd] =
+    createSignal<VideoEntry | null>(null);
 
   onMount(async () => {
     await fetchPlaylists();
@@ -61,7 +70,7 @@ export default function Playlists() {
           } catch {
             counts[pl.id] = 0;
           }
-        })
+        }),
       );
 
       setCountsMap(counts);
@@ -90,7 +99,7 @@ export default function Playlists() {
     const confirmed = await showConfirmDialog(
       `Are you sure you want to delete "${plName}"? Videos in this playlist will remain in your library.`,
       "Delete Playlist",
-      "warning"
+      "warning",
     );
 
     if (!confirmed) return;
@@ -290,10 +299,7 @@ export default function Playlists() {
           <h2 class="page-title" style="margin: 0;">
             <i class="ph-fill ph-list-dashes"></i> Playlists
           </h2>
-          <button
-            class="primary-btn"
-            onClick={() => setShowCreateModal(true)}
-          >
+          <button class="primary-btn" onClick={() => setShowCreateModal(true)}>
             <i class="ph-fill ph-plus-circle"></i> Create Playlist
           </button>
         </div>
@@ -320,20 +326,27 @@ export default function Playlists() {
                         class="playlist-cover-img"
                         onLoad={(e) => {
                           e.currentTarget.style.display = "block";
-                          const fallback = e.currentTarget.parentElement?.querySelector(
-                            ".playlist-cover-placeholder"
-                          ) as HTMLElement | null;
+                          const fallback =
+                            e.currentTarget.parentElement?.querySelector(
+                              ".playlist-cover-placeholder",
+                            ) as HTMLElement | null;
                           if (fallback) fallback.style.display = "none";
                         }}
                         onError={(e) => {
                           const autoThumb = firstThumbMap()[playlist.id];
-                          if (autoThumb && !e.currentTarget.src.includes(encodeURIComponent(autoThumb))) {
+                          if (
+                            autoThumb &&
+                            !e.currentTarget.src.includes(
+                              encodeURIComponent(autoThumb),
+                            )
+                          ) {
                             e.currentTarget.src = convertFileSrc(autoThumb);
                           } else {
                             e.currentTarget.style.display = "none";
-                            const fallback = e.currentTarget.parentElement?.querySelector(
-                              ".playlist-cover-placeholder"
-                            ) as HTMLElement | null;
+                            const fallback =
+                              e.currentTarget.parentElement?.querySelector(
+                                ".playlist-cover-placeholder",
+                              ) as HTMLElement | null;
                             if (fallback) fallback.style.display = "flex";
                           }
                         }}
@@ -352,7 +365,8 @@ export default function Playlists() {
                           {playlist.name}
                         </h3>
                         <span class="playlist-card-count">
-                          <i class="ph ph-video"></i> {count()} video{count() !== 1 ? "s" : ""}
+                          <i class="ph ph-video"></i> {count()} video
+                          {count() !== 1 ? "s" : ""}
                         </span>
                       </div>
 
@@ -484,7 +498,8 @@ export default function Playlists() {
                             onInput={(e) => setTempTitle(e.currentTarget.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") handleTitleSave();
-                              else if (e.key === "Escape") setEditingTitle(false);
+                              else if (e.key === "Escape")
+                                setEditingTitle(false);
                             }}
                             autofocus
                           />
@@ -507,8 +522,9 @@ export default function Playlists() {
 
                       <div class="playlist-hero-stats">
                         <span>
-                          <i class="ph ph-film-strip"></i> {playlistVideos().length}{" "}
-                          Video{playlistVideos().length !== 1 ? "s" : ""}
+                          <i class="ph ph-film-strip"></i>{" "}
+                          {playlistVideos().length} Video
+                          {playlistVideos().length !== 1 ? "s" : ""}
                         </span>
                       </div>
 
@@ -546,10 +562,12 @@ export default function Playlists() {
                         }}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDrop(e, index())}
-                        style={draggedIndex() === index() ? "opacity: 0.4;" : ""}
+                        style={
+                          draggedIndex() === index() ? "opacity: 0.4;" : ""
+                        }
                         onClick={() =>
                           navigate(
-                            `/player/${video.id}?context=playlist&id=${pl.id}`
+                            `/player/${video.id}?context=playlist&id=${pl.id}`,
                           )
                         }
                         onAddToPlaylist={(v) => {
@@ -559,7 +577,7 @@ export default function Playlists() {
                         onRemoveFromPlaylist={(v) => removeFromPlaylist(v.id)}
                         onDelete={(v) => {
                           setPlaylistVideos((prev) =>
-                            prev.filter((x) => x.id !== v.id)
+                            prev.filter((x) => x.id !== v.id),
                           );
                         }}
                       />

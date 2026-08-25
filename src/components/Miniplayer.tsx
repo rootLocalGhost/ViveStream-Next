@@ -1,4 +1,11 @@
-import { Component, createSignal, Show, onMount, onCleanup, createEffect } from "solid-js";
+import {
+  Component,
+  createSignal,
+  Show,
+  onMount,
+  onCleanup,
+  createEffect,
+} from "solid-js";
 import { useLocation, useNavigate } from "@solidjs/router";
 import {
   activeVideo,
@@ -62,7 +69,9 @@ export const Miniplayer: Component = () => {
       setIsPlaying(true);
       setActiveVideo(nextVid);
       const params = playerContextParams();
-      const qs = new URLSearchParams(params as Record<string, string>).toString();
+      const qs = new URLSearchParams(
+        params as Record<string, string>,
+      ).toString();
       navigate(`/player/${nextVid.id}${qs ? `?${qs}` : ""}`);
     }
   };
@@ -101,7 +110,10 @@ export const Miniplayer: Component = () => {
       setGlobalVideoRef(videoRef);
       videoRef.volume = volume();
       videoRef.muted = isMuted();
-      if (currentTime() > 0 && Math.abs(videoRef.currentTime - currentTime()) > 1.5) {
+      if (
+        currentTime() > 0 &&
+        Math.abs(videoRef.currentTime - currentTime()) > 1.5
+      ) {
         videoRef.currentTime = currentTime();
       }
       if (isPlaying()) {
@@ -162,11 +174,15 @@ export const Miniplayer: Component = () => {
               preload="auto"
               onPlay={() => {
                 setIsPlaying(true);
-                invoke("update_playback_status", { playing: true }).catch(() => {});
+                invoke("update_playback_status", { playing: true }).catch(
+                  () => {},
+                );
               }}
               onPause={() => {
                 setIsPlaying(false);
-                invoke("update_playback_status", { playing: false }).catch(() => {});
+                invoke("update_playback_status", { playing: false }).catch(
+                  () => {},
+                );
               }}
               onTimeUpdate={(e) => {
                 if (!isSeeking()) setCurrentTime(e.currentTarget.currentTime);
@@ -219,9 +235,7 @@ export const Miniplayer: Component = () => {
                   onClick={toggleGlobalPlay}
                   title={isPlaying() ? "Pause" : "Play"}
                 >
-                  <i
-                    class={`ph-fill ph-${isPlaying() ? "pause" : "play"}`}
-                  ></i>
+                  <i class={`ph-fill ph-${isPlaying() ? "pause" : "play"}`}></i>
                 </button>
                 <button
                   class="miniplayer-ctrl-btn"

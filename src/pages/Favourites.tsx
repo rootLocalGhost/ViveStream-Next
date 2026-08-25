@@ -10,7 +10,8 @@ import "./Favourites.css";
 export default function Favourites() {
   const [videos, setVideos] = createSignal<VideoEntry[]>([]);
   const [showAddToModal, setShowAddToModal] = createSignal(false);
-  const [selectedVideoForAdd, setSelectedVideoForAdd] = createSignal<VideoEntry | null>(null);
+  const [selectedVideoForAdd, setSelectedVideoForAdd] =
+    createSignal<VideoEntry | null>(null);
   const navigate = useNavigate();
 
   onMount(async () => {

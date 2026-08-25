@@ -64,9 +64,13 @@ function verifyVersions() {
   if (mismatches.length > 0) {
     console.error("\n❌ Version mismatch detected!");
     mismatches.forEach((m) => {
-      console.error(`   ${m.name} has version "${m.ver}", expected "${v_version}"`);
+      console.error(
+        `   ${m.name} has version "${m.ver}", expected "${v_version}"`,
+      );
     });
-    console.error("\n💡 Run 'bun run bump' to synchronize all files to a new version.");
+    console.error(
+      "\n💡 Run 'bun run bump' to synchronize all files to a new version.",
+    );
     process.exit(1);
   }
 

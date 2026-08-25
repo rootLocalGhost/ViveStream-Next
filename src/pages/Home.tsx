@@ -10,7 +10,8 @@ import "./Home.css";
 export default function Home() {
   const navigate = useNavigate();
   const [showAddToModal, setShowAddToModal] = createSignal(false);
-  const [selectedVideoForAdd, setSelectedVideoForAdd] = createSignal<VideoEntry | null>(null);
+  const [selectedVideoForAdd, setSelectedVideoForAdd] =
+    createSignal<VideoEntry | null>(null);
 
   onMount(async () => {
     try {

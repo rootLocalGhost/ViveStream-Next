@@ -285,12 +285,17 @@
   position: absolute;
   inset: -10px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(39, 201, 63, 0.4) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(39, 201, 63, 0.4) 0%,
+    transparent 70%
+  );
   animation: pulseGlowSuccess 2.5s ease-in-out infinite;
 }
 
 @keyframes pulseGlowSuccess {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(0.95);
     opacity: 0.5;
   }
@@ -406,4 +411,3 @@
   height: 140px;
   padding: 16px;
 }
-

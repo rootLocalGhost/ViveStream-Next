@@ -76,7 +76,7 @@ export default function ShortcutsModal(props: ShortcutsModalProps) {
       shortcuts: cat.shortcuts.filter(
         (s) =>
           s.description.toLowerCase().includes(q) ||
-          s.keys.some((k) => k.toLowerCase().includes(q))
+          s.keys.some((k) => k.toLowerCase().includes(q)),
       ),
     })).filter((cat) => cat.shortcuts.length > 0);
   };
@@ -143,7 +143,8 @@ export default function ShortcutsModal(props: ShortcutsModalProps) {
 
           <div class="shortcuts-footer">
             <span class="shortcuts-hint">
-              Press <kbd class="shortcut-kbd">?</kbd> anywhere in the app to view this cheat sheet.
+              Press <kbd class="shortcut-kbd">?</kbd> anywhere in the app to
+              view this cheat sheet.
             </span>
           </div>
         </div>

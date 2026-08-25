@@ -5,7 +5,12 @@ import { invoke } from "@tauri-apps/api/core";
 import "@phosphor-icons/web/regular";
 import "@phosphor-icons/web/fill";
 import "./App.css";
-import { sidebarHoverMode, forceSetup, showShortcutsModal, setShowShortcutsModal } from "./store";
+import {
+  sidebarHoverMode,
+  forceSetup,
+  showShortcutsModal,
+  setShowShortcutsModal,
+} from "./store";
 import NotificationSystem from "./components/NotificationSystem";
 import ShortcutsModal from "./components/ShortcutsModal";
 import Miniplayer from "./components/Miniplayer";
@@ -129,7 +134,14 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
       >
         <Show
           when={needsSetup() === false && !forceSetup()}
-          fallback={<Setup onComplete={() => { setNeedsSetup(false); setForceSetup(false); }} />}
+          fallback={
+            <Setup
+              onComplete={() => {
+                setNeedsSetup(false);
+                setForceSetup(false);
+              }}
+            />
+          }
         >
           {props.children}
         </Show>
@@ -197,13 +209,21 @@ const AppLayout: Component<{ children?: any }> = (props) => {
       }
 
       // Miniplayer Toggle (I) when not in player page
-      if (!isInput && (e.key === "i" || e.key === "I") && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      if (
+        !isInput &&
+        (e.key === "i" || e.key === "I") &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey
+      ) {
         if (!location.pathname.startsWith("/player")) {
           const vid = activeVideo();
           if (vid) {
             e.preventDefault();
             const params = playerContextParams();
-            const qs = new URLSearchParams(params as Record<string, string>).toString();
+            const qs = new URLSearchParams(
+              params as Record<string, string>,
+            ).toString();
             navigate(`/player/${vid.id}${qs ? `?${qs}` : ""}`);
             return;
           }
@@ -217,19 +237,44 @@ const AppLayout: Component<{ children?: any }> = (props) => {
         if (code === "Digit1" || key === "1" || key === "!" || key === "h") {
           e.preventDefault();
           navigate("/");
-        } else if (code === "Digit2" || key === "2" || key === "@" || key === "f") {
+        } else if (
+          code === "Digit2" ||
+          key === "2" ||
+          key === "@" ||
+          key === "f"
+        ) {
           e.preventDefault();
           navigate("/favourites");
-        } else if (code === "Digit3" || key === "3" || key === "#" || key === "p") {
+        } else if (
+          code === "Digit3" ||
+          key === "3" ||
+          key === "#" ||
+          key === "p"
+        ) {
           e.preventDefault();
           navigate("/playlists");
-        } else if (code === "Digit4" || key === "4" || key === "$" || key === "a") {
+        } else if (
+          code === "Digit4" ||
+          key === "4" ||
+          key === "$" ||
+          key === "a"
+        ) {
           e.preventDefault();
           navigate("/artists");
-        } else if (code === "Digit5" || key === "5" || key === "%" || key === "d") {
+        } else if (
+          code === "Digit5" ||
+          key === "5" ||
+          key === "%" ||
+          key === "d"
+        ) {
           e.preventDefault();
           navigate("/downloads");
-        } else if (code === "Digit6" || key === "6" || key === "^" || key === "s") {
+        } else if (
+          code === "Digit6" ||
+          key === "6" ||
+          key === "^" ||
+          key === "s"
+        ) {
           e.preventDefault();
           navigate("/settings");
         }

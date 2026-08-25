@@ -61,20 +61,28 @@ function updateFiles(newVersion) {
   // 2. package.json
   const pkg = JSON.parse(fs.readFileSync(files.packageJson, "utf-8"));
   pkg.version = newVersion;
-  fs.writeFileSync(files.packageJson, JSON.stringify(pkg, null, 2) + "\n", "utf-8");
+  fs.writeFileSync(
+    files.packageJson,
+    JSON.stringify(pkg, null, 2) + "\n",
+    "utf-8",
+  );
 
   // 3. Cargo.toml
   let cargo = fs.readFileSync(files.cargoToml, "utf-8");
   cargo = cargo.replace(
     /(\[package\][\s\S]*?version\s*=\s*)"[^"]+"/,
-    `$1"${newVersion}"`
+    `$1"${newVersion}"`,
   );
   fs.writeFileSync(files.cargoToml, cargo, "utf-8");
 
   // 4. tauri.conf.json
   const tauri = JSON.parse(fs.readFileSync(files.tauriConf, "utf-8"));
   tauri.version = newVersion;
-  fs.writeFileSync(files.tauriConf, JSON.stringify(tauri, null, 2) + "\n", "utf-8");
+  fs.writeFileSync(
+    files.tauriConf,
+    JSON.stringify(tauri, null, 2) + "\n",
+    "utf-8",
+  );
 }
 
 function main() {
@@ -83,7 +91,8 @@ function main() {
   const nonFlags = args.filter((a) => !a.startsWith("-"));
 
   const shouldGitTag = flags.includes("--tag") || flags.includes("-t");
-  const shouldGitCommit = shouldGitTag || flags.includes("--commit") || flags.includes("-c");
+  const shouldGitCommit =
+    shouldGitTag || flags.includes("--commit") || flags.includes("-c");
 
   const currentVersion = getCurrentVersion();
   const bumpType = nonFlags[0] || "patch";
@@ -100,7 +109,10 @@ function main() {
 
   // Synchronize Cargo.lock
   try {
-    execSync("cargo check", { cwd: path.join(rootDir, "src-tauri"), stdio: "ignore" });
+    execSync("cargo check", {
+      cwd: path.join(rootDir, "src-tauri"),
+      stdio: "ignore",
+    });
     console.log("✔ Updated src-tauri/Cargo.lock");
   } catch {
     // If cargo is unavailable, continue
@@ -109,10 +121,13 @@ function main() {
   if (shouldGitCommit) {
     try {
       console.log("\n📦 Creating Git commit...");
-      execSync(`git add VERSION package.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json`, {
-        cwd: rootDir,
-        stdio: "inherit",
-      });
+      execSync(
+        `git add VERSION package.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json`,
+        {
+          cwd: rootDir,
+          stdio: "inherit",
+        },
+      );
       execSync(`git commit -m "chore(release): v${nextVersion}"`, {
         cwd: rootDir,
         stdio: "inherit",
@@ -125,14 +140,18 @@ function main() {
           stdio: "inherit",
         });
         console.log(`\n🎉 Tag created: v${nextVersion}`);
-        console.log(`👉 Run 'git push origin main --tags' to push and trigger the release pipeline!`);
+        console.log(
+          `👉 Run 'git push origin main --tags' to push and trigger the release pipeline!`,
+        );
       }
     } catch (err) {
       console.error("Failed to commit or tag:", err.message);
     }
   } else {
     console.log(`\n🎉 Version bumped to v${nextVersion}`);
-    console.log(`👉 Tip: You can run 'bun run bump --tag' to automatically commit and tag.`);
+    console.log(
+      `👉 Tip: You can run 'bun run bump --tag' to automatically commit and tag.`,
+    );
   }
 }
 

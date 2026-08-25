@@ -1,4 +1,11 @@
-import { onMount, onCleanup, For, Show, createSignal, createMemo } from "solid-js";
+import {
+  onMount,
+  onCleanup,
+  For,
+  Show,
+  createSignal,
+  createMemo,
+} from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import {
   downloadUrl,
@@ -42,7 +49,7 @@ export default function Downloads() {
 
   const [dropdownOpen, setDropdownOpen] = createSignal(false);
   const [activeTab, setActiveTab] = createSignal<"Active Queue" | "History">(
-    "Active Queue"
+    "Active Queue",
   );
 
   let dropdownRef: HTMLDivElement | undefined;
@@ -58,7 +65,7 @@ export default function Downloads() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     onCleanup(() =>
-      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("mousedown", handleClickOutside),
     );
   });
 
@@ -70,13 +77,16 @@ export default function Downloads() {
       active: all.filter((t) => t.status === "downloading").length,
       pending: all.filter((t) => t.status === "pending").length,
       done: all.filter((t) => t.status === "done").length,
-      failed: all.filter((t) => t.status === "error" || t.status === "cancelled").length,
+      failed: all.filter(
+        (t) => t.status === "error" || t.status === "cancelled",
+      ).length,
     };
   });
 
   const hasClearableQueue = createMemo(() => {
     return tasks().some(
-      (t) => t.status === "done" || t.status === "error" || t.status === "cancelled"
+      (t) =>
+        t.status === "done" || t.status === "error" || t.status === "cancelled",
     );
   });
 
@@ -243,7 +253,9 @@ export default function Downloads() {
           >
             History
             <Show when={(downloadHistory() || []).length > 0}>
-              <span class="tab-badge secondary">{(downloadHistory() || []).length}</span>
+              <span class="tab-badge secondary">
+                {(downloadHistory() || []).length}
+              </span>
             </Show>
           </button>
         </div>
@@ -264,7 +276,9 @@ export default function Downloads() {
         >
           <i class="ph-fill ph-trash"></i>
           <span>
-            {activeTab() === "Active Queue" ? "Clear Completed" : "Clear History"}
+            {activeTab() === "Active Queue"
+              ? "Clear Completed"
+              : "Clear History"}
           </span>
         </button>
       </div>
@@ -278,16 +292,20 @@ export default function Downloads() {
               <i class="ph ph-stack"></i> Total: <b>{queueSummary().total}</b>
             </div>
             <div class="summary-chip active">
-              <i class="ph ph-spinner spinIcon"></i> Active: <b>{queueSummary().active}</b>
+              <i class="ph ph-spinner spinIcon"></i> Active:{" "}
+              <b>{queueSummary().active}</b>
             </div>
             <div class="summary-chip pending">
-              <i class="ph ph-clock"></i> Queued: <b>{queueSummary().pending}</b>
+              <i class="ph ph-clock"></i> Queued:{" "}
+              <b>{queueSummary().pending}</b>
             </div>
             <div class="summary-chip done">
-              <i class="ph-fill ph-check-circle"></i> Done: <b>{queueSummary().done}</b>
+              <i class="ph-fill ph-check-circle"></i> Done:{" "}
+              <b>{queueSummary().done}</b>
             </div>
             <div class="summary-chip failed">
-              <i class="ph-fill ph-warning-circle"></i> Failed: <b>{queueSummary().failed}</b>
+              <i class="ph-fill ph-warning-circle"></i> Failed:{" "}
+              <b>{queueSummary().failed}</b>
             </div>
           </div>
         </Show>
@@ -311,7 +329,9 @@ export default function Downloads() {
           <div class="empty-queue-state">
             <i class="ph-fill ph-tray empty-icon"></i>
             <span class="empty-message">Your download queue is empty.</span>
-            <p class="empty-subtext">Paste a YouTube URL above to queue downloads.</p>
+            <p class="empty-subtext">
+              Paste a YouTube URL above to queue downloads.
+            </p>
           </div>
         </Show>
 
@@ -338,7 +358,8 @@ export default function Downloads() {
                         class="task-thumbnail"
                         loading="lazy"
                         onError={(e) => {
-                          e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
+                          e.currentTarget.src =
+                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
                         }}
                       />
                       <Show when={task.dlType}>
@@ -373,12 +394,14 @@ export default function Downloads() {
                         <div class="task-state-box">
                           <Show when={task.status === "pending"}>
                             <span class="task-state pending">
-                              <i class="ph ph-clock"></i> {task.phase || "Queued"}
+                              <i class="ph ph-clock"></i>{" "}
+                              {task.phase || "Queued"}
                             </span>
                           </Show>
                           <Show when={task.status === "downloading"}>
                             <span class="task-state downloading">
-                              <i class="ph ph-spinner spinIcon"></i> {task.phase || "Downloading"}
+                              <i class="ph ph-spinner spinIcon"></i>{" "}
+                              {task.phase || "Downloading"}
                             </span>
                           </Show>
                           <Show when={task.status === "done"}>
@@ -404,13 +427,20 @@ export default function Downloads() {
                               <i class="ph ph-gauge"></i> {task.speed}
                             </span>
                           </Show>
-                          <Show when={task.eta && task.status === "downloading"}>
-                            <span class="metric-badge eta" title="Estimated Time Remaining">
+                          <Show
+                            when={task.eta && task.status === "downloading"}
+                          >
+                            <span
+                              class="metric-badge eta"
+                              title="Estimated Time Remaining"
+                            >
                               <i class="ph ph-timer"></i> {task.eta}
                             </span>
                           </Show>
                           <Show when={task.status === "downloading"}>
-                            <span class="metric-badge pct">{Math.round(task.progress)}%</span>
+                            <span class="metric-badge pct">
+                              {Math.round(task.progress)}%
+                            </span>
                           </Show>
                         </div>
                       </div>
@@ -420,7 +450,11 @@ export default function Downloads() {
                   {/* Task Card Actions Bar */}
                   <div class="task-card-footer">
                     <div class="task-control-actions">
-                      <Show when={task.status === "error" || task.status === "cancelled"}>
+                      <Show
+                        when={
+                          task.status === "error" || task.status === "cancelled"
+                        }
+                      >
                         <button
                           class="task-ctrl-btn retry-btn"
                           onClick={() => retryDownload(task.id)}
@@ -430,7 +464,12 @@ export default function Downloads() {
                         </button>
                       </Show>
 
-                      <Show when={task.status === "pending" || task.status === "downloading"}>
+                      <Show
+                        when={
+                          task.status === "pending" ||
+                          task.status === "downloading"
+                        }
+                      >
                         <button
                           class="task-ctrl-btn cancel-btn"
                           onClick={() => cancelDownload(task.id)}
@@ -508,7 +547,9 @@ export default function Downloads() {
           <div class="empty-queue-state">
             <i class="ph-fill ph-clock-counter-clockwise empty-icon"></i>
             <span class="empty-message">No download history yet.</span>
-            <p class="empty-subtext">Completed and attempted downloads will be logged here.</p>
+            <p class="empty-subtext">
+              Completed and attempted downloads will be logged here.
+            </p>
           </div>
         </Show>
 
@@ -530,7 +571,8 @@ export default function Downloads() {
                       class="history-thumbnail"
                       loading="lazy"
                       onError={(e) => {
-                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
+                        e.currentTarget.src =
+                          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
                       }}
                     />
                     <Show when={item.status === "done"}>
@@ -562,10 +604,13 @@ export default function Downloads() {
                           </Show>
                         </span>
 
-                        <span class="history-type-chip">{item.dl_type || "Video"}</span>
+                        <span class="history-type-chip">
+                          {item.dl_type || "Video"}
+                        </span>
 
                         <span class="history-date">
-                          <i class="ph ph-calendar-blank"></i> {formatDate(item.created_at)}
+                          <i class="ph ph-calendar-blank"></i>{" "}
+                          {formatDate(item.created_at)}
                         </span>
                       </div>
 

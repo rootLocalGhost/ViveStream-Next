@@ -121,7 +121,11 @@
   justify-content: center;
   font-size: 60px;
   color: rgba(255, 255, 255, 0.3);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(0, 0, 0, 0.4)
+  );
 }
 
 .artist-hero-avatar-upload {

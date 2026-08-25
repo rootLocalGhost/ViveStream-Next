@@ -767,7 +767,9 @@
   padding: 12px 16px;
   box-shadow: var(--clay-card-shadow);
   border: var(--app-border, 1px solid rgba(255, 255, 255, 0.05));
-  transition: transform 0.2s var(--transition-smooth), border-color 0.2s;
+  transition:
+    transform 0.2s var(--transition-smooth),
+    border-color 0.2s;
 }
 
 .history-card:hover {
@@ -1020,4 +1022,3 @@
     justify-content: flex-end;
   }
 }
-

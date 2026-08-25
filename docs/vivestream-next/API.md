@@ -9,46 +9,51 @@ This document outlines the internal communication interfaces used in ViveStream-
 These commands are exported from `src-tauri/src/lib.rs` and can be called from the frontend using `@tauri-apps/api/core` `invoke()`.
 
 ### Binary & Environment Management
-* `check_binaries()`: Verifies the existence of required external dependencies (`yt-dlp`, `ffmpeg`, `deno`) in the app's internal bin directory.
-* `download_binaries()`: Initiates the downloading of the necessary dependencies from remote repositories.
-* `wipe_dependencies()`: Safely deletes the downloaded binaries.
-* `clean_database_and_media()`: Truncates non-essential tables and removes temporary media.
-* `nuclear_wipe()`: Dangerously deletes all stored videos, database tables, config files, and binaries.
-* `reindex_library()`: Scans the local filesystem to rebuild the SQLite database based on existing video files and metadata.
+
+- `check_binaries()`: Verifies the existence of required external dependencies (`yt-dlp`, `ffmpeg`, `deno`) in the app's internal bin directory.
+- `download_binaries()`: Initiates the downloading of the necessary dependencies from remote repositories.
+- `wipe_dependencies()`: Safely deletes the downloaded binaries.
+- `clean_database_and_media()`: Truncates non-essential tables and removes temporary media.
+- `nuclear_wipe()`: Dangerously deletes all stored videos, database tables, config files, and binaries.
+- `reindex_library()`: Scans the local filesystem to rebuild the SQLite database based on existing video files and metadata.
 
 ### Download & Extraction Management
-* `get_video_metadata(url: String, client: String)`: Extracts metadata (title, thumbnails, channel, duration) without downloading the media. Resolves PO Tokens natively if required.
-* `download_video(url: String, quality: String, format: String, download_path: String, use_cookie: bool)`: Initiates a concurrent download job. Progress is emitted asynchronously via Tauri events.
+
+- `get_video_metadata(url: String, client: String)`: Extracts metadata (title, thumbnails, channel, duration) without downloading the media. Resolves PO Tokens natively if required.
+- `download_video(url: String, quality: String, format: String, download_path: String, use_cookie: bool)`: Initiates a concurrent download job. Progress is emitted asynchronously via Tauri events.
 
 ### Media Library: Videos & Playlists
-* `get_downloaded_videos()`: Retrieves all downloaded `VideoEntry` objects from the SQLite database.
-* `update_video_details(id: String, title: String, channel: String)`: Updates specific metadata for a video entry.
-* `update_video_added_at(id: String)`: Refreshes the insertion timestamp for sorting purposes.
-* `delete_video(id: String, delete_file: bool)`: Removes a video from the database and optionally from the local filesystem.
-* `get_favorites()`: Returns a list of video objects marked as favorites.
-* `check_favorite(id: String)` -> `bool`: Checks if a specific video is marked as a favorite.
-* `toggle_favorite(id: String)`: Flips the favorite status of a video.
-* `create_playlist(name: String)`: Instantiates a new playlist object in the database.
-* `get_playlists()`: Retrieves a list of all playlists.
-* `delete_playlist(id: String)`: Removes a playlist entirely (cascades to junction tables).
-* `add_video_to_playlist(playlist_id: String, video_id: String)`: Maps a video to a playlist.
-* `remove_video_from_playlist(playlist_id: String, video_id: String)`: Deletes the mapping.
-* `get_playlist_videos(playlist_id: String)`: Retrieves ordered `VideoEntry` items for a specific playlist.
-* `update_playlist_title(id: String, name: String)`: Renames a playlist.
-* `update_playlist_order(playlist_id: String, video_ids: Vec<String>)`: Persists custom drag-and-drop sorting order.
-* `upload_playlist_cover(id: String, path: String)` & `upload_playlist_banner(id: String, path: String)`: Manages custom image associations for playlists.
+
+- `get_downloaded_videos()`: Retrieves all downloaded `VideoEntry` objects from the SQLite database.
+- `update_video_details(id: String, title: String, channel: String)`: Updates specific metadata for a video entry.
+- `update_video_added_at(id: String)`: Refreshes the insertion timestamp for sorting purposes.
+- `delete_video(id: String, delete_file: bool)`: Removes a video from the database and optionally from the local filesystem.
+- `get_favorites()`: Returns a list of video objects marked as favorites.
+- `check_favorite(id: String)` -> `bool`: Checks if a specific video is marked as a favorite.
+- `toggle_favorite(id: String)`: Flips the favorite status of a video.
+- `create_playlist(name: String)`: Instantiates a new playlist object in the database.
+- `get_playlists()`: Retrieves a list of all playlists.
+- `delete_playlist(id: String)`: Removes a playlist entirely (cascades to junction tables).
+- `add_video_to_playlist(playlist_id: String, video_id: String)`: Maps a video to a playlist.
+- `remove_video_from_playlist(playlist_id: String, video_id: String)`: Deletes the mapping.
+- `get_playlist_videos(playlist_id: String)`: Retrieves ordered `VideoEntry` items for a specific playlist.
+- `update_playlist_title(id: String, name: String)`: Renames a playlist.
+- `update_playlist_order(playlist_id: String, video_ids: Vec<String>)`: Persists custom drag-and-drop sorting order.
+- `upload_playlist_cover(id: String, path: String)` & `upload_playlist_banner(id: String, path: String)`: Manages custom image associations for playlists.
 
 ### Media Library: Artists & History
-* `get_artists()`: Returns a list of all unique channel names and their avatar paths.
-* `get_videos_by_artist(artist: String)`: Retrieves videos associated with a specific channel/artist.
-* `upload_artist_avatar(artist: String, path: String)`: Manages custom avatars for channels.
-* `get_download_history()`: Retrieves the persistent log of past download attempts and their statuses.
-* `clear_download_history_db()`: Flushes the history table.
-* `delete_download_history_item(id: String)`: Removes a single line item from the history.
+
+- `get_artists()`: Returns a list of all unique channel names and their avatar paths.
+- `get_videos_by_artist(artist: String)`: Retrieves videos associated with a specific channel/artist.
+- `upload_artist_avatar(artist: String, path: String)`: Manages custom avatars for channels.
+- `get_download_history()`: Retrieves the persistent log of past download attempts and their statuses.
+- `clear_download_history_db()`: Flushes the history table.
+- `delete_download_history_item(id: String)`: Removes a single line item from the history.
 
 ### OS Media Controls Integration (`souvlaki`)
-* `update_media_metadata(title: String, artist: String)`: Updates the OS-level media banner (e.g., Windows 10/11 popup or Linux MPRIS).
-* `update_playback_status(playing: bool)`: Updates the system-level Play/Pause state.
+
+- `update_media_metadata(title: String, artist: String)`: Updates the OS-level media banner (e.g., Windows 10/11 popup or Linux MPRIS).
+- `update_playback_status(playing: bool)`: Updates the system-level Play/Pause state.
 
 ---
 
@@ -56,12 +61,12 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 
 The Rust backend uses `Emitter` to push real-time events to the frontend. SolidJS listens to these via `@tauri-apps/api/event` `listen()`.
 
-* `download-progress`: Emitted continuously during a download job. Payload includes `id`, `percentage`, `speed`, and `eta`.
-* `download-status`: Emitted when a download state changes (e.g., "Extracting", "Downloading", "Merging", "Completed", "Error").
-* `media-play`: Emitted when the user presses the system-level Play button (via keyboard hardware or OS menu).
-* `media-pause`: Emitted when the user presses the system-level Pause button.
-* `media-next`: Emitted when the user presses the system-level Next button.
-* `media-prev`: Emitted when the user presses the system-level Previous button.
+- `download-progress`: Emitted continuously during a download job. Payload includes `id`, `percentage`, `speed`, and `eta`.
+- `download-status`: Emitted when a download state changes (e.g., "Extracting", "Downloading", "Merging", "Completed", "Error").
+- `media-play`: Emitted when the user presses the system-level Play button (via keyboard hardware or OS menu).
+- `media-pause`: Emitted when the user presses the system-level Pause button.
+- `media-next`: Emitted when the user presses the system-level Next button.
+- `media-prev`: Emitted when the user presses the system-level Previous button.
 
 ---
 
@@ -69,8 +74,8 @@ The Rust backend uses `Emitter` to push real-time events to the frontend. SolidJ
 
 Because local video playback via file protocols (`file://` or `asset://`) inside Tauri's secure webview causes severe memory issues and breaks HTTP Range requests (seeking), a local server is employed.
 
-* **Port**: `1422` (Hardcoded bound loopback address: `127.0.0.1:1422`)
-* **Protocol**: HTTP/1.1 (Supports `Range: bytes=X-Y` requests).
-* **CORS**: Completely open (`allow_any_origin`) but only accepts `GET`, `OPTIONS`, `HEAD`.
-* **Path Resolution**: The server maps the root `/` to the application's base directory (derived securely via Rust's path logic).
-  * Example: To play `C:\Users\Name\AppData\Local\ViveStream-Next\Videos\video.mp4`, the frontend requests `http://localhost:1422/Videos/video.mp4`.
+- **Port**: `1422` (Hardcoded bound loopback address: `127.0.0.1:1422`)
+- **Protocol**: HTTP/1.1 (Supports `Range: bytes=X-Y` requests).
+- **CORS**: Completely open (`allow_any_origin`) but only accepts `GET`, `OPTIONS`, `HEAD`.
+- **Path Resolution**: The server maps the root `/` to the application's base directory (derived securely via Rust's path logic).
+  - Example: To play `C:\Users\Name\AppData\Local\ViveStream-Next\Videos\video.mp4`, the frontend requests `http://localhost:1422/Videos/video.mp4`.

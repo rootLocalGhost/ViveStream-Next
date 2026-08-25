@@ -15,7 +15,9 @@
 
 :root {
   --font-display: "MajorMonoDisplay", "Tiro Bangla", "Hind Siliguri", monospace;
-  --font-body: "Poppins", "Tiro Bangla", "Hind Siliguri", "Noto Sans Bengali", "Segoe UI", sans-serif;
+  --font-body:
+    "Poppins", "Tiro Bangla", "Hind Siliguri", "Noto Sans Bengali", "Segoe UI",
+    sans-serif;
   --primary-accent: #f25c54;
   --primary-accent-dark: #e04b43;
   --sidebar-collapsed-width: 72px;
@@ -975,4 +977,3 @@ input:checked + .slider:before {
     font-size: 13px;
   }
 }
-

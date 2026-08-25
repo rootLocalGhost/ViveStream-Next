@@ -12,17 +12,33 @@ if (!fs.existsSync(versionFile)) {
 }
 
 const version = fs.readFileSync(versionFile, "utf-8").trim();
-console.log(`\n🚀 Starting ViveStream Next v${version} Local Build Manager...\n`);
+console.log(
+  `\n🚀 Starting ViveStream Next v${version} Local Build Manager...\n`,
+);
 
 const args = process.argv.slice(2);
 const flags = new Set(args.map((a) => a.toLowerCase()));
 
 let buildDeb = flags.has("--deb") || flags.has("--linux") || flags.has("--all");
-let buildAppImage = flags.has("--appimage") || flags.has("--linux") || flags.has("--all");
-let buildArch = flags.has("--arch") || flags.has("--pkg") || flags.has("--linux") || flags.has("--all");
+let buildAppImage =
+  flags.has("--appimage") || flags.has("--linux") || flags.has("--all");
+let buildArch =
+  flags.has("--arch") ||
+  flags.has("--pkg") ||
+  flags.has("--linux") ||
+  flags.has("--all");
 let buildRpm = flags.has("--rpm") || flags.has("--linux") || flags.has("--all");
-let buildExe = flags.has("--exe") || flags.has("--nsis") || flags.has("--win") || flags.has("--windows") || flags.has("--all");
-let buildMsi = flags.has("--msi") || flags.has("--win") || flags.has("--windows") || flags.has("--all");
+let buildExe =
+  flags.has("--exe") ||
+  flags.has("--nsis") ||
+  flags.has("--win") ||
+  flags.has("--windows") ||
+  flags.has("--all");
+let buildMsi =
+  flags.has("--msi") ||
+  flags.has("--win") ||
+  flags.has("--windows") ||
+  flags.has("--all");
 
 // Default to platform-appropriate build if no specific flag passed
 if (args.length === 0) {
@@ -67,8 +83,17 @@ if (buildDeb || buildArch) {
   console.log("\n📦 Building Debian (.deb) package...");
   try {
     runCmd("bun tauri build --bundles deb");
-    const debBundleDir = path.join(rootDir, "src-tauri", "target", "release", "bundle", "deb");
-    const debFiles = fs.readdirSync(debBundleDir).filter((f) => f.endsWith(".deb"));
+    const debBundleDir = path.join(
+      rootDir,
+      "src-tauri",
+      "target",
+      "release",
+      "bundle",
+      "deb",
+    );
+    const debFiles = fs
+      .readdirSync(debBundleDir)
+      .filter((f) => f.endsWith(".deb"));
     if (debFiles.length > 0) {
       const debName = `vivestream-next_${version}_amd64.deb`;
       const res = copyArtifact(path.join(debBundleDir, debFiles[0]), debName);
@@ -83,13 +108,27 @@ if (buildDeb || buildArch) {
 if (buildArch) {
   console.log("\n📦 Generating Arch Linux (.pkg.tar.zst) package...");
   try {
-    const debBundleDir = path.join(rootDir, "src-tauri", "target", "release", "bundle", "deb");
-    const debFiles = fs.readdirSync(debBundleDir).filter((f) => f.endsWith(".deb"));
+    const debBundleDir = path.join(
+      rootDir,
+      "src-tauri",
+      "target",
+      "release",
+      "bundle",
+      "deb",
+    );
+    const debFiles = fs
+      .readdirSync(debBundleDir)
+      .filter((f) => f.endsWith(".deb"));
     if (debFiles.length === 0) {
       throw new Error(".deb package missing for Arch generation.");
     }
     const debPath = path.join(debBundleDir, debFiles[0]);
-    const archBuildDir = path.join(rootDir, "src-tauri", "target", "arch_build");
+    const archBuildDir = path.join(
+      rootDir,
+      "src-tauri",
+      "target",
+      "arch_build",
+    );
 
     if (fs.existsSync(archBuildDir)) {
       fs.rmSync(archBuildDir, { recursive: true, force: true });
@@ -99,7 +138,11 @@ if (buildArch) {
     runCmd(`ar x "${debPath}"`, archBuildDir);
     runCmd(`tar -xf data.tar.*`, archBuildDir);
 
-    const sizeOutput = execSync(`du -sb . | awk '{print $1}'`, { cwd: archBuildDir }).toString().trim();
+    const sizeOutput = execSync(`du -sb . | awk '{print $1}'`, {
+      cwd: archBuildDir,
+    })
+      .toString()
+      .trim();
     const pkgInfoContent = `pkgname = vivestream-next-bin
 pkgbase = vivestream-next-bin
 pkgver = ${version}-1
@@ -127,7 +170,10 @@ conflict = vivestream-next
 
     const archPkgName = `vivestream-next_${version}_x86_64.pkg.tar.zst`;
     const archPkgPath = path.join(pkgDir, archPkgName);
-    runCmd(`tar --owner=0 --group=0 --numeric-owner -c --zstd -f "${archPkgPath}" .PKGINFO usr`, archBuildDir);
+    runCmd(
+      `tar --owner=0 --group=0 --numeric-owner -c --zstd -f "${archPkgPath}" .PKGINFO usr`,
+      archBuildDir,
+    );
 
     const stats = fs.statSync(archPkgPath);
     const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
@@ -145,8 +191,17 @@ if (buildAppImage) {
   console.log("\n📦 Building AppImage...");
   try {
     runCmd("bun tauri build --bundles appimage");
-    const appImageDir = path.join(rootDir, "src-tauri", "target", "release", "bundle", "appimage");
-    const appFiles = fs.readdirSync(appImageDir).filter((f) => f.endsWith(".AppImage"));
+    const appImageDir = path.join(
+      rootDir,
+      "src-tauri",
+      "target",
+      "release",
+      "bundle",
+      "appimage",
+    );
+    const appFiles = fs
+      .readdirSync(appImageDir)
+      .filter((f) => f.endsWith(".AppImage"));
     if (appFiles.length > 0) {
       const appName = `ViveStream-Next_${version}_amd64.AppImage`;
       const res = copyArtifact(path.join(appImageDir, appFiles[0]), appName);
@@ -162,7 +217,14 @@ if (buildRpm) {
   console.log("\n📦 Building RPM (.rpm) package...");
   try {
     runCmd("bun tauri build --bundles rpm");
-    const rpmDir = path.join(rootDir, "src-tauri", "target", "release", "bundle", "rpm");
+    const rpmDir = path.join(
+      rootDir,
+      "src-tauri",
+      "target",
+      "release",
+      "bundle",
+      "rpm",
+    );
     const rpmFiles = fs.readdirSync(rpmDir).filter((f) => f.endsWith(".rpm"));
     if (rpmFiles.length > 0) {
       const rpmName = `vivestream-next_${version}_x86_64.rpm`;
@@ -179,7 +241,14 @@ if (buildExe) {
   console.log("\n📦 Building Windows NSIS Setup (.exe)...");
   try {
     runCmd("bun tauri build --bundles nsis");
-    const nsisDir = path.join(rootDir, "src-tauri", "target", "release", "bundle", "nsis");
+    const nsisDir = path.join(
+      rootDir,
+      "src-tauri",
+      "target",
+      "release",
+      "bundle",
+      "nsis",
+    );
     const exeFiles = fs.readdirSync(nsisDir).filter((f) => f.endsWith(".exe"));
     if (exeFiles.length > 0) {
       const exeName = `vivestream-next_${version}_x64-setup.exe`;
@@ -196,7 +265,14 @@ if (buildMsi) {
   console.log("\n📦 Building Windows MSI (.msi)...");
   try {
     runCmd("bun tauri build --bundles msi");
-    const msiDir = path.join(rootDir, "src-tauri", "target", "release", "bundle", "msi");
+    const msiDir = path.join(
+      rootDir,
+      "src-tauri",
+      "target",
+      "release",
+      "bundle",
+      "msi",
+    );
     const msiFiles = fs.readdirSync(msiDir).filter((f) => f.endsWith(".msi"));
     if (msiFiles.length > 0) {
       const msiName = `vivestream-next_${version}_x64.msi`;

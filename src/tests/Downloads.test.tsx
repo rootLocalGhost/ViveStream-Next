@@ -32,6 +32,8 @@ describe("Downloads Component", () => {
 
     const queueTabBtn = screen.getByRole("button", { name: /Active Queue/i });
     fireEvent.click(queueTabBtn);
-    expect(screen.getByText(/Your download queue is empty/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Your download queue is empty/i),
+    ).toBeInTheDocument();
   });
 });

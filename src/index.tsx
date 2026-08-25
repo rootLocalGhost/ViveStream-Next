@@ -9,4 +9,3 @@ if (import.meta.env.PROD) {
 }
 
 render(() => <App />, document.getElementById("root") as HTMLElement);
-

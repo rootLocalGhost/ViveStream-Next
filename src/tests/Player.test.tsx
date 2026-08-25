@@ -40,7 +40,9 @@ beforeAll(() => {
   HTMLVideoElement.prototype.play = vi.fn().mockReturnValue(Promise.resolve());
   HTMLVideoElement.prototype.pause = vi.fn();
   HTMLVideoElement.prototype.load = vi.fn();
-  HTMLVideoElement.prototype.requestPictureInPicture = vi.fn().mockResolvedValue({} as any);
+  HTMLVideoElement.prototype.requestPictureInPicture = vi
+    .fn()
+    .mockResolvedValue({} as any);
   document.exitPictureInPicture = vi.fn().mockResolvedValue({} as any);
   global.fetch = vi.fn(() =>
     Promise.resolve({

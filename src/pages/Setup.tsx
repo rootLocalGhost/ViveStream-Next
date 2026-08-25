@@ -156,8 +156,9 @@ export default function Setup(props: { onComplete?: () => void }) {
                 <AnimatedLogo />
                 <h1 class="setup-title">VIVESTREAM</h1>
                 <p class="setup-description">
-                  To enable local hardware transcoding (Intel QSV / NVIDIA NVENC) and stream extraction,
-                  ViveStream requires core media engines fetched securely from official repositories.
+                  To enable local hardware transcoding (Intel QSV / NVIDIA
+                  NVENC) and stream extraction, ViveStream requires core media
+                  engines fetched securely from official repositories.
                 </p>
               </div>
               <div class="setup-terminal-wrapper">
@@ -180,7 +181,9 @@ export default function Setup(props: { onComplete?: () => void }) {
                     <p class="setup-log-line processing">&gt; Working...</p>
                   )}
                   {logs().length === 0 && (
-                    <p class="setup-log-line muted">Awaiting user authorization...</p>
+                    <p class="setup-log-line muted">
+                      Awaiting user authorization...
+                    </p>
                   )}
                 </div>
               </div>
@@ -205,7 +208,8 @@ export default function Setup(props: { onComplete?: () => void }) {
                   </>
                 ) : (
                   <>
-                    <i class="ph-fill ph-download-simple"></i> INITIALIZE DEPLOYMENT
+                    <i class="ph-fill ph-download-simple"></i> INITIALIZE
+                    DEPLOYMENT
                   </>
                 )}
               </button>
@@ -222,7 +226,8 @@ export default function Setup(props: { onComplete?: () => void }) {
             <div class="setup-header">
               <h1 class="setup-title setup-complete-title">SETUP COMPLETE</h1>
               <p class="setup-description">
-                All media engines and hardware acceleration pipelines are fully configured and verified.
+                All media engines and hardware acceleration pipelines are fully
+                configured and verified.
               </p>
             </div>
 
@@ -243,7 +248,9 @@ export default function Setup(props: { onComplete?: () => void }) {
                 </div>
                 <div class="setup-status-text">
                   <span class="setup-status-name">Deno JS Runtime</span>
-                  <span class="setup-status-desc">n-Challenge Decryption Active</span>
+                  <span class="setup-status-desc">
+                    n-Challenge Decryption Active
+                  </span>
                 </div>
               </div>
 
@@ -253,7 +260,9 @@ export default function Setup(props: { onComplete?: () => void }) {
                 </div>
                 <div class="setup-status-text">
                   <span class="setup-status-name">FFmpeg Transcoder</span>
-                  <span class="setup-status-desc">Intel QSV / NVIDIA NVENC Enabled</span>
+                  <span class="setup-status-desc">
+                    Intel QSV / NVIDIA NVENC Enabled
+                  </span>
                 </div>
               </div>
 
@@ -263,7 +272,9 @@ export default function Setup(props: { onComplete?: () => void }) {
                 </div>
                 <div class="setup-status-text">
                   <span class="setup-status-name">Local Library</span>
-                  <span class="setup-status-desc">High-Performance Database Ready</span>
+                  <span class="setup-status-desc">
+                    High-Performance Database Ready
+                  </span>
                 </div>
               </div>
             </div>
@@ -272,9 +283,14 @@ export default function Setup(props: { onComplete?: () => void }) {
               <i class="ph-fill ph-rocket-launch"></i> LAUNCH VIVESTREAM
             </button>
 
-            <div class="setup-log-toggle" onClick={() => setShowLogs(!showLogs())}>
+            <div
+              class="setup-log-toggle"
+              onClick={() => setShowLogs(!showLogs())}
+            >
               <i class={`ph ph-caret-${showLogs() ? "up" : "down"}`}></i>
-              <span>{showLogs() ? "Hide Deployment Logs" : "View Deployment Logs"}</span>
+              <span>
+                {showLogs() ? "Hide Deployment Logs" : "View Deployment Logs"}
+              </span>
             </div>
 
             <Show when={showLogs()}>
@@ -292,4 +308,3 @@ export default function Setup(props: { onComplete?: () => void }) {
     </div>
   );
 }
-

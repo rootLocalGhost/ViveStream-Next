@@ -178,7 +178,9 @@ export const {
   const [showShortcutsModal, setShowShortcutsModal] = createSignal(false);
   const [isFetchingInfo, setIsFetchingInfo] = createSignal(false);
   const [fetchingUrl, setFetchingUrl] = createSignal("");
-  const [downloadHistory, setDownloadHistory] = createSignal<DownloadHistoryEntry[]>([]);
+  const [downloadHistory, setDownloadHistory] = createSignal<
+    DownloadHistoryEntry[]
+  >([]);
 
   const [useAnimatedIcons, setUseAnimatedIcons] =
     createSignal(initialAnimState);
@@ -341,7 +343,10 @@ export const toggleGlobalPlay = () => {
       globalVideoRef.pause();
       setIsPlaying(false);
     } else {
-      globalVideoRef.play().then(() => setIsPlaying(true)).catch(() => {});
+      globalVideoRef
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {});
     }
   }
 };
@@ -355,7 +360,10 @@ export const pauseGlobalPlay = () => {
 
 export const resumeGlobalPlay = () => {
   if (globalVideoRef) {
-    globalVideoRef.play().then(() => setIsPlaying(true)).catch(() => {});
+    globalVideoRef
+      .play()
+      .then(() => setIsPlaying(true))
+      .catch(() => {});
   }
 };
 
@@ -556,13 +564,18 @@ export const retryDownload = (id: string) => {
 
 export const clearDownloadHistory = () => {
   setTasks((prev) =>
-    prev.filter((t) => t.status !== "done" && t.status !== "error" && t.status !== "cancelled"),
+    prev.filter(
+      (t) =>
+        t.status !== "done" && t.status !== "error" && t.status !== "cancelled",
+    ),
   );
 };
 
 export const fetchDownloadHistory = async () => {
   try {
-    const records = await invoke<DownloadHistoryEntry[]>("get_download_history");
+    const records = await invoke<DownloadHistoryEntry[]>(
+      "get_download_history",
+    );
     if (Array.isArray(records)) {
       setDownloadHistory(records);
     }
@@ -646,7 +659,9 @@ const executeDownload = async (task: DownloadTask) => {
               newProgress = parseFloat(match[1]);
               newPhase = "Downloading";
             }
-            const speedMatch = cleanLog.match(/at\s+([^\s]+(?:[kMG]?i?B\/s|B\/s))/);
+            const speedMatch = cleanLog.match(
+              /at\s+([^\s]+(?:[kMG]?i?B\/s|B\/s))/,
+            );
             if (speedMatch) {
               newSpeed = speedMatch[1];
             }
@@ -744,13 +759,16 @@ export const startDownloadQueue = async () => {
 
     let targetPlaylistId: string | undefined = undefined;
     if (response.playlist_title) {
-        try {
-            const newPlaylist = await invoke<{id: string, name: string}>("create_playlist", { name: response.playlist_title });
-            targetPlaylistId = newPlaylist.id;
-            addToast(`Playlist "${response.playlist_title}" created`, "success");
-        } catch (err) {
-            console.error("Failed to create playlist:", err);
-        }
+      try {
+        const newPlaylist = await invoke<{ id: string; name: string }>(
+          "create_playlist",
+          { name: response.playlist_title },
+        );
+        targetPlaylistId = newPlaylist.id;
+        addToast(`Playlist "${response.playlist_title}" created`, "success");
+      } catch (err) {
+        console.error("Failed to create playlist:", err);
+      }
     }
 
     const currentDlType = downloadType();
