@@ -5,6 +5,7 @@ import {
   onMount,
   onCleanup,
   createEffect,
+  untrack,
 } from "solid-js";
 import { useLocation, useNavigate } from "@solidjs/router";
 import {
@@ -19,9 +20,7 @@ import {
   playerContextParams,
   toggleGlobalPlay,
   seekGlobalPlay,
-  setGlobalVolume,
   toggleGlobalMute,
-  toggleGlobalPiP,
   closeGlobalMiniplayer,
   setGlobalVideoRef,
   setIsPlaying,
@@ -40,14 +39,22 @@ const formatTime = (timeInSeconds: number) => {
 };
 
 export const Miniplayer: Component = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = createSignal(false);
   const [isSeeking, setIsSeeking] = createSignal(false);
+  let isUnmounting = false;
 
   let videoRef: HTMLVideoElement | undefined;
 
-  const isPlayerPage = () => location.pathname.startsWith("/player");
+  const isPlayerPage = () => {
+    try {
+      return useLocation().pathname.startsWith("/player");
+    } catch {
+      return typeof window !== "undefined"
+        ? window.location.pathname.startsWith("/player")
+        : false;
+    }
+  };
 
   const shouldShow = () => {
     return !isPlayerPage() && activeVideo() !== null && !miniplayerDismissed();
@@ -56,6 +63,11 @@ export const Miniplayer: Component = () => {
   const handleExpand = () => {
     const vid = activeVideo();
     if (!vid) return;
+    isUnmounting = true;
+    if (videoRef) {
+      setCurrentTime(videoRef.currentTime);
+      setIsPlaying(!videoRef.paused);
+    }
     const params = playerContextParams();
     const qs = new URLSearchParams(params as Record<string, string>).toString();
     navigate(`/player/${vid.id}${qs ? `?${qs}` : ""}`);
@@ -104,21 +116,32 @@ export const Miniplayer: Component = () => {
     seekGlobalPlay(val);
   };
 
-  // Synchronize the video element reference when on miniplayer
+  // Synchronize the video element reference when on miniplayer WITHOUT tracking currentTime
   createEffect(() => {
     if (shouldShow() && videoRef) {
       setGlobalVideoRef(videoRef);
       videoRef.volume = volume();
       videoRef.muted = isMuted();
+
+      const initialTime = untrack(() => currentTime());
       if (
-        currentTime() > 0 &&
-        Math.abs(videoRef.currentTime - currentTime()) > 1.5
+        initialTime > 0 &&
+        Math.abs(videoRef.currentTime - initialTime) > 1.5
       ) {
-        videoRef.currentTime = currentTime();
+        videoRef.currentTime = initialTime;
       }
-      if (isPlaying()) {
+      const initialPlaying = untrack(() => isPlaying());
+      if (initialPlaying && videoRef.paused) {
         videoRef.play().catch(() => {});
       }
+    }
+  });
+
+  // Dedicated light effect for volume & mute changes
+  createEffect(() => {
+    if (videoRef) {
+      videoRef.volume = volume();
+      videoRef.muted = isMuted();
     }
   });
 
@@ -152,7 +175,14 @@ export const Miniplayer: Component = () => {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+    onCleanup(() => {
+      isUnmounting = true;
+      window.removeEventListener("keydown", handleKeyDown);
+      if (videoRef) {
+        setCurrentTime(videoRef.currentTime);
+        setIsPlaying(!videoRef.paused);
+      }
+    });
   });
 
   const seekProgress = () =>
@@ -172,13 +202,39 @@ export const Miniplayer: Component = () => {
               class="miniplayer-video-element"
               src={`http://127.0.0.1:1422/Videos/${activeVideo()!.id}.mp4`}
               preload="auto"
+              autoplay
+              onCanPlay={() => {
+                if (videoRef) {
+                  const savedTime = untrack(currentTime);
+                  if (savedTime > 0 && Math.abs(videoRef.currentTime - savedTime) > 0.5) {
+                    videoRef.currentTime = savedTime;
+                  }
+                  if (untrack(isPlaying) && videoRef.paused) {
+                    videoRef.play().catch(() => {});
+                  }
+                }
+              }}
+              onLoadedMetadata={(e) => {
+                setDuration(e.currentTarget.duration);
+                if (videoRef) {
+                  const savedTime = untrack(currentTime);
+                  if (savedTime > 0) {
+                    videoRef.currentTime = savedTime;
+                  }
+                  if (untrack(isPlaying) && videoRef.paused) {
+                    videoRef.play().catch(() => {});
+                  }
+                }
+              }}
               onPlay={() => {
+                if (isUnmounting) return;
                 setIsPlaying(true);
                 invoke("update_playback_status", { playing: true }).catch(
                   () => {},
                 );
               }}
               onPause={() => {
+                if (isUnmounting || (videoRef && videoRef.seeking)) return;
                 setIsPlaying(false);
                 invoke("update_playback_status", { playing: false }).catch(
                   () => {},
@@ -187,38 +243,38 @@ export const Miniplayer: Component = () => {
               onTimeUpdate={(e) => {
                 if (!isSeeking()) setCurrentTime(e.currentTarget.currentTime);
               }}
-              onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
               onEnded={handlePlayNext}
             />
 
-            {/* Hover overlay with action controls */}
-            <div class={`miniplayer-overlay ${isHovered() ? "visible" : ""}`}>
-              <div
-                class="miniplayer-top-row"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div class="miniplayer-badge">
-                  <i class="ph-fill ph-picture-in-picture"></i>
-                  <span>Miniplayer</span>
-                </div>
-                <div class="miniplayer-top-actions">
-                  <button
-                    class="miniplayer-icon-btn"
-                    onClick={handleExpand}
-                    title="Expand to Full Player (I)"
-                  >
-                    <i class="ph-bold ph-arrows-out-simple"></i>
-                  </button>
-                  <button
-                    class="miniplayer-icon-btn close-btn"
-                    onClick={closeGlobalMiniplayer}
-                    title="Close Miniplayer"
-                  >
-                    <i class="ph-bold ph-x"></i>
-                  </button>
-                </div>
+            {/* Permanent Top Controls: Badge on left, Expand & Close on right */}
+            <div
+              class="miniplayer-top-row"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div class="miniplayer-badge">
+                <i class="ph-fill ph-picture-in-picture"></i>
+                <span>Miniplayer</span>
               </div>
+              <div class="miniplayer-top-actions">
+                <button
+                  class="miniplayer-icon-btn"
+                  onClick={handleExpand}
+                  title="Expand to Full Player (I)"
+                >
+                  <i class="ph-bold ph-arrows-out-simple"></i>
+                </button>
+                <button
+                  class="miniplayer-icon-btn close-btn"
+                  onClick={closeGlobalMiniplayer}
+                  title="Close Miniplayer"
+                >
+                  <i class="ph-bold ph-x"></i>
+                </button>
+              </div>
+            </div>
 
+            {/* Hover overlay with playback controls and seekbar */}
+            <div class={`miniplayer-overlay ${isHovered() ? "visible" : ""}`}>
               <div
                 class="miniplayer-center-controls"
                 onClick={(e) => e.stopPropagation()}
