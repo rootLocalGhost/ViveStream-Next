@@ -369,8 +369,6 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--clay-bg);
-  box-shadow: var(--clay-inset-shadow);
   border-radius: 32px;
   border: none;
   padding: 60px 20px;
