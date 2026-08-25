@@ -7,6 +7,10 @@ import {
   toggleAppPalette,
   sidebarHoverMode,
   toggleSidebarHoverMode,
+  alwaysShowSearchBar,
+  toggleAlwaysShowSearchBar,
+  showFpsCounter,
+  toggleShowFpsCounter,
   concurrentDownloads,
   updateConcurrentDownloads,
   concurrentFragments,
@@ -171,7 +175,7 @@ export default function Settings() {
       </h2>
 
       <div class="settings-card">
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-appearance-theme">
           <div>
             <h3 class="settings-title">Appearance</h3>
             <p class="settings-desc">
@@ -202,7 +206,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-appearance-palette">
           <div>
             <h3 class="settings-title">Color Palette</h3>
             <p class="settings-desc">Choose a primary accent scheme.</p>
@@ -225,7 +229,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-appearance-sidebar">
           <div>
             <h3 class="settings-title">Auto-Expand Sidebar</h3>
             <p class="settings-desc">
@@ -244,7 +248,45 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-appearance-searchbar">
+          <div>
+            <h3 class="settings-title">Always Show Search Bar</h3>
+            <p class="settings-desc">
+              Keep the global search bar visible in the top header instead of auto-hiding.
+            </p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={alwaysShowSearchBar()}
+              onChange={(e) => toggleAlwaysShowSearchBar(e.target.checked)}
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="full-divider"></div>
+
+        <div class="flex-row-between" id="setting-appearance-fps">
+          <div>
+            <h3 class="settings-title">Show FPS Counter</h3>
+            <p class="settings-desc">
+              Display an in-app real-time frame rate monitor in the corner.
+            </p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={showFpsCounter()}
+              onChange={(e) => toggleShowFpsCounter(e.target.checked)}
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="full-divider"></div>
+
+        <div class="flex-row-between" id="setting-appearance-shortcuts">
           <div>
             <h3 class="settings-title">Keyboard Shortcuts</h3>
             <p class="settings-desc">
@@ -266,7 +308,7 @@ export default function Settings() {
       </h2>
 
       <div class="settings-card">
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-engine-concurrent-dl">
           <div>
             <h3 class="settings-title">Concurrent Downloads</h3>
             <p class="settings-desc">
@@ -296,7 +338,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-engine-concurrent-frag">
           <div>
             <h3 class="settings-title">Concurrent Fragments</h3>
             <p class="settings-desc">
@@ -326,7 +368,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-engine-speed-limit">
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
             <p class="settings-desc">
@@ -344,7 +386,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-engine-browser-cookies">
           <div>
             <h3 class="settings-title">Browser Cookies</h3>
             <p class="settings-desc">
@@ -382,7 +424,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-engine-youtube-client">
           <div>
             <h3 class="settings-title">YouTube API Client Fallback</h3>
             <p class="settings-desc">
@@ -421,7 +463,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-engine-auto-subs">
           <div>
             <h3 class="settings-title">Download Automatic Subtitles</h3>
             <p class="settings-desc">
@@ -440,7 +482,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-engine-sponsorblock">
           <div>
             <h3 class="settings-title">Remove Sponsored Segments</h3>
             <p class="settings-desc">
@@ -459,7 +501,7 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-engine-reindex">
           <div>
             <h3 class="settings-title">Re-index Local Storage</h3>
             <p class="settings-desc">
@@ -491,7 +533,7 @@ export default function Settings() {
       </h2>
 
       <div class="danger-card">
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-danger-force-setup">
           <div>
             <h3 class="settings-title">Force Setup Screen</h3>
             <p class="settings-desc">
@@ -509,7 +551,7 @@ export default function Settings() {
 
         <div class="full-divider danger-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-danger-update-binaries">
           <div>
             <h3 class="settings-title">Update Core Engines</h3>
             <p class="settings-desc">
@@ -537,7 +579,7 @@ export default function Settings() {
 
         <div class="full-divider danger-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-danger-wipe-dependencies">
           <div>
             <h3 class="settings-title">Wipe Core Engines</h3>
             <p class="settings-desc">
@@ -562,7 +604,7 @@ export default function Settings() {
 
         <div class="full-divider danger-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-danger-clean-database">
           <div>
             <h3 class="settings-title danger">Clean Database & Media</h3>
             <p class="settings-desc">
@@ -590,7 +632,7 @@ export default function Settings() {
 
         <div class="full-divider danger-divider"></div>
 
-        <div class="flex-row-between">
+        <div class="flex-row-between" id="setting-danger-nuclear-wipe">
           <div>
             <h3 class="settings-title danger">
               Nuclear Wipe (Delete Everything)
