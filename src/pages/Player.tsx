@@ -40,6 +40,7 @@ import {
   setTheaterMode,
   setPlayerContextParams,
   setGlobalVideoRef,
+  isSearchOpen,
 } from "../store";
 import "./Player.css";
 
@@ -87,8 +88,14 @@ export default function Player() {
   let unlistenNext: UnlistenFn | undefined;
   let unlistenPrev: UnlistenFn | undefined;
   let currentLoadingId: string | null = null;
+  let isUnmounting = false;
 
   const toggleMiniplayerMode = () => {
+    isUnmounting = true;
+    if (videoRef) {
+      setCurrentTime(videoRef.currentTime);
+      setIsPlaying(!videoRef.paused);
+    }
     if (window.history.length > 1) {
       navigate(-1);
     } else {
@@ -384,12 +391,18 @@ export default function Player() {
   const handleKeyDown = (e: KeyboardEvent) => {
     const target = e.target as HTMLElement | null;
     if (
-      target &&
-      (target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.tagName === "SELECT" ||
-        target.isContentEditable)
+      isSearchOpen() ||
+      (target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable))
     ) {
+      return;
+    }
+
+    // Guard: ignore player single-key shortcuts if Ctrl, Meta, or Alt is pressed
+    if (e.ctrlKey || e.metaKey || e.altKey) {
       return;
     }
 
@@ -662,6 +675,7 @@ export default function Player() {
   });
 
   onCleanup(() => {
+    isUnmounting = true;
     window.removeEventListener("keydown", handleKeyDown);
     document.removeEventListener("mousedown", handleClickOutside);
     document.removeEventListener("fullscreenchange", handleFullscreenChange);
@@ -709,8 +723,9 @@ export default function Player() {
             setCurrentTime(0);
           }
 
-          setIsPlaying(true);
-          handlePlay();
+          if (untrack(isPlaying)) {
+            handlePlay();
+          }
         }
       },
       { defer: true },
@@ -752,21 +767,29 @@ export default function Player() {
               autoplay
               onEnded={handleVideoEnd}
               onPlay={() => {
+                if (isUnmounting) return;
                 invoke("update_playback_status", { playing: true });
                 setIsPlaying(true);
               }}
               onPause={() => {
+                if (isUnmounting || (videoRef && videoRef.seeking)) return;
                 invoke("update_playback_status", { playing: false });
                 setIsPlaying(false);
               }}
               onLoadedMetadata={(e) => {
                 setDuration(e.currentTarget.duration);
-                if (isPlaying()) {
+                if (activeVideo()?.id === params.id) {
+                  const savedTime = untrack(currentTime);
+                  if (savedTime > 0 && Math.abs(e.currentTarget.currentTime - savedTime) > 0.5) {
+                    e.currentTarget.currentTime = savedTime;
+                  }
+                }
+                if (isPlaying() || untrack(isPlaying)) {
                   handlePlay();
                 }
               }}
               onCanPlay={() => {
-                if (isPlaying()) {
+                if (isPlaying() || untrack(isPlaying)) {
                   handlePlay();
                 }
               }}
