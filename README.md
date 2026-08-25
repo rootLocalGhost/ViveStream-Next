@@ -14,9 +14,21 @@
 
 Built with **Tauri v2**, **SolidJS**, and **Rust** for maximum performance, hardware-accelerated transcoding, and a tactile claymorphic interface.
 
-[Download Latest Release](https://github.com/rootlocalghost/ViveStream-Next/releases) • [Features](#-core-features) • [Keyboard Shortcuts](#-keyboard-shortcuts) • [Developer Guide](#-developer-setup)
+[Download Latest Release](https://github.com/rootlocalghost/ViveStream-Next/releases) • [Features](#-core-features) • [Keyboard Shortcuts](#-keyboard-shortcuts) • [Developer Guide](#-developer-setup) • [Documentation](./docs/vivestream-next/)
 
 </div>
+
+---
+
+## ✨ Project Overview & Tech Stack
+ViveStream-Next is an advanced, ultra-lightweight, offline-first media downloader and local streaming platform. Unlike Electron-based alternatives, it avoids shipping a bundled Chromium browser, keeping the install size incredibly small.
+
+### The Stack
+- **Frontend:** SolidJS for extreme performance and a zero-Virtual-DOM experience.
+- **Backend:** Tauri v2 powered by Rust for native OS integration and performance.
+- **Engines:** `yt-dlp` (Media Extraction), `FFmpeg` (Transcoding/Merging), and `Deno` (Cryptographic JS evaluation).
+- **Database:** SQLite (via `rusqlite` & `tauri-plugin-sql`) for fast, local metadata indexing.
+- **Local Server:** A dedicated `warp` HTTP server routes local media seamlessly to the video player.
 
 ---
 
@@ -26,8 +38,9 @@ Built with **Tauri v2**, **SolidJS**, and **Rust** for maximum performance, hard
 * **Smart Hardware Transcoding**: Automatic hardware-accelerated transcoding via NVIDIA NVENC, Intel QSV, AMD AMF, and Linux VAAPI (with smooth CPU fallback).
 * **Multi-Fragment Downloads**: Parallel fragment fetching for blazing-fast HLS/DASH downloads.
 * **Concurrent Queue Management**: Configurable parallel download slots (1–5 simultaneous jobs) with real-time progress logging and status tracking.
+* **Advanced Extraction**: Utilizes a headless native WebView to seamlessly extract Proof of Origin (PO) tokens, and `Deno` for decrypting YouTube's JS obfuscation.
 * **Browser Cookie Integration**: Automatic cookie extraction from 8+ desktop browsers (Chrome, Firefox, Brave, Edge, Opera, Vivaldi, Chromium, Safari) for restricted or premium media.
-* **Zero-Config Setup Wizard**: Automated initial provisioning and integrity verification for `yt-dlp` and `ffmpeg` binaries.
+* **Zero-Config Setup Wizard**: Automated initial provisioning and integrity verification for `yt-dlp` and `ffmpeg` binaries (downloaded on-the-fly to reduce installer bloat).
 
 ### 📚 Media Library, Playlists & Artists
 * **Automated Playlist Ingestion**: Paste any YouTube playlist URL to automatically create the playlist locally, download the media, deduplicate existing files, and link them.
@@ -37,11 +50,12 @@ Built with **Tauri v2**, **SolidJS**, and **Rust** for maximum performance, hard
 * **Metadata Editor**: Edit video titles and channel names directly from the media library.
 
 ### 🎥 Cinema Player Experience
-* **Local Streaming**: Instant playback powered by an embedded local HTTP server.
+* **Local Streaming**: Instant playback powered by an embedded local HTTP `warp` server routing files directly from your disk to the frontend.
 * **Display Modes**: Toggle between Standard View, **Theater Mode**, **Fullscreen**, and Picture-in-Picture (**Miniplayer**).
 * **Custom Subtitles & Playback Speed**: Multi-track `.vtt` caption rendering and variable playback speeds (0.25x – 2.0x).
 * **On-Screen Display (OSD)**: Sleek glassmorphic OSD badges providing instant visual feedback for seeking, volume, and playback modes.
 * **Smart Context Queue**: Seamlessly plays next items in context of current playlist or artist.
+* **Native Media Controls**: Integration with system media controls (play/pause, next/prev) via the `souvlaki` crate.
 
 ### 🎨 Claymorphism Design & Themes
 * **Vibrant Themes**: Switch between **Sunset** and **Crimson** accent palettes with Dark and Light mode support.
@@ -123,7 +137,7 @@ Because core engines (`yt-dlp`/`ffmpeg`) and downloaded media are stored locally
   sudo pacman -S base-devel webkit2gtk-4.1 curl wget unzip
   ```
 
-### Build Steps
+### Build & Run Steps
 
 1. **Clone the repository:**
    ```bash
@@ -131,15 +145,19 @@ Because core engines (`yt-dlp`/`ffmpeg`) and downloaded media are stored locally
    cd ViveStream-Next
    ```
 
-2. **Install dependencies:**
+2. **Initialize & Install dependencies:**
    ```bash
-   bun install
+   bun run init
    ```
+   *This command runs cargo build, installs JS dependencies via Bun, and builds Vite.*
 
 3. **Run in Development Mode:**
    ```bash
    bun start
+   # or
+   bun run tauri dev
    ```
+   *Note: This will spin up the SolidJS dev server and the Rust backend. Any changes to Rust code will trigger a recompile.*
 
 4. **Run Automated Tests:**
    ```bash
@@ -153,7 +171,13 @@ Because core engines (`yt-dlp`/`ffmpeg`) and downloaded media are stored locally
 5. **Build for Production:**
    ```bash
    bun run tauri build
+   # or use the provided scripts for specific platforms:
+   bun run build:linux
+   bun run build:win
    ```
+
+### Documentation
+For deep-dives into the codebase structure, architectural decisions, and Tauri APIs, see the [`docs/vivestream-next`](./docs/vivestream-next/) folder.
 
 ---
 
