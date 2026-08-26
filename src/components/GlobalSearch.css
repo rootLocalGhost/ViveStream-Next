@@ -34,67 +34,64 @@
 
 /* 2. Top-Middle Floating Search Bar (When Always Show is Enabled) */
 .floating-search-container {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 480px;
-  max-width: calc(100vw - 320px);
+  position: relative;
+  width: 380px;
+  max-width: calc(100vw - 360px);
   z-index: 9500;
   display: flex;
   flex-direction: column;
   pointer-events: auto;
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease;
+  transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s ease;
 }
 
 .floating-search-container.is-expanded {
-  width: 600px;
-  max-width: calc(100vw - 80px);
+  width: 520px;
+  max-width: calc(100vw - 120px);
 }
 
 .floating-search-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: var(--clay-bg, rgba(30, 30, 36, 0.88));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
-  border-radius: 24px;
-  padding: 6px 14px;
-  height: 42px;
+  gap: 8px;
+  background: var(--clay-bg, rgba(30, 30, 36, 0.85));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 18px;
+  padding: 4px 12px;
+  height: 36px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: text;
   -webkit-app-region: no-drag;
 }
 
 [data-theme="light"] .floating-search-bar {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(242, 92, 84, 0.2);
-  box-shadow: 0 8px 24px rgba(247, 157, 101, 0.25), inset 0 1px 0 #ffffff;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(242, 92, 84, 0.18);
+  box-shadow: 0 4px 16px rgba(247, 157, 101, 0.2), inset 0 1px 0 #ffffff;
 }
 
 .floating-search-bar:hover {
   border-color: var(--primary-accent, #f25c54);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 14px rgba(242, 92, 84, 0.2);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 10px rgba(242, 92, 84, 0.18);
 }
 
 .floating-search-container.is-expanded .floating-search-bar,
 .floating-search-bar:focus-within {
   border-color: var(--primary-accent, #f25c54);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(242, 92, 84, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(242, 92, 84, 0.24);
 }
 
 .floating-search-icon {
-  font-size: 1.15rem;
+  font-size: 1rem;
   color: var(--primary-accent, #f25c54);
   flex-shrink: 0;
   transition: transform 0.2s ease;
 }
 
 .floating-search-bar:hover .floating-search-icon {
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 .floating-search-input {
@@ -103,7 +100,7 @@
   border: none;
   outline: none;
   color: var(--primary-text, #ffffff);
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   font-weight: 500;
   font-family: inherit;
   width: 100%;
