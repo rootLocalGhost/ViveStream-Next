@@ -1,11 +1,18 @@
-import { createSignal, onMount, For, Show } from "solid-js";
+import { createSignal, onMount, createMemo, For } from "solid-js";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { useParams, useNavigate } from "@solidjs/router";
 import { open } from "@tauri-apps/plugin-dialog";
 import VideoCard from "../components/VideoCard";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
-import { VideoEntry, addToast } from "../store";
+import {
+  VideoEntry,
+  addToast,
+  artistVideosSortBy,
+  artistVideosSortDirection,
+  artistVideosRandomSeed,
+} from "../store";
+import { sortVideos } from "../utils/sortUtils";
 import "./ArtistPage.css";
 
 export default function ArtistPage() {
@@ -87,8 +94,17 @@ export default function ArtistPage() {
     return getArtistAvatarSrc();
   };
 
+  const displayedVideos = createMemo(() => {
+    return sortVideos(
+      videos(),
+      artistVideosSortBy(),
+      artistVideosSortDirection(),
+      artistVideosRandomSeed(),
+    );
+  });
+
   const playAll = () => {
-    const vids = videos();
+    const vids = displayedVideos();
     if (vids.length > 0) {
       navigate(
         `/player/${vids[0].id}?context=artist&name=${encodeURIComponent(artistName())}`,
@@ -108,7 +124,7 @@ export default function ArtistPage() {
         }}
       />
 
-      {/* Hero Banner Header matching playlist-hero */}
+      {/* Hero Banner Header */}
       <div class="artist-hero">
         <img
           src={getArtistBackdropSrc()}
@@ -192,7 +208,7 @@ export default function ArtistPage() {
         />
       ) : (
         <div class="grid">
-          <For each={videos()}>
+          <For each={displayedVideos()}>
             {(video) => (
               <VideoCard
                 video={video}
