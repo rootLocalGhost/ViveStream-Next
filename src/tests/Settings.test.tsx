@@ -88,4 +88,18 @@ describe("Settings Component", () => {
       );
     });
   });
+
+  it("handles sorting preferences and randomize on launch toggle", async () => {
+    render(() => <Settings />);
+    expect(screen.getByText("Library Sorting & Presentation")).toBeInTheDocument();
+
+    const nameSortBtn = screen.getByText("Name");
+    fireEvent.click(nameSortBtn);
+
+    const ascBtn = screen.getByText("Ascending");
+    fireEvent.click(ascBtn);
+
+    const randomizeSection = screen.getByText("Randomize Library on Startup");
+    expect(randomizeSection).toBeInTheDocument();
+  });
 });
