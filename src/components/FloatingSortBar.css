@@ -1,0 +1,262 @@
+/* ==========================================================================
+   Floating Sort Bar (Beside Floating Search Bar)
+   ========================================================================== */
+
+.floating-sort-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  z-index: 9500;
+  animation: floatingSortFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes floatingSortFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.floating-sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--clay-bg, rgba(30, 30, 36, 0.85));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 18px;
+  padding: 3px 6px 3px 10px;
+  height: 36px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+[data-theme="light"] .floating-sort-bar {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(242, 92, 84, 0.18);
+  box-shadow: 0 4px 16px rgba(247, 157, 101, 0.2), inset 0 1px 0 #ffffff;
+}
+
+.floating-sort-bar:hover {
+  border-color: var(--primary-accent, #f25c54);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 10px rgba(242, 92, 84, 0.18);
+}
+
+.floating-sort-container.is-active-modal .floating-sort-bar {
+  border-color: var(--primary-accent, #f25c54);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(242, 92, 84, 0.24);
+}
+
+/* Trigger Button */
+.floating-sort-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--primary-text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.floating-sort-trigger:hover {
+  color: var(--primary-accent);
+}
+
+.sort-icon-accent {
+  font-size: 0.95rem;
+  color: var(--primary-accent);
+}
+
+.floating-sort-label {
+  letter-spacing: 0.2px;
+}
+
+.sort-caret {
+  font-size: 0.72rem;
+  color: var(--secondary-text);
+  transition: transform 0.2s ease;
+}
+
+.sort-caret.open {
+  transform: rotate(180deg);
+  color: var(--primary-accent);
+}
+
+/* Direction Button */
+.floating-sort-dir-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  color: var(--primary-accent);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-theme="light"] .floating-sort-dir-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.floating-sort-dir-btn:hover {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+/* Shuffle Button */
+.floating-sort-shuffle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(242, 92, 84, 0.1);
+  border: 1px solid rgba(242, 92, 84, 0.2);
+  border-radius: 50%;
+  color: var(--primary-accent);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.floating-sort-shuffle-btn:hover {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: #ffffff;
+  transform: rotate(15deg) scale(1.08);
+}
+
+.floating-sort-shuffle-btn.active {
+  background: var(--primary-accent);
+  color: #ffffff;
+}
+
+/* Esc tag */
+.floating-sort-close kbd {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  color: var(--secondary-text);
+  font-family: monospace;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.floating-sort-close:hover kbd {
+  background: #ef233c;
+  border-color: #ef233c;
+  color: #ffffff;
+}
+
+/* Dropdown Menu */
+.floating-sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  background: var(--clay-bg, rgba(28, 28, 36, 0.96));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 5px;
+  z-index: 9600;
+  animation: sortDropdownFade 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes sortDropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.floating-sort-menu-header {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--secondary-text);
+  padding: 4px 8px 3px;
+}
+
+.floating-sort-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--primary-text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.floating-sort-menu-item .item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.floating-sort-menu-item .item-left i {
+  font-size: 0.95rem;
+  color: var(--secondary-text);
+}
+
+.floating-sort-menu-item:hover {
+  background: rgba(242, 92, 84, 0.12);
+  color: var(--primary-accent);
+}
+
+.floating-sort-menu-item:hover .item-left i {
+  color: var(--primary-accent);
+}
+
+.floating-sort-menu-item.active {
+  background: var(--primary-accent);
+  color: #ffffff;
+}
+
+.floating-sort-menu-item.active .item-left i {
+  color: #ffffff;
+}
+
+.check-icon {
+  font-size: 0.85rem;
+  color: #ffffff;
+}
