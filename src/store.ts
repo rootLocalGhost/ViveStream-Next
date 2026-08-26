@@ -57,6 +57,7 @@ export interface VideoEntry {
   avatar_path: string;
   subtitle_path: string;
   desc_path: string;
+  added_at?: string;
 }
 
 export interface DownloadTask {
@@ -104,10 +105,14 @@ export const {
   setSidebarHoverMode,
   alwaysShowSearchBar,
   setAlwaysShowSearchBar,
+  alwaysShowSortBar,
+  setAlwaysShowSortBar,
   showFpsCounter,
   setShowFpsCounter,
   isSearchOpen,
   setIsSearchOpen,
+  isSortOpen,
+  setIsSortOpen,
   globalSearchQuery,
   setGlobalSearchQuery,
   appTheme,
@@ -140,6 +145,52 @@ export const {
   setDownloadUrl,
   downloadQuality,
   setDownloadQuality,
+  defaultSortBy,
+  setDefaultSortBy,
+  defaultSortDirection,
+  setDefaultSortDirection,
+  randomizeOnLaunch,
+  setRandomizeOnLaunch,
+  launchRandomSeed,
+  setLaunchRandomSeed,
+  homeSortBy,
+  setHomeSortBy,
+  homeSortDirection,
+  setHomeSortDirection,
+  homeRandomSeed,
+  setHomeRandomSeed,
+  favSortBy,
+  setFavSortBy,
+  favSortDirection,
+  setFavSortDirection,
+  favRandomSeed,
+  setFavRandomSeed,
+  playlistsSortBy,
+  setPlaylistsSortBy,
+  playlistsSortDirection,
+  setPlaylistsSortDirection,
+  playlistVideosSortBy,
+  setPlaylistVideosSortBy,
+  playlistVideosSortDirection,
+  setPlaylistVideosSortDirection,
+  playlistVideosRandomSeed,
+  setPlaylistVideosRandomSeed,
+  activePlaylistDetail,
+  setActivePlaylistDetail,
+  artistsSortBy,
+  setArtistsSortBy,
+  artistsSortDirection,
+  setArtistsSortDirection,
+  artistVideosSortBy,
+  setArtistVideosSortBy,
+  artistVideosSortDirection,
+  setArtistVideosSortDirection,
+  artistVideosRandomSeed,
+  setArtistVideosRandomSeed,
+  historySortBy,
+  setHistorySortBy,
+  historySortDirection,
+  setHistorySortDirection,
   tasks,
   setTasks,
   isProcessingQueue,
@@ -197,10 +248,14 @@ export const {
   const [alwaysShowSearchBar, setAlwaysShowSearchBar] = createSignal(
     getBool("alwaysShowSearchBar", false),
   );
+  const [alwaysShowSortBar, setAlwaysShowSortBar] = createSignal(
+    getBool("alwaysShowSortBar", true),
+  );
   const [showFpsCounter, setShowFpsCounter] = createSignal(
     getBool("showFpsCounter", false),
   );
   const [isSearchOpen, setIsSearchOpen] = createSignal(false);
+  const [isSortOpen, setIsSortOpen] = createSignal(false);
   const [globalSearchQuery, setGlobalSearchQuery] = createSignal("");
   const [appTheme, setAppTheme] = createSignal(initialTheme);
   const [appPalette, setAppPalette] = createSignal(initialPalette);
@@ -241,6 +296,61 @@ export const {
     getStr("downloadQuality", "1440p"),
   );
 
+  const [defaultSortBy, setDefaultSortBy] = createSignal(
+    getStr("defaultSortBy", "date"),
+  );
+  const [defaultSortDirection, setDefaultSortDirection] = createSignal<
+    "asc" | "desc"
+  >((getStr("defaultSortDirection", "desc") as "asc" | "desc") || "desc");
+  const [randomizeOnLaunch, setRandomizeOnLaunch] = createSignal(
+    getBool("randomizeOnLaunch", false),
+  );
+  const [launchRandomSeed, setLaunchRandomSeed] = createSignal(Date.now());
+
+  const [homeSortBy, setHomeSortBy] = createSignal<string>(
+    getBool("randomizeOnLaunch", false)
+      ? "random"
+      : getStr("defaultSortBy", "date"),
+  );
+  const [homeSortDirection, setHomeSortDirection] = createSignal<
+    "asc" | "desc"
+  >((getStr("defaultSortDirection", "desc") as "asc" | "desc") || "desc");
+  const [homeRandomSeed, setHomeRandomSeed] = createSignal(Date.now());
+
+  const [favSortBy, setFavSortBy] = createSignal<string>("date");
+  const [favSortDirection, setFavSortDirection] =
+    createSignal<"asc" | "desc">("desc");
+  const [favRandomSeed, setFavRandomSeed] = createSignal(Date.now());
+
+  const [playlistsSortBy, setPlaylistsSortBy] = createSignal<string>("date");
+  const [playlistsSortDirection, setPlaylistsSortDirection] =
+    createSignal<"asc" | "desc">("desc");
+
+  const [playlistVideosSortBy, setPlaylistVideosSortBy] =
+    createSignal<string>("custom");
+  const [playlistVideosSortDirection, setPlaylistVideosSortDirection] =
+    createSignal<"asc" | "desc">("asc");
+  const [playlistVideosRandomSeed, setPlaylistVideosRandomSeed] =
+    createSignal(Date.now());
+  const [activePlaylistDetail, setActivePlaylistDetail] = createSignal<
+    any | null
+  >(null);
+
+  const [artistsSortBy, setArtistsSortBy] = createSignal<string>("name");
+  const [artistsSortDirection, setArtistsSortDirection] =
+    createSignal<"asc" | "desc">("asc");
+
+  const [artistVideosSortBy, setArtistVideosSortBy] =
+    createSignal<string>("date");
+  const [artistVideosSortDirection, setArtistVideosSortDirection] =
+    createSignal<"asc" | "desc">("desc");
+  const [artistVideosRandomSeed, setArtistVideosRandomSeed] =
+    createSignal(Date.now());
+
+  const [historySortBy, setHistorySortBy] = createSignal<string>("date");
+  const [historySortDirection, setHistorySortDirection] =
+    createSignal<"asc" | "desc">("desc");
+
   const [tasks, setTasks] = createSignal<DownloadTask[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = createSignal(false);
   const [homeVideos, setHomeVideos] = createSignal<VideoEntry[]>([]);
@@ -276,10 +386,14 @@ export const {
     setSidebarHoverMode,
     alwaysShowSearchBar,
     setAlwaysShowSearchBar,
+    alwaysShowSortBar,
+    setAlwaysShowSortBar,
     showFpsCounter,
     setShowFpsCounter,
     isSearchOpen,
     setIsSearchOpen,
+    isSortOpen,
+    setIsSortOpen,
     globalSearchQuery,
     setGlobalSearchQuery,
     appTheme,
@@ -312,6 +426,52 @@ export const {
     setDownloadUrl,
     downloadQuality,
     setDownloadQuality,
+    defaultSortBy,
+    setDefaultSortBy,
+    defaultSortDirection,
+    setDefaultSortDirection,
+    randomizeOnLaunch,
+    setRandomizeOnLaunch,
+    launchRandomSeed,
+    setLaunchRandomSeed,
+    homeSortBy,
+    setHomeSortBy,
+    homeSortDirection,
+    setHomeSortDirection,
+    homeRandomSeed,
+    setHomeRandomSeed,
+    favSortBy,
+    setFavSortBy,
+    favSortDirection,
+    setFavSortDirection,
+    favRandomSeed,
+    setFavRandomSeed,
+    playlistsSortBy,
+    setPlaylistsSortBy,
+    playlistsSortDirection,
+    setPlaylistsSortDirection,
+    playlistVideosSortBy,
+    setPlaylistVideosSortBy,
+    playlistVideosSortDirection,
+    setPlaylistVideosSortDirection,
+    playlistVideosRandomSeed,
+    setPlaylistVideosRandomSeed,
+    activePlaylistDetail,
+    setActivePlaylistDetail,
+    artistsSortBy,
+    setArtistsSortBy,
+    artistsSortDirection,
+    setArtistsSortDirection,
+    artistVideosSortBy,
+    setArtistVideosSortBy,
+    artistVideosSortDirection,
+    setArtistVideosSortDirection,
+    artistVideosRandomSeed,
+    setArtistVideosRandomSeed,
+    historySortBy,
+    setHistorySortBy,
+    historySortDirection,
+    setHistorySortDirection,
     tasks,
     setTasks,
     isProcessingQueue,
@@ -490,6 +650,12 @@ export const toggleAlwaysShowSearchBar = (val: boolean) => {
     window.localStorage.setItem("alwaysShowSearchBar", val.toString());
 };
 
+export const toggleAlwaysShowSortBar = (val: boolean) => {
+  setAlwaysShowSortBar(val);
+  if (isBrowser)
+    window.localStorage.setItem("alwaysShowSortBar", val.toString());
+};
+
 export const toggleShowFpsCounter = (val: boolean) => {
   setShowFpsCounter(val);
   if (isBrowser)
@@ -569,6 +735,26 @@ export const toggleLiveFromStart = (val: boolean) => {
 export const updateDownloadQuality = (val: string) => {
   setDownloadQuality(val);
   if (isBrowser) window.localStorage.setItem("downloadQuality", val);
+};
+
+export const updateDefaultSortBy = (val: string) => {
+  setDefaultSortBy(val);
+  if (isBrowser) window.localStorage.setItem("defaultSortBy", val);
+};
+
+export const updateDefaultSortDirection = (val: "asc" | "desc") => {
+  setDefaultSortDirection(val);
+  if (isBrowser) window.localStorage.setItem("defaultSortDirection", val);
+};
+
+export const toggleRandomizeOnLaunch = (val: boolean) => {
+  setRandomizeOnLaunch(val);
+  if (isBrowser)
+    window.localStorage.setItem("randomizeOnLaunch", val.toString());
+};
+
+export const refreshLaunchRandomSeed = () => {
+  setLaunchRandomSeed(Date.now() + Math.random());
 };
 
 export const updateTask = (id: string, updates: Partial<DownloadTask>) => {
