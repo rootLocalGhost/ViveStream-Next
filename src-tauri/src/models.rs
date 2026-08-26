@@ -10,6 +10,8 @@ pub struct VideoEntry {
     pub avatar_path: String,
     pub subtitle_path: String,
     pub desc_path: String,
+    #[serde(default)]
+    pub added_at: Option<String>,
 }
 
 #[derive(Serialize)]
