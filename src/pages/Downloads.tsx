@@ -34,7 +34,12 @@ import {
   cancelDownload,
   removeTaskFromQueue,
   setDialogState,
+  historySortBy,
+  historySortDirection,
 } from "../store";
+import {
+  sortDownloadHistory,
+} from "../utils/sortUtils";
 import "./Downloads.css";
 
 export default function Downloads() {
@@ -51,6 +56,14 @@ export default function Downloads() {
   const [activeTab, setActiveTab] = createSignal<"Active Queue" | "History">(
     "Active Queue",
   );
+
+  const displayedHistory = createMemo(() => {
+    return sortDownloadHistory(
+      downloadHistory() || [],
+      historySortBy(),
+      historySortDirection(),
+    );
+  });
 
   let dropdownRef: HTMLDivElement | undefined;
   const qualities = ["720p", "1080p", "1440p", "4K", "Best"];
@@ -555,7 +568,7 @@ export default function Downloads() {
 
         <Show when={(downloadHistory() || []).length > 0}>
           <div class="history-list">
-            <For each={downloadHistory() || []}>
+            <For each={displayedHistory()}>
               {(item) => (
                 <div class={`history-card ${item.status}`}>
                   <div
