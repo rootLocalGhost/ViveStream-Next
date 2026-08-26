@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import "@phosphor-icons/web/regular";
 import "@phosphor-icons/web/fill";
+import "@phosphor-icons/web/bold";
 import "./App.css";
 import GlobalSearch from "./components/GlobalSearch";
 import {
@@ -14,6 +15,8 @@ import {
   setShowShortcutsModal,
   isSearchOpen,
   setIsSearchOpen,
+  isSortOpen,
+  setIsSortOpen,
   setGlobalSearchQuery,
   activeVideo,
   playerContextParams,
@@ -22,6 +25,7 @@ import NotificationSystem from "./components/NotificationSystem";
 import ShortcutsModal from "./components/ShortcutsModal";
 import Miniplayer from "./components/Miniplayer";
 import FPSCounter from "./components/FPSCounter";
+import FloatingSortBar from "./components/FloatingSortBar";
 
 const Home = lazy(() => import("./pages/Home"));
 const Downloads = lazy(() => import("./pages/Downloads"));
@@ -134,7 +138,10 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
       />
       <FPSCounter />
       <ImmersiveTitleBar />
-      <GlobalSearch />
+      <div class="top-floating-header">
+        <GlobalSearch />
+        <FloatingSortBar />
+      </div>
       <Miniplayer />
       <Show
         when={needsSetup() !== null}
@@ -195,7 +202,7 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           target.tagName === "SELECT" ||
           target.isContentEditable);
 
-      // Escape closes shortcuts modal or search bar
+      // Escape closes shortcuts modal, sort bar, or search bar
       if (e.key === "Escape") {
         if (showShortcutsModal()) {
           e.preventDefault();
@@ -207,6 +214,11 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           setIsSearchOpen(false);
           return;
         }
+        if (isSortOpen()) {
+          e.preventDefault();
+          setIsSortOpen(false);
+          return;
+        }
         if (isInput) {
           target?.blur();
           return;
@@ -215,6 +227,13 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           e.preventDefault();
           navigate(-1);
         }
+        return;
+      }
+
+      // Ctrl + S or Alt + S sorting hotkey
+      if (!isInput && ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S") || (e.altKey && (e.key === "s" || e.key === "S")))) {
+        e.preventDefault();
+        setIsSortOpen(!isSortOpen());
         return;
       }
 
