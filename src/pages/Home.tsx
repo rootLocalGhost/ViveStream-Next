@@ -1,10 +1,18 @@
-import { createSignal, onMount, For } from "solid-js";
+import { createSignal, onMount, createMemo, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
 import VideoCard from "../components/VideoCard";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
-import { homeVideos, setHomeVideos, VideoEntry } from "../store";
+import {
+  homeVideos,
+  setHomeVideos,
+  VideoEntry,
+  homeSortBy,
+  homeSortDirection,
+  homeRandomSeed,
+} from "../store";
+import { sortVideos } from "../utils/sortUtils";
 import "./Home.css";
 
 export default function Home() {
@@ -20,6 +28,15 @@ export default function Home() {
     } catch (e) {
       console.error("Failed to load library:", e);
     }
+  });
+
+  const displayedVideos = createMemo(() => {
+    return sortVideos(
+      homeVideos(),
+      homeSortBy(),
+      homeSortDirection(),
+      homeRandomSeed(),
+    );
   });
 
   return (
@@ -42,7 +59,7 @@ export default function Home() {
         />
       ) : (
         <div class="grid">
-          <For each={homeVideos()}>
+          <For each={displayedVideos()}>
             {(video) => (
               <VideoCard
                 video={video}
