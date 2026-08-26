@@ -977,3 +977,17 @@ input:checked + .slider:before {
     font-size: 13px;
   }
 }
+
+/* Unified Top Floating Command Header */
+.top-floating-header {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9500;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+  max-width: calc(100vw - 320px);
+}
