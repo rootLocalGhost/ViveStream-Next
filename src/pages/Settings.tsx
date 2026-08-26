@@ -29,6 +29,14 @@ import {
   showConfirmDialog,
   addToast,
   setShowShortcutsModal,
+  defaultSortBy,
+  updateDefaultSortBy,
+  defaultSortDirection,
+  updateDefaultSortDirection,
+  randomizeOnLaunch,
+  toggleRandomizeOnLaunch,
+  alwaysShowSortBar,
+  toggleAlwaysShowSortBar,
 } from "../store";
 import "./Settings.css";
 
@@ -300,6 +308,110 @@ export default function Settings() {
           >
             <i class="ph-fill ph-keyboard"></i> View Cheat Sheet
           </button>
+        </div>
+      </div>
+
+      <h2 class="page-title page-title-spaced">
+        <i class="ph-fill ph-sort-ascending"></i> Library Sorting & Presentation
+      </h2>
+
+      <div class="settings-card">
+        <div class="flex-row-between" id="setting-sort-default-by">
+          <div>
+            <h3 class="settings-title">Default Sort Criterion</h3>
+            <p class="settings-desc">
+              Initial sorting order used when opening the video library.
+            </p>
+          </div>
+          <div class="toggle-group">
+            <button
+              onClick={() => updateDefaultSortBy("date")}
+              class={`toggle-btn ${defaultSortBy() === "date" ? "active" : ""}`}
+            >
+              <i class="ph ph-calendar-blank"></i> Date
+            </button>
+            <button
+              onClick={() => updateDefaultSortBy("name")}
+              class={`toggle-btn ${defaultSortBy() === "name" ? "active" : ""}`}
+            >
+              <i class="ph ph-text-aa"></i> Name
+            </button>
+            <button
+              onClick={() => updateDefaultSortBy("channel")}
+              class={`toggle-btn ${defaultSortBy() === "channel" ? "active" : ""}`}
+            >
+              <i class="ph ph-user"></i> Channel
+            </button>
+            <button
+              onClick={() => updateDefaultSortBy("random")}
+              class={`toggle-btn ${defaultSortBy() === "random" ? "active" : ""}`}
+            >
+              <i class="ph ph-shuffle"></i> Random
+            </button>
+          </div>
+        </div>
+
+        <div class="full-divider"></div>
+
+        <div class="flex-row-between" id="setting-sort-default-direction">
+          <div>
+            <h3 class="settings-title">Default Sort Direction</h3>
+            <p class="settings-desc">
+              Preferred ordering sequence for chronological and alphabetical lists.
+            </p>
+          </div>
+          <div class="toggle-group">
+            <button
+              onClick={() => updateDefaultSortDirection("desc")}
+              class={`toggle-btn ${defaultSortDirection() === "desc" ? "active" : ""}`}
+            >
+              <i class="ph ph-sort-descending"></i> Descending
+            </button>
+            <button
+              onClick={() => updateDefaultSortDirection("asc")}
+              class={`toggle-btn ${defaultSortDirection() === "asc" ? "active" : ""}`}
+            >
+              <i class="ph ph-sort-ascending"></i> Ascending
+            </button>
+          </div>
+        </div>
+
+        <div class="full-divider"></div>
+
+        <div class="flex-row-between" id="setting-sort-randomize-launch">
+          <div>
+            <h3 class="settings-title">Randomize Library on Startup</h3>
+            <p class="settings-desc">
+              Shuffle media order automatically on every launch to discover fresh content.
+            </p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={randomizeOnLaunch()}
+              onChange={(e) => toggleRandomizeOnLaunch(e.target.checked)}
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="full-divider"></div>
+
+        <div class="flex-row-between" id="setting-sort-always-show">
+          <div>
+            <h3 class="settings-title">Always Show Sort Bar</h3>
+            <p class="settings-desc">
+              Keep the floating sort controls visible at the top of library pages instead of auto-hiding. (Shortcut: <kbd style="background: var(--primary-background); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.8rem;">Ctrl+S</kbd>)
+            </p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              checked={alwaysShowSortBar()}
+              onChange={(e) => toggleAlwaysShowSortBar(e.target.checked)}
+            />
+            <span class="slider"></span>
+          </label>
         </div>
       </div>
 
