@@ -53,6 +53,7 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
     icon: "compass",
     shortcuts: [
       { keys: ["Ctrl", "F"], description: "Toggle Global Search" },
+      { keys: ["Ctrl", "S"], description: "Toggle Library Sorting Controls" },
       { keys: ["Type"], description: "Type anywhere to quick search" },
       { keys: ["Shift", "1 / H"], description: "Navigate to Home" },
       { keys: ["Shift", "2 / F"], description: "Navigate to Favourites" },
