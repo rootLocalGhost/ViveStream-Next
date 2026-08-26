@@ -92,10 +92,11 @@ export default function Player() {
 
   const toggleMiniplayerMode = () => {
     isUnmounting = true;
+    const playState = isPlaying();
     if (videoRef) {
       setCurrentTime(videoRef.currentTime);
-      setIsPlaying(!videoRef.paused);
     }
+    setIsPlaying(playState);
     if (window.history.length > 1) {
       navigate(-1);
     } else {
@@ -687,7 +688,6 @@ export default function Player() {
     if (unlistenPrev) unlistenPrev();
     if (videoRef) {
       setCurrentTime(videoRef.currentTime);
-      setIsPlaying(!videoRef.paused);
     }
   });
 
