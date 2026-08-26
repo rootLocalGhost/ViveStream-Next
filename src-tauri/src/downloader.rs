@@ -440,6 +440,7 @@ pub async fn get_video_metadata(
                 avatar_path: String::new(),
                 subtitle_path: String::new(),
                 desc_path: String::new(),
+                added_at: None,
             });
         }
     }
