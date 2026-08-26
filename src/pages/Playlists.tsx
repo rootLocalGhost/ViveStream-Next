@@ -1,12 +1,16 @@
-import { createSignal, onMount, For, Show } from "solid-js";
+import { createSignal, onMount, onCleanup, createMemo, For, Show } from "solid-js";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useNavigate } from "@solidjs/router";
-import { VideoEntry, showConfirmDialog, addToast } from "../store";
+import { VideoEntry, showConfirmDialog, addToast, playlistsSortBy, playlistsSortDirection, playlistVideosSortBy, playlistVideosSortDirection, playlistVideosRandomSeed, setActivePlaylistDetail } from "../store";
 import VideoCard from "../components/VideoCard";
 import CreatePlaylistModal from "../components/CreatePlaylistModal";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
+import {
+  sortPlaylists,
+  sortPlaylistVideos,
+} from "../utils/sortUtils";
 import "./Playlists.css";
 
 interface Playlist {
@@ -49,6 +53,10 @@ export default function Playlists() {
     await fetchPlaylists();
   });
 
+  onCleanup(() => {
+    setActivePlaylistDetail(null);
+  });
+
   const fetchPlaylists = async () => {
     try {
       const data = await invoke<Playlist[]>("get_playlists");
@@ -88,6 +96,7 @@ export default function Playlists() {
       });
       setPlaylistVideos(videos);
       setActivePlaylist(playlist);
+      setActivePlaylistDetail(playlist);
       setEditingTitle(false);
     } catch (e) {
       console.error("Failed to open playlist:", e);
@@ -159,7 +168,7 @@ export default function Playlists() {
         addToast("Custom cover updated!", "success");
       } catch (err) {
         console.error("Failed to upload playlist cover:", err);
-        addToast(`Failed to upload cover: ${err}`, "error");
+        addToast("Failed to update cover", "error");
       }
     }
   };
@@ -182,7 +191,7 @@ export default function Playlists() {
         addToast("Custom banner updated!", "success");
       } catch (err) {
         console.error("Failed to upload playlist banner:", err);
-        addToast(`Failed to upload banner: ${err}`, "error");
+        addToast("Failed to update banner", "error");
       }
     }
   };
@@ -231,7 +240,7 @@ export default function Playlists() {
   };
 
   const playAll = () => {
-    const vids = playlistVideos();
+    const vids = displayedPlaylistVideos();
     const pl = activePlaylist();
     if (vids.length > 0 && pl) {
       navigate(`/player/${vids[0].id}?context=playlist&id=${pl.id}`);
@@ -244,7 +253,6 @@ export default function Playlists() {
     if (ts) {
       return `http://127.0.0.1:1422/PlaylistCovers/${pl.id}.jpg?t=${ts}`;
     }
-    // Check if there is a first video thumbnail
     if (activePlaylist()?.id === pl.id && playlistVideos().length > 0) {
       return convertFileSrc(playlistVideos()[0].thumbnail_path);
     }
@@ -267,6 +275,26 @@ export default function Playlists() {
     return `http://127.0.0.1:1422/PlaylistBanners/${pl.id}.jpg`;
   };
 
+  // Displayed Playlists with Sorting
+  const displayedPlaylists = createMemo(() => {
+    return sortPlaylists(
+      playlists(),
+      countsMap(),
+      playlistsSortBy(),
+      playlistsSortDirection(),
+    );
+  });
+
+  // Displayed Videos inside Playlist with Sorting
+  const displayedPlaylistVideos = createMemo(() => {
+    return sortPlaylistVideos(
+      playlistVideos(),
+      playlistVideosSortBy(),
+      playlistVideosSortDirection(),
+      playlistVideosRandomSeed(),
+    );
+  });
+
   return (
     <div class="page-wrapper playlists-page">
       {/* Create Playlist Modal */}
@@ -288,7 +316,6 @@ export default function Playlists() {
         onClose={() => {
           setShowAddToModal(false);
           setSelectedVideoForAdd(null);
-          // Refresh counts
           fetchPlaylists();
         }}
       />
@@ -312,96 +339,102 @@ export default function Playlists() {
           />
         ) : (
           <div class="grid">
-            <For each={playlists()}>
-              {(playlist) => {
-                const count = () => countsMap()[playlist.id] || 0;
-                return (
-                  <div
-                    class="playlist-card"
-                    onClick={() => openPlaylist(playlist)}
-                  >
-                    <div class="playlist-cover-wrapper">
-                      <img
-                        src={getCoverSrc(playlist)}
-                        class="playlist-cover-img"
-                        onLoad={(e) => {
-                          e.currentTarget.style.display = "block";
-                          const fallback =
-                            e.currentTarget.parentElement?.querySelector(
-                              ".playlist-cover-placeholder",
-                            ) as HTMLElement | null;
-                          if (fallback) fallback.style.display = "none";
-                        }}
-                        onError={(e) => {
-                          const autoThumb = firstThumbMap()[playlist.id];
-                          if (
-                            autoThumb &&
-                            !e.currentTarget.src.includes(
-                              encodeURIComponent(autoThumb),
-                            )
-                          ) {
-                            e.currentTarget.src = convertFileSrc(autoThumb);
-                          } else {
-                            e.currentTarget.style.display = "none";
-                            const fallback =
-                              e.currentTarget.parentElement?.querySelector(
-                                ".playlist-cover-placeholder",
-                              ) as HTMLElement | null;
-                            if (fallback) fallback.style.display = "flex";
-                          }
-                        }}
-                      />
+              <For each={displayedPlaylists()}>
+                  {(playlist) => {
+                    const count = () => countsMap()[playlist.id] || 0;
+                    return (
                       <div
-                        class="playlist-cover-placeholder"
-                        style="display: none;"
+                        class="playlist-card"
+                        onClick={() => openPlaylist(playlist)}
                       >
-                        <i class="ph-fill ph-playlist"></i>
-                      </div>
-                    </div>
+                        <div class="playlist-cover-wrapper">
+                          <img
+                            src={getCoverSrc(playlist)}
+                            class="playlist-cover-img"
+                            onLoad={(e) => {
+                              e.currentTarget.style.display = "block";
+                              const fallback =
+                                e.currentTarget.parentElement?.querySelector(
+                                  ".playlist-cover-placeholder",
+                                ) as HTMLElement | null;
+                              if (fallback) fallback.style.display = "none";
+                            }}
+                            onError={(e) => {
+                              const autoThumb = firstThumbMap()[playlist.id];
+                              if (
+                                autoThumb &&
+                                !e.currentTarget.src.includes(
+                                  encodeURIComponent(autoThumb),
+                                )
+                              ) {
+                                e.currentTarget.src = convertFileSrc(autoThumb);
+                              } else {
+                                e.currentTarget.style.display = "none";
+                                const fallback =
+                                  e.currentTarget.parentElement?.querySelector(
+                                    ".playlist-cover-placeholder",
+                                  ) as HTMLElement | null;
+                                if (fallback) fallback.style.display = "flex";
+                              }
+                            }}
+                          />
+                          <div
+                            class="playlist-cover-placeholder"
+                            style="display: none;"
+                          >
+                            <i class="ph-fill ph-playlist"></i>
+                          </div>
+                        </div>
 
-                    <div class="playlist-card-footer">
-                      <div class="playlist-card-meta">
-                        <h3 class="playlist-card-title" title={playlist.name}>
-                          {playlist.name}
-                        </h3>
-                        <span class="playlist-card-count">
-                          <i class="ph ph-video"></i> {count()} video
-                          {count() !== 1 ? "s" : ""}
-                        </span>
-                      </div>
+                        <div class="playlist-card-footer">
+                          <div class="playlist-card-meta">
+                            <h3
+                              class="playlist-card-title"
+                              title={playlist.name}
+                            >
+                              {playlist.name}
+                            </h3>
+                            <span class="playlist-card-count">
+                              <i class="ph ph-video"></i> {count()} video
+                              {count() !== 1 ? "s" : ""}
+                            </span>
+                          </div>
 
-                      <div class="playlist-card-actions">
-                        <button
-                          class="playlist-action-icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openPlaylist(playlist);
-                            setTempTitle(playlist.name);
-                            setEditingTitle(true);
-                          }}
-                          title="Rename"
-                        >
-                          <i class="ph-fill ph-pencil-simple"></i>
-                        </button>
-                        <button
-                          class="playlist-action-icon delete-icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePlaylist(playlist.id, playlist.name);
-                          }}
-                          title="Delete Playlist"
-                        >
-                          <i class="ph-fill ph-trash"></i>
-                        </button>
+                          <div class="playlist-card-actions">
+                            <button
+                              class="playlist-action-icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPlaylist(playlist);
+                                setTempTitle(playlist.name);
+                                setEditingTitle(true);
+                              }}
+                              title="Rename"
+                            >
+                              <i class="ph-fill ph-pencil-simple"></i>
+                            </button>
+                            <button
+                              class="playlist-action-icon delete-icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePlaylist(
+                                  playlist.id,
+                                  playlist.name,
+                                );
+                              }}
+                              title="Delete Playlist"
+                            >
+                              <i class="ph-fill ph-trash"></i>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              }}
-            </For>
-          </div>
-        )}
-      </Show>
+                    );
+                  }}
+                </For>
+              </div>
+            )}
+        </Show>
 
       {/* Playlist Detail / Full View */}
       <Show when={activePlaylist()}>
@@ -426,6 +459,7 @@ export default function Playlists() {
                       class="playlist-hero-icon-btn"
                       onClick={() => {
                         setActivePlaylist(null);
+                        setActivePlaylistDetail(null);
                         fetchPlaylists();
                       }}
                       title="Back to Playlists"
@@ -551,44 +585,61 @@ export default function Playlists() {
                 />
               ) : (
                 <div class="grid">
-                  <For each={playlistVideos()}>
-                    {(video, index) => (
-                      <VideoCard
-                        video={video}
-                        draggable={true}
-                        onDragStart={(e) => {
-                          e.dataTransfer?.setData("text/plain", video.id);
-                          setDraggedIndex(index());
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => handleDrop(e, index())}
-                        style={
-                          draggedIndex() === index() ? "opacity: 0.4;" : ""
-                        }
-                        onClick={() =>
-                          navigate(
-                            `/player/${video.id}?context=playlist&id=${pl.id}`,
-                          )
-                        }
-                        onAddToPlaylist={(v) => {
-                          setSelectedVideoForAdd(v);
-                          setShowAddToModal(true);
-                        }}
-                        onRemoveFromPlaylist={(v) => removeFromPlaylist(v.id)}
-                        onDelete={(v) => {
-                          setPlaylistVideos((prev) =>
-                            prev.filter((x) => x.id !== v.id),
-                          );
-                        }}
-                      />
-                    )}
-                  </For>
-                </div>
-              )}
-            </>
-          );
-        })()}
-      </Show>
-    </div>
+                  <For each={displayedPlaylistVideos()}>
+                        {(video, index) => (
+                          <VideoCard
+                            video={video}
+                            draggable={vidSortBy() === "custom"}
+                            onDragStart={(e) => {
+                              if (vidSortBy() === "custom") {
+                                e.dataTransfer?.setData(
+                                  "text/plain",
+                                  video.id,
+                                );
+                                setDraggedIndex(index());
+                              }
+                            }}
+                            onDragOver={(e) => {
+                              if (vidSortBy() === "custom") {
+                                e.preventDefault();
+                              }
+                            }}
+                            onDrop={(e) => {
+                              if (vidSortBy() === "custom") {
+                                handleDrop(e, index());
+                              }
+                            }}
+                            style={
+                              draggedIndex() === index()
+                                ? "opacity: 0.4;"
+                                : ""
+                            }
+                            onClick={() =>
+                              navigate(
+                                `/player/${video.id}?context=playlist&id=${pl.id}`,
+                              )
+                            }
+                            onAddToPlaylist={(v) => {
+                              setSelectedVideoForAdd(v);
+                              setShowAddToModal(true);
+                            }}
+                            onRemoveFromPlaylist={(v) =>
+                              removeFromPlaylist(v.id)
+                            }
+                            onDelete={(v) => {
+                              setPlaylistVideos((prev) =>
+                                prev.filter((x) => x.id !== v.id),
+                              );
+                            }}
+                          />
+                        )}
+                      </For>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </Show>
+        </div>
   );
 }
