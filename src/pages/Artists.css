@@ -61,3 +61,12 @@
 .artist-card:hover .artist-card-title {
   color: var(--primary-accent);
 }
+
+.artist-video-count {
+  font-size: 0.75rem;
+  color: var(--secondary-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: -8px;
+}
