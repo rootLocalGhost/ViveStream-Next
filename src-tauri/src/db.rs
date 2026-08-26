@@ -108,6 +108,8 @@ fn map_video_row(
         .to_string_lossy()
         .into_owned();
 
+    let added_at: Option<String> = row.get(5).ok();
+
     Ok(VideoEntry {
         id,
         title: row.get(1)?,
@@ -117,6 +119,7 @@ fn map_video_row(
         avatar_path,
         subtitle_path,
         desc_path,
+        added_at,
     })
 }
 
@@ -125,7 +128,7 @@ pub async fn get_downloaded_videos(app: AppHandle) -> Result<Vec<VideoEntry>, St
     tokio::task::spawn_blocking(move || {
         let conn = get_db_connection(&app)?;
         let base_dir = get_base_dir(&app)?;
-        let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos ORDER BY added_at DESC").map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path, DATETIME(added_at, 'localtime') FROM Videos ORDER BY added_at DESC").map_err(|e| e.to_string())?;
         let iter = stmt
             .query_map([], |row| map_video_row(row, &base_dir))
             .map_err(|e| e.to_string())?;
@@ -174,7 +177,7 @@ pub async fn get_favorites(app: AppHandle) -> Result<Vec<VideoEntry>, String> {
     tokio::task::spawn_blocking(move || {
         let conn = get_db_connection(&app)?;
         let base_dir = get_base_dir(&app)?;
-        let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path FROM Videos WHERE is_favorite = 1 ORDER BY added_at DESC").map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare("SELECT id, title, channel_name, video_path, thumbnail_path, DATETIME(added_at, 'localtime') FROM Videos WHERE is_favorite = 1 ORDER BY added_at DESC").map_err(|e| e.to_string())?;
         let iter = stmt
             .query_map([], |row| map_video_row(row, &base_dir))
             .map_err(|e| e.to_string())?;
@@ -243,7 +246,7 @@ pub async fn get_videos_by_artist(app: AppHandle, name: String) -> Result<Vec<Vi
         let trimmed_name = name.trim().to_string();
         let mut stmt = conn
             .prepare(
-                "SELECT id, title, channel_name, video_path, thumbnail_path 
+                "SELECT id, title, channel_name, video_path, thumbnail_path, DATETIME(added_at, 'localtime') 
              FROM Videos 
              WHERE TRIM(channel_name) = ?1 COLLATE NOCASE 
              ORDER BY added_at DESC",
@@ -381,7 +384,7 @@ pub async fn get_playlist_videos(
         let base_dir = get_base_dir(&app)?;
         let mut stmt = conn
             .prepare(
-                "SELECT v.id, v.title, v.channel_name, v.video_path, v.thumbnail_path 
+                "SELECT v.id, v.title, v.channel_name, v.video_path, v.thumbnail_path, DATETIME(v.added_at, 'localtime') 
                  FROM Videos v INNER JOIN Playlist_Videos pv ON v.id = pv.video_id 
                  WHERE pv.playlist_id = ?1 ORDER BY pv.sort_order ASC",
             )
