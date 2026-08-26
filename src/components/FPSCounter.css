@@ -1,0 +1,64 @@
+/* FPS Counter Floating Pill Styles */
+.fps-counter-pill {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(15, 15, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  font-family: monospace, var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  user-select: none;
+  pointer-events: none;
+  transition: all 0.25s ease;
+}
+
+.fps-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.fps-counter-pill.fps-good {
+  color: #4ade80;
+}
+.fps-counter-pill.fps-good .fps-dot {
+  background-color: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+.fps-counter-pill.fps-warn {
+  color: #facc15;
+}
+.fps-counter-pill.fps-warn .fps-dot {
+  background-color: #eab308;
+  box-shadow: 0 0 8px #eab308;
+}
+
+.fps-counter-pill.fps-bad {
+  color: #f87171;
+}
+.fps-counter-pill.fps-bad .fps-dot {
+  background-color: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.fps-value {
+  font-size: 0.82rem;
+  letter-spacing: 0.5px;
+}
+
+.fps-unit {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
