@@ -60,20 +60,23 @@ export const Miniplayer: Component = () => {
     return !isPlayerPage() && activeVideo() !== null && !miniplayerDismissed();
   };
 
-  const handleExpand = () => {
+  const handleExpand = (e?: Event) => {
+    if (e) e.stopPropagation();
     const vid = activeVideo();
     if (!vid) return;
     isUnmounting = true;
+    const playState = isPlaying();
     if (videoRef) {
       setCurrentTime(videoRef.currentTime);
-      setIsPlaying(!videoRef.paused);
     }
+    setIsPlaying(playState);
     const params = playerContextParams();
     const qs = new URLSearchParams(params as Record<string, string>).toString();
     navigate(`/player/${vid.id}${qs ? `?${qs}` : ""}`);
   };
 
-  const handlePlayNext = () => {
+  const handlePlayNext = (e?: Event) => {
+    if (e) e.stopPropagation();
     const q = playerQueue();
     if (q.length > 0) {
       const nextVid = q[0];
@@ -88,7 +91,8 @@ export const Miniplayer: Component = () => {
     }
   };
 
-  const handlePlayPrev = async () => {
+  const handlePlayPrev = async (e?: Event) => {
+    if (e) e.stopPropagation();
     const vid = activeVideo();
     if (!vid) return;
     try {
@@ -106,12 +110,13 @@ export const Miniplayer: Component = () => {
         setActiveVideo(prevVid);
         navigate(`/player/${prevVid.id}`);
       }
-    } catch (e) {
-      console.error("Failed to play previous:", e);
+    } catch (err) {
+      console.error("Failed to play previous:", err);
     }
   };
 
   const handleSeek = (e: Event) => {
+    e.stopPropagation();
     const val = parseFloat((e.target as HTMLInputElement).value);
     seekGlobalPlay(val);
   };
@@ -180,7 +185,6 @@ export const Miniplayer: Component = () => {
       window.removeEventListener("keydown", handleKeyDown);
       if (videoRef) {
         setCurrentTime(videoRef.currentTime);
-        setIsPlaying(!videoRef.paused);
       }
     });
   });
@@ -192,10 +196,11 @@ export const Miniplayer: Component = () => {
     <Show when={shouldShow()}>
       <div
         class="miniplayer-container"
+        onClick={handleExpand}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div class="miniplayer-card">
+        <div class="miniplayer-card" onClick={handleExpand}>
           <div class="miniplayer-media-box" onClick={handleExpand}>
             <video
               ref={videoRef}
@@ -246,12 +251,9 @@ export const Miniplayer: Component = () => {
               onEnded={handlePlayNext}
             />
 
-            {/* Permanent Top Controls: Badge on left, Expand & Close on right */}
-            <div
-              class="miniplayer-top-row"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div class="miniplayer-badge">
+            {/* Top Row Controls */}
+            <div class="miniplayer-top-row">
+              <div class="miniplayer-badge" onClick={handleExpand}>
                 <i class="ph-fill ph-picture-in-picture"></i>
                 <span>Miniplayer</span>
               </div>
@@ -265,7 +267,10 @@ export const Miniplayer: Component = () => {
                 </button>
                 <button
                   class="miniplayer-icon-btn close-btn"
-                  onClick={closeGlobalMiniplayer}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeGlobalMiniplayer();
+                  }}
                   title="Close Miniplayer"
                 >
                   <i class="ph-bold ph-x"></i>
@@ -288,7 +293,10 @@ export const Miniplayer: Component = () => {
                 </button>
                 <button
                   class="miniplayer-ctrl-btn play-btn"
-                  onClick={toggleGlobalPlay}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleGlobalPlay();
+                  }}
                   title={isPlaying() ? "Pause" : "Play"}
                 >
                   <i class={`ph-fill ph-${isPlaying() ? "pause" : "play"}`}></i>
@@ -314,8 +322,14 @@ export const Miniplayer: Component = () => {
                   step="0.1"
                   value={currentTime()}
                   onInput={handleSeek}
-                  onMouseDown={() => setIsSeeking(true)}
-                  onMouseUp={() => setIsSeeking(false)}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    setIsSeeking(true);
+                  }}
+                  onMouseUp={(e) => {
+                    e.stopPropagation();
+                    setIsSeeking(false);
+                  }}
                   style={{ "--progress": `${seekProgress()}%` } as any}
                 />
               </div>
