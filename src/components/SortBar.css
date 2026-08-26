@@ -1,0 +1,272 @@
+/* ==========================================================================
+   Sleek Floating Sort Bar Styles
+   ========================================================================== */
+
+.sort-bar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 6px 12px;
+  background: var(--clay-bg, rgba(30, 30, 36, 0.75));
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: sortBarFadeIn 0.2s ease-out;
+}
+
+@keyframes sortBarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sort-bar-container.temporary-floating {
+  position: sticky;
+  top: 12px;
+  z-index: 8000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 16px rgba(242, 92, 84, 0.2);
+  border-color: var(--primary-accent, #f25c54);
+}
+
+.sort-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* Clay Button Base */
+.clay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  height: 34px;
+  background: var(--primary-background, rgba(20, 20, 26, 0.8));
+  color: var(--primary-text);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.clay-btn:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 8px rgba(242, 92, 84, 0.15);
+}
+
+.clay-btn:active {
+  transform: translateY(0);
+}
+
+/* Item Count Badge */
+.sort-item-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--primary-background, rgba(20, 20, 26, 0.6));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: var(--secondary-text);
+}
+
+.sort-item-count .count-number {
+  font-weight: 700;
+  color: var(--primary-accent);
+}
+
+/* Dropdown */
+.sort-dropdown-wrapper {
+  position: relative;
+}
+
+.sort-dropdown-trigger {
+  min-width: 130px;
+  justify-content: space-between;
+}
+
+.sort-label-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sort-prefix {
+  color: var(--secondary-text);
+  font-weight: 400;
+  font-size: 0.78rem;
+}
+
+.dropdown-caret {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+  color: var(--secondary-text);
+}
+
+.dropdown-caret.open {
+  transform: rotate(180deg);
+  color: var(--primary-accent);
+}
+
+.sort-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: var(--clay-bg, rgba(28, 28, 36, 0.96));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 6px;
+  z-index: 8500;
+  animation: sortDropdownSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes sortDropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sort-dropdown-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--secondary-text);
+  padding: 6px 10px 4px;
+}
+
+.sort-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--primary-text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.sort-dropdown-item .item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-dropdown-item .item-left i {
+  font-size: 0.95rem;
+  color: var(--secondary-text);
+  transition: color 0.15s ease;
+}
+
+.sort-dropdown-item:hover {
+  background: rgba(242, 92, 84, 0.12);
+  color: var(--primary-accent);
+}
+
+.sort-dropdown-item:hover .item-left i {
+  color: var(--primary-accent);
+}
+
+.sort-dropdown-item.active {
+  background: var(--primary-accent);
+  color: #ffffff;
+}
+
+.sort-dropdown-item.active .item-left i {
+  color: #ffffff;
+}
+
+.active-check {
+  font-size: 0.85rem;
+  color: #ffffff;
+}
+
+/* Direction Button */
+.sort-direction-btn {
+  min-width: 72px;
+  justify-content: center;
+}
+
+.sort-direction-btn i {
+  color: var(--primary-accent);
+  font-size: 0.95rem;
+}
+
+/* Shuffle Button */
+.sort-reshuffle-btn {
+  background: rgba(242, 92, 84, 0.12);
+  border-color: rgba(242, 92, 84, 0.3);
+  color: var(--primary-accent);
+}
+
+.sort-reshuffle-btn:hover {
+  background: var(--primary-accent);
+  color: #ffffff;
+}
+
+.sort-reshuffle-btn i {
+  font-size: 0.95rem;
+}
+
+/* Close floating sort button */
+.sort-close-floating-btn {
+  padding: 6px 8px;
+  color: var(--secondary-text);
+}
+
+.sort-close-floating-btn:hover {
+  color: #ef233c;
+  border-color: #ef233c;
+}
+
+@media (max-width: 600px) {
+  .sort-bar-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sort-bar-actions {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+}
