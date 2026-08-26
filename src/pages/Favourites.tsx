@@ -1,10 +1,16 @@
-import { createSignal, onMount, For } from "solid-js";
+import { createSignal, onMount, createMemo, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
 import VideoCard from "../components/VideoCard";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
-import { VideoEntry } from "../store";
+import {
+  VideoEntry,
+  favSortBy,
+  favSortDirection,
+  favRandomSeed,
+} from "../store";
+import { sortVideos } from "../utils/sortUtils";
 import "./Favourites.css";
 
 export default function Favourites() {
@@ -21,6 +27,15 @@ export default function Favourites() {
     } catch (e) {
       console.error("Failed to load favorites library:", e);
     }
+  });
+
+  const displayedVideos = createMemo(() => {
+    return sortVideos(
+      videos(),
+      favSortBy(),
+      favSortDirection(),
+      favRandomSeed(),
+    );
   });
 
   return (
@@ -47,7 +62,7 @@ export default function Favourites() {
         />
       ) : (
         <div class="grid">
-          <For each={videos()}>
+          <For each={displayedVideos()}>
             {(video) => (
               <VideoCard
                 video={video}
