@@ -351,6 +351,8 @@ export default function Playlists() {
                           <img
                             src={getCoverSrc(playlist)}
                             class="playlist-cover-img"
+                            loading="lazy"
+                            decoding="async"
                             onLoad={(e) => {
                               e.currentTarget.style.display = "block";
                               const fallback =
@@ -447,6 +449,7 @@ export default function Playlists() {
                 <img
                   src={getBannerSrc(pl)}
                   class="playlist-hero-backdrop"
+                  decoding="async"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                   }}
@@ -490,6 +493,7 @@ export default function Playlists() {
                       <img
                         src={getCoverSrc(pl)}
                         class="playlist-hero-cover"
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                         }}
