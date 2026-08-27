@@ -1,6 +1,12 @@
-import { createSignal, onMount, Show } from "solid-js";
+import { createSignal, createMemo, Show } from "solid-js";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { VideoEntry, showConfirmDialog, addToast } from "../store";
+import {
+  VideoEntry,
+  showConfirmDialog,
+  addToast,
+  favoritesSet,
+  toggleFavoriteInCache,
+} from "../store";
 import "./VideoCard.css";
 
 export interface VideoCardProps {
@@ -20,23 +26,11 @@ export interface VideoCardProps {
 }
 
 export default function VideoCard(props: VideoCardProps) {
-  const [isFavorite, setIsFavorite] = createSignal(
-    props.initialFavorite ?? false,
-  );
-  const [isDeleting, setIsDeleting] = createSignal(false);
-
-  onMount(async () => {
-    if (props.initialFavorite === undefined) {
-      try {
-        const fav = await invoke<boolean>("check_favorite", {
-          id: props.video.id,
-        });
-        setIsFavorite(fav);
-      } catch {
-        // Ignore check favorite failure
-      }
-    }
+  const isFavorite = createMemo(() => {
+    if (props.initialFavorite !== undefined) return props.initialFavorite;
+    return favoritesSet().has(props.video.id);
   });
+  const [isDeleting, setIsDeleting] = createSignal(false);
 
   const handleToggleFavorite = async (e: MouseEvent) => {
     e.stopPropagation();
@@ -46,7 +40,7 @@ export default function VideoCard(props: VideoCardProps) {
         id: props.video.id,
         isFavorite: newStatus,
       });
-      setIsFavorite(newStatus);
+      toggleFavoriteInCache(props.video.id, newStatus);
       props.onToggleFavorite?.(props.video.id, newStatus);
       addToast(
         newStatus ? "Added to Favourites" : "Removed from Favourites",
@@ -109,6 +103,7 @@ export default function VideoCard(props: VideoCardProps) {
           alt={props.video.title}
           class="video-thumbnail"
           loading="lazy"
+          decoding="async"
         />
       </div>
 
@@ -126,13 +121,11 @@ export default function VideoCard(props: VideoCardProps) {
                     : `http://127.0.0.1:1422/Avatars/${encodeURIComponent(props.video.channel)}.jpg`
                 }
                 onError={(e) => {
-                  if (!e.currentTarget.src.includes("127.0.0.1:1422/Avatars")) {
-                    e.currentTarget.src = `http://127.0.0.1:1422/Avatars/${encodeURIComponent(props.video.channel)}.jpg`;
-                  } else {
-                    e.currentTarget.style.display = "none";
-                  }
+                  e.currentTarget.style.display = "none";
                 }}
                 class="avatar-small"
+                loading="lazy"
+                decoding="async"
               />
             </Show>
             <p class="video-channel" title={props.video.channel}>
