@@ -33,7 +33,9 @@
   font-weight: 600;
   font-size: 14px;
   color: var(--primary-text);
-  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  animation: toastSlideDown 0.35s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
   border: var(--app-border);
   max-width: 500px;
 }
@@ -64,6 +66,7 @@
   align-items: center;
   justify-content: center;
   z-index: 10002;
+  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .dialog-box {
@@ -78,7 +81,9 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  animation: popIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  animation: modalPopIn 0.28s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
   border: var(--app-border);
 }
 
@@ -123,9 +128,10 @@
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
+  transform: translate3d(0, 0, 0);
   transition:
-    transform 0.2s,
-    box-shadow 0.2s;
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
   border: none;
 }
 
@@ -148,23 +154,33 @@
   box-shadow: var(--clay-btn-active);
 }
 
-@keyframes slideDown {
+@keyframes toastSlideDown {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translate3d(0, -24px, 0) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
-@keyframes popIn {
+
+@keyframes modalFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+  }
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
