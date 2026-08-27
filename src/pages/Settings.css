@@ -51,7 +51,13 @@
   border-radius: 24px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -65,7 +71,7 @@
 }
 
 .settings-page .toggle-btn:hover {
-  transform: translateY(-1px);
+  transform: translate3d(0, -1px, 0);
 }
 
 .settings-page .color-swatch {
