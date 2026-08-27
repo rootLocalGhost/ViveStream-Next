@@ -370,6 +370,7 @@ export default function Downloads() {
                         src={`https://i.ytimg.com/vi/${task.id}/hqdefault.jpg`}
                         class="task-thumbnail"
                         loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.src =
                             "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
@@ -583,6 +584,7 @@ export default function Downloads() {
                       src={`https://i.ytimg.com/vi/${item.video_id}/hqdefault.jpg`}
                       class="history-thumbnail"
                       loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.src =
                           "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
