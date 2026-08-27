@@ -58,7 +58,12 @@
   justify-content: center;
   border: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
   flex-shrink: 0;
   box-shadow: var(--clay-btn-shadow);
 }
@@ -186,9 +191,9 @@
 
 .downloads-page .clear-history-btn {
   position: absolute;
-  right: 4px;
+  right: 0;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translate3d(0, 0, 0);
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -202,7 +207,13 @@
   font-weight: 600;
   font-family: var(--font-body);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .downloads-page .clear-history-btn i {
@@ -409,7 +420,13 @@
   border: none;
   border-radius: 24px;
   padding: 12px;
-  transition: all 0.3s ease;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px auto 260px;
+  contain: layout paint;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--clay-card-shadow);
 }
 
@@ -621,7 +638,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  transition: all 0.2s;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .task-ctrl-btn:hover {
@@ -674,7 +697,12 @@
   font-weight: 600;
   gap: 6px;
   font-size: 11px;
-  transition: all 0.2s;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .downloads-page .task-toggle-btn:hover {
@@ -931,7 +959,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .history-action-btn:hover {
