@@ -8,17 +8,19 @@
   flex-direction: column;
   pointer-events: auto;
   z-index: 9500;
-  animation: floatingSortFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  animation: floatingSortFadeIn 0.22s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
 }
 
 @keyframes floatingSortFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.98);
+    transform: translate3d(0, -6px, 0) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -26,15 +28,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--clay-bg, rgba(30, 30, 36, 0.85));
+  background: var(--clay-bg, #25262c);
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 18px;
   padding: 3px 6px 3px 10px;
   height: 36px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
   user-select: none;
   -webkit-app-region: no-drag;
 }
@@ -69,7 +74,9 @@
   cursor: pointer;
   padding: 3px 6px;
   border-radius: 12px;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
   white-space: nowrap;
 }
 
@@ -110,7 +117,13 @@
   color: var(--primary-accent);
   font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 [data-theme="light"] .floating-sort-dir-btn {
@@ -122,7 +135,7 @@
   background: var(--primary-accent);
   border-color: var(--primary-accent);
   color: #ffffff;
-  transform: scale(1.08);
+  transform: scale3d(1.08, 1.08, 1) translate3d(0, 0, 0);
 }
 
 /* Shuffle Button */
@@ -138,14 +151,20 @@
   color: var(--primary-accent);
   font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .floating-sort-shuffle-btn:hover {
   background: var(--primary-accent);
   border-color: var(--primary-accent);
   color: #ffffff;
-  transform: rotate(15deg) scale(1.08);
+  transform: rotate(15deg) scale3d(1.08, 1.08, 1) translate3d(0, 0, 0);
 }
 
 .floating-sort-shuffle-btn.active {
@@ -163,7 +182,10 @@
   color: var(--secondary-text);
   font-family: monospace;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .floating-sort-close:hover kbd {
@@ -223,7 +245,9 @@
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   text-align: left;
 }
 
