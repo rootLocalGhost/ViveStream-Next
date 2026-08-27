@@ -11,6 +11,7 @@ import {
   homeSortBy,
   homeSortDirection,
   homeRandomSeed,
+  loadFavoritesCache,
 } from "../store";
 import { sortVideos } from "../utils/sortUtils";
 import "./Home.css";
@@ -23,7 +24,10 @@ export default function Home() {
 
   onMount(async () => {
     try {
-      const data = await invoke<VideoEntry[]>("get_downloaded_videos");
+      const [data] = await Promise.all([
+        invoke<VideoEntry[]>("get_downloaded_videos"),
+        loadFavoritesCache(),
+      ]);
       setHomeVideos(data);
     } catch (e) {
       console.error("Failed to load library:", e);
