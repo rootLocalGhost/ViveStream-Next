@@ -21,11 +21,14 @@
   border: var(--app-border, none);
   padding: 10px;
   cursor: pointer;
-  transition:
-    transform 0.2s var(--transition-smooth),
-    box-shadow 0.2s;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px auto 220px;
+  contain: layout paint;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
-  overflow: hidden;
 }
 
 .playlists-page .playlist-card:hover {
@@ -42,17 +45,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: translate3d(0, 0, 0);
+  contain: paint;
 }
 
 .playlist-cover-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1) translate3d(0, 0, 0);
+  transition: transform 0.35s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .playlist-card:hover .playlist-cover-img {
-  transform: scale(1.04);
+  transform: scale(1.05) translate3d(0, 0, 0);
 }
 
 .playlist-cover-placeholder {
@@ -120,13 +126,18 @@
   justify-content: center;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .playlist-action-icon:hover {
   background: rgba(255, 255, 255, 0.15);
   color: var(--primary-text);
-  transform: scale(1.1);
+  transform: scale3d(1.1, 1.1, 1) translate3d(0, 0, 0);
 }
 
 .playlist-action-icon.delete-icon:hover {
@@ -213,7 +224,13 @@
   justify-content: center;
   font-size: 17px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   padding: 0;
 }
@@ -221,7 +238,7 @@
 .playlist-hero-icon-btn:hover {
   background: rgba(36, 36, 48, 0.95);
   color: #ffffff;
-  transform: scale(1.08);
+  transform: scale3d(1.08, 1.08, 1) translate3d(0, 0, 0);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
@@ -274,7 +291,12 @@
   justify-content: center;
   font-size: 15px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
   padding: 0;
 }
 
@@ -282,7 +304,7 @@
   background: var(--primary-accent);
   color: #ffffff;
   border-color: transparent;
-  transform: scale(1.1);
+  transform: scale3d(1.1, 1.1, 1) translate3d(0, 0, 0);
   box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.5);
 }
 
@@ -334,7 +356,12 @@
   justify-content: center;
   font-size: 15px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
   flex-shrink: 0;
   padding: 0;
 }
@@ -343,7 +370,7 @@
   background: var(--primary-accent);
   border-color: transparent;
   color: #ffffff;
-  transform: scale(1.1);
+  transform: scale3d(1.1, 1.1, 1) translate3d(0, 0, 0);
   box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.4);
 }
 
@@ -381,7 +408,11 @@
   justify-content: center;
   cursor: pointer;
   font-size: 16px;
-  transition: all 0.2s;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease;
   padding: 0;
 }
 
@@ -391,7 +422,7 @@
 }
 
 .playlist-save-btn:hover {
-  transform: scale(1.1);
+  transform: scale3d(1.1, 1.1, 1) translate3d(0, 0, 0);
   background: var(--primary-accent-dark, #e04b43);
 }
 
@@ -402,7 +433,7 @@
 
 .playlist-cancel-btn:hover {
   background: rgba(255, 71, 87, 0.6);
-  transform: scale(1.1);
+  transform: scale3d(1.1, 1.1, 1) translate3d(0, 0, 0);
 }
 
 .playlist-hero-stats {
