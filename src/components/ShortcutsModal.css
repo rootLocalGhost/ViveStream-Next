@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  animation: fadeIn 0.2s ease-out;
+  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .shortcuts-modal-container {
@@ -24,11 +24,11 @@
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.8),
-    0 0 30px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.15);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
   overflow: hidden;
-  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  animation: modalPopIn 0.28s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
 }
 
 [data-theme="light"] .shortcuts-modal-container {
@@ -78,14 +78,20 @@
   justify-content: center;
   cursor: pointer;
   font-size: 16px;
-  transition: all 0.2s ease;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .shortcuts-close-btn:hover {
   background: var(--primary-accent);
   color: #ffffff;
   border-color: transparent;
-  transform: scale(1.08);
+  transform: scale3d(1.08, 1.08, 1) translate3d(0, 0, 0);
 }
 
 .shortcuts-search-row {
@@ -246,13 +252,22 @@
   gap: 6px;
 }
 
-@keyframes scaleUp {
+@keyframes modalFadeIn {
   from {
-    transform: scale(0.95);
     opacity: 0;
   }
   to {
-    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes modalPopIn {
+  from {
+    transform: translate3d(0, 16px, 0) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0) scale(1);
     opacity: 1;
   }
 }
