@@ -53,15 +53,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--clay-bg, rgba(30, 30, 36, 0.85));
+  background: var(--clay-bg, #25262c);
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 18px;
   padding: 4px 12px;
   height: 36px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
   cursor: text;
   -webkit-app-region: no-drag;
 }
@@ -122,13 +125,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .floating-search-clear-btn:hover {
   background: rgba(255, 255, 255, 0.14);
   color: var(--primary-text, #ffffff);
-  transform: scale(1.1);
+  transform: scale3d(1.1, 1.1, 1) translate3d(0, 0, 0);
 }
 
 .floating-search-kbd {
@@ -153,7 +161,10 @@
   color: var(--secondary-text, #94a3b8);
   font-family: monospace;
   font-weight: 600;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 [data-theme="light"] .floating-search-kbd kbd,
@@ -297,7 +308,10 @@
   white-space: nowrap;
   user-select: none;
   flex-shrink: 0;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .scope-home {
@@ -416,7 +430,15 @@
   padding: 8px 12px;
   border-radius: 14px;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  content-visibility: auto;
+  contain-intrinsic-size: 100% 52px;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.18s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)),
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   user-select: none;
   border: 1px solid transparent;
 }
@@ -428,7 +450,6 @@
 
 .search-result-item.selected {
   border-color: var(--primary-accent, #f25c54);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2), 0 0 10px rgba(242, 92, 84, 0.2);
 }
 
 .result-icon-badge {
