@@ -736,9 +736,7 @@ input:checked + .slider:before {
 }
 
 .sidebar a.active {
-  background: var(--glass-hover);
   color: var(--primary-accent);
-  box-shadow: inset 4px 0 0 var(--primary-accent);
 }
 
 .nav-text {
@@ -853,7 +851,7 @@ input:checked + .slider:before {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 16px;
   padding-top: 10px;
   padding-bottom: 40px;
