@@ -111,6 +111,11 @@ pub async fn check_binaries(app: AppHandle) -> Result<BinaryCheckStatus, String>
 }
 
 #[tauri::command]
+pub async fn update_binaries(app: AppHandle) -> Result<(), String> {
+    download_binaries(app).await
+}
+
+#[tauri::command]
 pub async fn download_binaries(app: AppHandle) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
     fs::create_dir_all(&bin_dir).map_err(|e| e.to_string())?;
