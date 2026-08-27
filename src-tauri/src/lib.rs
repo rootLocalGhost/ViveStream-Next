@@ -145,6 +145,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             check_binaries,
             download_binaries,
+            update_binaries,
             get_video_metadata,
             download_video,
             get_downloaded_videos,
