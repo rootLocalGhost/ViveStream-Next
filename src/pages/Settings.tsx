@@ -38,6 +38,7 @@ import {
   alwaysShowSortBar,
   toggleAlwaysShowSortBar,
 } from "../store";
+import BenchmarkModal from "../components/BenchmarkModal";
 import "./Settings.css";
 
 export default function Settings() {
@@ -46,6 +47,7 @@ export default function Settings() {
   const [loadingNuclear, setLoadingNuclear] = createSignal(false);
   const [loadingUpdate, setLoadingUpdate] = createSignal(false);
   const [loadingReindex, setLoadingReindex] = createSignal(false);
+  const [showBenchmark, setShowBenchmark] = createSignal(false);
   const [cookiesDropdownOpen, setCookiesDropdownOpen] = createSignal(false);
   const [clientDropdownOpen, setClientDropdownOpen] = createSignal(false);
 
@@ -87,9 +89,13 @@ export default function Settings() {
   const handleUpdateBinaries = async () => {
     setLoadingUpdate(true);
     try {
-      await invoke("update_binaries");
+      try {
+        await invoke("update_binaries");
+      } catch {
+        await invoke("download_binaries");
+      }
       addToast(
-        "Core engines (yt-dlp and FFmpeg) have been successfully updated to the latest versions.",
+        "Core engines (yt-dlp, Deno, and FFmpeg) have been successfully updated to the latest versions.",
         "success",
       );
     } catch (e) {
@@ -639,6 +645,34 @@ export default function Settings() {
           </button>
         </div>
       </div>
+
+      <h2 class="page-title page-title-spaced">
+        <i class="ph-fill ph-gauge"></i> Performance & Diagnostics
+      </h2>
+
+      <div class="settings-card">
+        <div class="flex-row-between" id="setting-ui-benchmark">
+          <div>
+            <h3 class="settings-title">UI Rendering Benchmark</h3>
+            <p class="settings-desc">
+              Run hardware-accelerated diagnostics to test frame pacing, 1% low FPS,
+              and 150-card DOM rendering throughput.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowBenchmark(true)}
+            class="command-btn secondary"
+          >
+            <i class="ph-fill ph-lightning"></i>
+            Run Benchmark
+          </button>
+        </div>
+      </div>
+
+      <BenchmarkModal
+        isOpen={showBenchmark()}
+        onClose={() => setShowBenchmark(false)}
+      />
 
       <h2 class="page-title page-title-spaced page-title-danger">
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
