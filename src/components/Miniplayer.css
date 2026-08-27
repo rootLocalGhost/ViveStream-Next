@@ -5,17 +5,19 @@
   width: 350px;
   max-width: calc(100vw - 48px);
   z-index: 9000;
-  animation: miniplayerSlideIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  animation: miniplayerSlideIn 0.38s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 @keyframes miniplayerSlideIn {
   from {
     opacity: 0;
-    transform: translateY(40px) scale(0.92);
+    transform: translate3d(0, 36px, 0) scale(0.92);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -100,7 +102,13 @@
   justify-content: center;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -110,7 +118,7 @@
   background: var(--primary-accent);
   border-color: var(--primary-accent);
   color: #ffffff;
-  transform: scale(1.12);
+  transform: scale3d(1.12, 1.12, 1) translate3d(0, 0, 0);
   box-shadow: 0 4px 16px rgba(242, 92, 84, 0.45);
 }
 
@@ -163,13 +171,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.15s ease;
   padding: 4px;
 }
 
 .miniplayer-ctrl-btn:hover {
   color: var(--primary-accent);
-  transform: scale(1.2);
+  transform: scale3d(1.2, 1.2, 1) translate3d(0, 0, 0);
 }
 
 .miniplayer-ctrl-btn.play-btn {
