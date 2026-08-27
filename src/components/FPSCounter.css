@@ -1,4 +1,3 @@
-/* FPS Counter Floating Pill Styles */
 .fps-counter-pill {
   position: fixed;
   bottom: 24px;
@@ -9,16 +8,32 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 20px;
-  background: rgba(15, 15, 20, 0.85);
+  background: rgba(15, 15, 20, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
   font-family: monospace, var(--font-body);
   font-size: 0.75rem;
   font-weight: 700;
   user-select: none;
   pointer-events: none;
-  transition: all 0.25s ease;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  animation: fpsPillPop 0.3s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease,
+    background-color 0.25s ease;
+}
+
+@keyframes fpsPillPop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 
 .fps-dot {
