@@ -130,6 +130,13 @@ const SETTINGS_INDEX: SettingItem[] = [
     keywords: ["reindex", "re-index", "scan", "database", "library", "refresh", "fix"],
   },
   {
+    id: "setting-ui-benchmark",
+    title: "UI Performance Benchmark",
+    description: "Run graphics and frame pacing diagnostics to measure FPS stability and DOM speed.",
+    category: "Performance & Diagnostics",
+    keywords: ["benchmark", "fps", "performance", "test", "speed", "diagnostics", "lag", "stutter"],
+  },
+  {
     id: "setting-danger-force-setup",
     title: "Force Setup Screen",
     description: "Launch the deployment screen to test setup rendering without deleting existing files.",
