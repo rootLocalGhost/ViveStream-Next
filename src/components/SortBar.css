@@ -15,18 +15,23 @@
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  animation: sortBarFadeIn 0.2s ease-out;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+  animation: sortBarFadeIn 0.22s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
 }
 
 @keyframes sortBarFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translate3d(0, -6px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -67,19 +72,25 @@
   font-weight: 500;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
   user-select: none;
 }
 
 .clay-btn:hover {
   border-color: var(--primary-accent);
   color: var(--primary-accent);
-  transform: translateY(-1px);
+  transform: translate3d(0, -1px, 0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 8px rgba(242, 92, 84, 0.15);
 }
 
 .clay-btn:active {
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 
 /* Item Count Badge */
@@ -183,7 +194,9 @@
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   text-align: left;
 }
 
