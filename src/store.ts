@@ -231,6 +231,10 @@ export const {
   setTheaterMode,
   playerContextParams,
   setPlayerContextParams,
+  favoritesSet,
+  setFavoritesSet,
+  loadFavoritesCache,
+  toggleFavoriteInCache,
 } = createRoot(() => {
   const [toasts, setToasts] = createSignal<Toast[]>([]);
   const [dialogState, setDialogState] = createSignal<DialogState | null>(null);
@@ -240,6 +244,7 @@ export const {
   const [downloadHistory, setDownloadHistory] = createSignal<
     DownloadHistoryEntry[]
   >([]);
+  const [favoritesSet, setFavoritesSet] = createSignal<Set<string>>(new Set());
 
   const [useAnimatedIcons, setUseAnimatedIcons] =
     createSignal(initialAnimState);
@@ -510,6 +515,24 @@ export const {
     setTheaterMode,
     playerContextParams,
     setPlayerContextParams,
+    favoritesSet,
+    setFavoritesSet,
+    loadFavoritesCache: async () => {
+      try {
+        const favs = await invoke<VideoEntry[]>("get_favorites");
+        setFavoritesSet(new Set(favs.map((f) => f.id)));
+      } catch {
+        // Fallback gracefully
+      }
+    },
+    toggleFavoriteInCache: (id: string, isFav: boolean) => {
+      setFavoritesSet((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    },
   };
 });
 
