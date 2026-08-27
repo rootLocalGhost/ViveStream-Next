@@ -6,18 +6,19 @@
   box-shadow: var(--clay-card-shadow);
   border: var(--app-border, none);
   padding: 8px;
-  transition:
-    transform 0.2s var(--transition-smooth),
-    box-shadow 0.2s,
-    border-color 0.2s;
   cursor: pointer;
   position: relative;
-  overflow: hidden;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px auto 240px;
+  contain: layout paint;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .video-card:hover {
   transform: var(--card-hover-transform);
-  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .video-thumbnail-container {
@@ -28,6 +29,9 @@
   overflow: hidden;
   box-shadow: var(--clay-btn-shadow);
   background: #111;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  contain: strict;
 }
 
 .video-thumbnail {
@@ -35,11 +39,14 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  image-rendering: -webkit-optimize-contrast;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .video-card:hover .video-thumbnail {
-  transform: scale(1.03);
+  transform: scale3d(1.03, 1.03, 1) translate3d(0, 0, 0);
 }
 
 .video-meta-row {
@@ -67,9 +74,10 @@
   gap: 4px;
   flex-shrink: 0;
   opacity: 0.85;
+  transform: translate3d(0, 0, 0);
   transition:
     opacity 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .video-card:hover .video-card-actions {
@@ -88,17 +96,21 @@
   justify-content: center;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  /* padding: 5px; */
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
   margin: 2px;
 }
 
 .card-action-btn:hover {
   background: var(--primary-accent);
   color: #ffffff;
-  transform: scale(1.1);
+  transform: scale3d(1.1, 1.1, 1) translate3d(0, 0, 0);
   border-color: transparent;
-  box-shadow: 0 4px 12px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.35);
 }
 
 .card-action-btn.fav-btn.is-fav {
@@ -170,3 +182,4 @@
   flex-shrink: 0;
   box-shadow: var(--clay-btn-shadow);
 }
+
