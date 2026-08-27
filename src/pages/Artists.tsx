@@ -2,7 +2,13 @@ import { createSignal, onMount, createMemo, For, Show } from "solid-js";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
-import { VideoEntry, artistsSortBy, artistsSortDirection } from "../store";
+import {
+  VideoEntry,
+  artistsSortBy,
+  artistsSortDirection,
+  homeVideos,
+  setHomeVideos,
+} from "../store";
 import { sortArtists, ArtistEntry } from "../utils/sortUtils";
 import "./Artists.css";
 
@@ -13,23 +19,31 @@ export default function Artists() {
 
   onMount(async () => {
     try {
-      const data = await invoke<ArtistEntry[]>("get_artists");
-      setArtists(data);
+      const [artistData, allVideos] = await Promise.all([
+        invoke<ArtistEntry[]>("get_artists"),
+        homeVideos().length > 0
+          ? Promise.resolve(homeVideos())
+          : invoke<VideoEntry[]>("get_downloaded_videos").then((v) => {
+              setHomeVideos(v);
+              return v;
+            }),
+      ]);
+      setArtists(artistData);
 
-      // Preload video counts for each artist
+      // Fast single-pass in-memory count calculation
       const counts: Record<string, number> = {};
-      await Promise.all(
-        data.map(async (a) => {
-          try {
-            const vids = await invoke<VideoEntry[]>("get_videos_by_artist", {
-              name: a.name,
-            });
-            counts[a.name] = vids.length;
-          } catch {
-            counts[a.name] = 0;
-          }
-        }),
-      );
+      const lowerCounts: Record<string, number> = {};
+      for (const v of allVideos) {
+        const ch = (v.channel || "").trim();
+        const lower = ch.toLowerCase();
+        lowerCounts[lower] = (lowerCounts[lower] || 0) + 1;
+      }
+
+      for (const a of artistData) {
+        const lower = a.name.trim().toLowerCase();
+        counts[a.name] = lowerCounts[lower] || 0;
+      }
+
       setCountsMap(counts);
     } catch (e) {
       console.error("Failed to load artists library:", e);
@@ -69,6 +83,8 @@ export default function Artists() {
               >
                 <img
                   src={convertFileSrc(artist.avatar_path)}
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     e.currentTarget.src = "";
                     e.currentTarget.className =
