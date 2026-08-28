@@ -1,4 +1,4 @@
-import { createSignal, onMount, createMemo, For } from "solid-js";
+import { createSignal, onMount, createMemo, createEffect, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
@@ -12,8 +12,10 @@ import {
   homeSortDirection,
   homeRandomSeed,
   loadFavoritesCache,
+  getThumbnailUrl,
 } from "../store";
 import { sortVideos } from "../utils/sortUtils";
+import { preloadImages } from "../utils/imageLoader";
 import "./Home.css";
 
 export default function Home() {
@@ -41,6 +43,14 @@ export default function Home() {
       homeSortDirection(),
       homeRandomSeed(),
     );
+  });
+
+  createEffect(() => {
+    const list = displayedVideos();
+    if (list.length > 0) {
+      const urls = list.slice(0, 30).map((v) => getThumbnailUrl(v));
+      preloadImages(urls);
+    }
   });
 
   return (
