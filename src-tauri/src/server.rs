@@ -19,9 +19,14 @@ pub async fn start_server(base_dir: PathBuf) {
             "Referer",
         ]);
 
-    // Serve the base directory directly.
-    // E.g., http://127.0.0.1:1422/Videos/123.mp4 maps to base_dir/Videos/123.mp4
-    let routes = warp::fs::dir(base_dir).with(cors);
+    // Serve the base directory with immutable cache headers for decoded GPU texture caching
+    let routes = warp::fs::dir(base_dir)
+        .with(cors)
+        .with(warp::reply::with::header(
+            "Cache-Control",
+            "public, max-age=31536000, immutable",
+        ))
+        .with(warp::reply::with::header("Accept-Ranges", "bytes"));
 
     // Bind to the exact port requested by the frontend
     warp::serve(routes).run(([127, 0, 0, 1], 1422)).await;
