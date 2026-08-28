@@ -189,18 +189,6 @@ const NavItem = (props: {
 const AppLayout: Component<{ children?: any }> = (props) => {
   const [isPinned, setIsPinned] = createSignal(false);
   const [isHovered, setIsHovered] = createSignal(false);
-  const [isScrolling, setIsScrolling] = createSignal(false);
-  let scrollTimer: any = null;
-
-  const handleMainScroll = () => {
-    if (!isScrolling()) {
-      setIsScrolling(true);
-    }
-    if (scrollTimer) clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => {
-      setIsScrolling(false);
-    }, 150);
-  };
 
   const isExpanded = () => isPinned() || isHovered();
   const navigate = useNavigate();
@@ -416,10 +404,7 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           />
         </div>
       </nav>
-      <main
-        class={`main-content ${isScrolling() ? "is-scrolling" : ""}`}
-        onScroll={handleMainScroll}
-      >
+      <main class="main-content">
         {props.children}
       </main>
     </div>
