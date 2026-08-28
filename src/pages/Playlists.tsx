@@ -7,6 +7,7 @@ import VideoCard from "../components/VideoCard";
 import CreatePlaylistModal from "../components/CreatePlaylistModal";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
+import VirtualGrid from "../components/VirtualGrid";
 import {
   sortPlaylists,
   sortPlaylistVideos,
@@ -299,7 +300,7 @@ export default function Playlists() {
   createEffect(() => {
     const list = displayedPlaylistVideos();
     if (list.length > 0) {
-      const urls = list.slice(0, 30).map((v) => getThumbnailUrl(v));
+      const urls = list.map((v) => getThumbnailUrl(v));
       preloadImages(urls);
     }
   });
@@ -597,57 +598,60 @@ export default function Playlists() {
                   iconName="film-strip"
                 />
               ) : (
-                <div class="grid">
-                  <For each={displayedPlaylistVideos()}>
-                        {(video, index) => (
-                          <VideoCard
-                            video={video}
-                            draggable={vidSortBy() === "custom"}
-                            onDragStart={(e) => {
-                              if (vidSortBy() === "custom") {
-                                e.dataTransfer?.setData(
-                                  "text/plain",
-                                  video.id,
-                                );
-                                setDraggedIndex(index());
-                              }
-                            }}
-                            onDragOver={(e) => {
-                              if (vidSortBy() === "custom") {
-                                e.preventDefault();
-                              }
-                            }}
-                            onDrop={(e) => {
-                              if (vidSortBy() === "custom") {
-                                handleDrop(e, index());
-                              }
-                            }}
-                            style={
-                              draggedIndex() === index()
-                                ? "opacity: 0.4;"
-                                : ""
-                            }
-                            onClick={() =>
-                              navigate(
-                                `/player/${video.id}?context=playlist&id=${pl.id}`,
-                              )
-                            }
-                            onAddToPlaylist={(v) => {
-                              setSelectedVideoForAdd(v);
-                              setShowAddToModal(true);
-                            }}
-                            onRemoveFromPlaylist={(v) =>
-                              removeFromPlaylist(v.id)
-                            }
-                            onDelete={(v) => {
-                              setPlaylistVideos((prev) =>
-                                prev.filter((x) => x.id !== v.id),
-                              );
-                            }}
-                          />
-                        )}
-                      </For>
-                    </div>
+                <VirtualGrid
+                  items={displayedPlaylistVideos()}
+                  minItemWidth={340}
+                  gap={16}
+                  estimatedItemHeight={285}
+                  overscan={2}
+                  renderItem={(video, index) => (
+                    <VideoCard
+                      video={video}
+                      draggable={vidSortBy() === "custom"}
+                      onDragStart={(e) => {
+                        if (vidSortBy() === "custom") {
+                          e.dataTransfer?.setData(
+                            "text/plain",
+                            video.id,
+                          );
+                          setDraggedIndex(index());
+                        }
+                      }}
+                      onDragOver={(e) => {
+                        if (vidSortBy() === "custom") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onDrop={(e) => {
+                        if (vidSortBy() === "custom") {
+                          handleDrop(e, index());
+                        }
+                      }}
+                      style={
+                        draggedIndex() === index()
+                          ? "opacity: 0.4;"
+                          : ""
+                      }
+                      onClick={() =>
+                        navigate(
+                          `/player/${video.id}?context=playlist&id=${pl.id}`,
+                        )
+                      }
+                      onAddToPlaylist={(v) => {
+                        setSelectedVideoForAdd(v);
+                        setShowAddToModal(true);
+                      }}
+                      onRemoveFromPlaylist={(v) =>
+                        removeFromPlaylist(v.id)
+                      }
+                      onDelete={(v) => {
+                        setPlaylistVideos((prev) =>
+                          prev.filter((x) => x.id !== v.id),
+                        );
+                      }}
+                    />
+                  )}
+                />
                   )}
                 </>
               );
