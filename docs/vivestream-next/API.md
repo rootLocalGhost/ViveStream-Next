@@ -12,6 +12,7 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 
 - `check_binaries()`: Verifies the existence of required external dependencies (`yt-dlp`, `ffmpeg`, `deno`) in the app's internal bin directory.
 - `download_binaries()`: Initiates the downloading of the necessary dependencies from remote repositories.
+- `update_binaries()`: Updates the downloaded binaries.
 - `wipe_dependencies()`: Safely deletes the downloaded binaries.
 - `clean_database_and_media()`: Truncates non-essential tables and removes temporary media.
 - `nuclear_wipe()`: Dangerously deletes all stored videos, database tables, config files, and binaries.
@@ -40,6 +41,7 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 - `update_playlist_title(id: String, name: String)`: Renames a playlist.
 - `update_playlist_order(playlist_id: String, video_ids: Vec<String>)`: Persists custom drag-and-drop sorting order.
 - `upload_playlist_cover(id: String, path: String)` & `upload_playlist_banner(id: String, path: String)`: Manages custom image associations for playlists.
+- `sync_thumbnail_cache(quality: Option<String>)`: Synchronizes the local thumbnail cache.
 
 ### Media Library: Artists & History
 
