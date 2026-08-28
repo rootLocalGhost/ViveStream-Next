@@ -856,8 +856,7 @@ input:checked + .slider:before {
   padding-top: 10px;
   padding-bottom: 40px;
   padding-right: 10px;
-  contain: layout;
-  transform: translate3d(0, 0, 0);
+  contain: layout style;
 }
 
 .command-btn {
