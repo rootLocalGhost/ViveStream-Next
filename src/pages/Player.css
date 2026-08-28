@@ -66,33 +66,49 @@
 }
 
 .player-page-container.is-theater {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  grid-template-areas:
-    "stage stage"
-    "meta  sidebar";
-  gap: 14px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
   max-width: 100%;
 }
 
 .player-page-container.is-theater .player-main-col {
-  display: contents;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .player-page-container.is-theater .player-video-wrapper {
-  grid-area: stage;
+  width: 100%;
   border-radius: 16px;
-  height: 72vh;
+  height: 75vh;
   max-height: calc(100vh - 120px);
   aspect-ratio: auto;
 }
 
 .player-page-container.is-theater .player-meta-block {
-  grid-area: meta;
+  width: 100%;
+  max-width: 100%;
+  padding: 4px 0 0 0;
+  margin: 0;
 }
 
 .player-page-container.is-theater .player-sidebar {
-  grid-area: sidebar;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+  padding: 12px 0 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.player-page-container.is-theater .player-sidebar > h3 {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
 }
 
 .player-page-container.is-fullscreen {
@@ -211,11 +227,6 @@ video::cue {
   font-size: 20px;
 }
 
-.player-page-container.is-theater .player-meta-block {
-  padding: 8px 0 0 0;
-  max-width: 100%;
-  margin: 0 auto;
-}
 
 .player-title {
   font-size: 22px;
@@ -333,6 +344,7 @@ video::cue {
 
 .queue-meta {
   display: flex;
+  justify-content: space-between;
   flex-direction: column;
   justify-content: flex-start;
   padding: 2px 0;
@@ -340,7 +352,7 @@ video::cue {
 
 .queue-title {
   color: var(--primary-text);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -349,16 +361,37 @@ video::cue {
   line-height: 1.4;
 }
 
+.queue-channel-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  min-width: 0;
+}
+
+.queue-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--tertiary-background);
+  flex-shrink: 0;
+  box-shadow: var(--clay-btn-shadow);
+  border: var(--app-border);
+}
+
 .queue-channel {
   color: var(--secondary-text);
   font-size: 13px;
-  margin-top: 6px;
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .player-page-container.is-theater .queue-item {
   flex-direction: column;
-  padding: 12px;
+  padding: 6px;
   border-radius: 24px;
 }
 
