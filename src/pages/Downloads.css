@@ -249,6 +249,7 @@
 .queue-summary-bar {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 20px;
@@ -416,6 +417,7 @@
 .downloads-page .download-task-card {
   display: flex;
   flex-direction: column;
+  justify-content: space-evenly;
   background: var(--clay-bg);
   border: none;
   border-radius: 24px;
