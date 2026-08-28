@@ -92,29 +92,61 @@ export function preloadImage(src: string): Promise<boolean> {
 }
 
 /**
- * Concurrently pre-warms a list of image URLs with concurrency limit to prevent thread saturation.
+ * Concurrently pre-warms a list of image URLs with priority, then progressively loads the rest during browser idle periods.
  */
-export function preloadImages(srcs: string[], maxConcurrent = 6): void {
+export function preloadImages(
+  srcs: string[],
+  immediateCount = 30,
+  maxConcurrent = 6,
+): void {
   if (!srcs || srcs.length === 0 || typeof window === "undefined") return;
 
-  const validSrcs = srcs.filter((s) => s && !isImageDecoded(s) && !isImageFailed(s));
+  const validSrcs = srcs.filter(
+    (s) => s && !isImageDecoded(s) && !isImageFailed(s),
+  );
   if (validSrcs.length === 0) return;
 
-  let index = 0;
+  const immediateBatch = validSrcs.slice(0, immediateCount);
+  const remainingBatch = validSrcs.slice(immediateCount);
+
   let running = 0;
 
-  const next = () => {
-    while (running < maxConcurrent && index < validSrcs.length) {
-      const src = validSrcs[index++];
-      running++;
-      preloadImage(src).finally(() => {
-        running--;
-        next();
-      });
-    }
+  const processQueue = (items: string[], onDone?: () => void) => {
+    let itemIndex = 0;
+    const next = () => {
+      while (running < maxConcurrent && itemIndex < items.length) {
+        const src = items[itemIndex++];
+        running++;
+        preloadImage(src).finally(() => {
+          running--;
+          next();
+        });
+      }
+      if (running === 0 && itemIndex >= items.length && onDone) {
+        onDone();
+      }
+    };
+    next();
   };
 
-  next();
+  // Immediate priority preloading for initial viewport
+  processQueue(immediateBatch, () => {
+    // Idle background preloading for remaining library items
+    if (remainingBatch.length > 0) {
+      if ("requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(
+          () => {
+            processQueue(remainingBatch);
+          },
+          { timeout: 2000 },
+        );
+      } else {
+        setTimeout(() => {
+          processQueue(remainingBatch);
+        }, 100);
+      }
+    }
+  });
 }
 
 /**
