@@ -10,16 +10,14 @@
   cursor: pointer;
   position: relative;
   content-visibility: auto;
-  contain-intrinsic-size: auto 280px auto 240px;
-  contain: layout paint;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  will-change: transform;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  contain-intrinsic-size: 340px 270px;
+  contain: layout style paint;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 
 .video-card:hover {
   transform: var(--card-hover-transform);
+  will-change: transform;
 }
 
 .video-thumbnail-container {
@@ -29,9 +27,7 @@
   border-radius: calc(var(--clay-radius) - 8px);
   overflow: hidden;
   box-shadow: var(--clay-btn-shadow);
-  background: #111;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
+  background: #151518;
   contain: strict;
 }
 
@@ -40,14 +36,18 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  image-rendering: -webkit-optimize-contrast;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  image-rendering: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease-out, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.video-thumbnail.loaded {
+  opacity: 1;
 }
 
 .video-card:hover .video-thumbnail {
-  transform: scale3d(1.03, 1.03, 1) translate3d(0, 0, 0);
+  transform: scale3d(1.03, 1.03, 1);
+  will-change: transform;
 }
 
 .video-meta-row {
@@ -75,10 +75,7 @@
   gap: 4px;
   flex-shrink: 0;
   opacity: 0.85;
-  transform: translate3d(0, 0, 0);
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.2s ease;
 }
 
 .video-card:hover .video-card-actions {
@@ -97,8 +94,6 @@
   justify-content: center;
   cursor: pointer;
   font-size: 14px;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
   transition:
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     background-color 0.2s ease,
@@ -110,7 +105,7 @@
 .card-action-btn:hover {
   background: var(--primary-accent);
   color: #ffffff;
-  transform: scale3d(1.1, 1.1, 1) translate3d(0, 0, 0);
+  transform: scale3d(1.1, 1.1, 1);
   border-color: transparent;
 }
 
