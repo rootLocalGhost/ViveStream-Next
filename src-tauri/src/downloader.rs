@@ -446,6 +446,7 @@ pub async fn get_video_metadata(
                 subtitle_path: String::new(),
                 desc_path: String::new(),
                 added_at: None,
+                lq_thumbnail_path: None,
             });
         }
     }
@@ -749,6 +750,12 @@ async fn download_video_inner(
         let _ = fs::rename(&raw_thumb, &metadata.thumbnail_path);
     }
 
+    // Immediately generate ultra-lightweight 480px low-quality thumbnail for smooth 60+ FPS grid rendering
+    let lq_thumb_path = thumb_dir.join(format!("{}_lq.jpg", metadata.id));
+    if Path::new(&metadata.thumbnail_path).exists() {
+        let _ = generate_lq_thumbnail(&ffmpeg_path, Path::new(&metadata.thumbnail_path), &lq_thumb_path, 480, 5);
+    }
+
     let avatar_path = av_dir.join(format!("{}.jpg", metadata.channel));
     if !avatar_path.exists() {
         let _ = fs::copy(&metadata.thumbnail_path, &avatar_path);
@@ -1012,8 +1019,107 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
         }
     }
     let _ = conn.execute("DELETE FROM Artists WHERE name NOT IN (SELECT DISTINCT channel_name FROM Videos WHERE channel_name IS NOT NULL)", []);
+    optimize_all_thumbnails(&app, None, false);
     Ok(format!(
         "Successfully indexed database logic. Verified {} files.",
         physical_ids.len()
     ))
 }
+
+pub fn generate_lq_thumbnail(
+    ffmpeg_path: &Path,
+    original_path: &Path,
+    lq_path: &Path,
+    scale_width: u32,
+    quality_val: u32,
+) -> Result<(), String> {
+    if !original_path.exists() {
+        return Ok(());
+    }
+    let mut cmd = Command::new(ffmpeg_path);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(0x08000000);
+
+    let scale_filter = format!("scale='min({},iw)':-2", scale_width);
+    let q_str = quality_val.to_string();
+
+    let output = cmd
+        .args([
+            "-y",
+            "-i",
+            original_path.to_str().unwrap_or_default(),
+            "-vf",
+            &scale_filter,
+            "-q:v",
+            &q_str,
+            lq_path.to_str().unwrap_or_default(),
+        ])
+        .output();
+
+    match output {
+        Ok(out) if out.status.success() => Ok(()),
+        Ok(out) => Err(format!(
+            "FFmpeg failed to generate LQ thumbnail: {}",
+            String::from_utf8_lossy(&out.stderr)
+        )),
+        Err(e) => Err(format!("Failed to execute FFmpeg: {}", e)),
+    }
+}
+
+pub fn optimize_all_thumbnails(app: &AppHandle, quality_preset: Option<String>, force: bool) {
+    let app_handle = app.clone();
+    let quality_preset = quality_preset.unwrap_or_else(|| "medium".to_string());
+    let (scale_width, q_val) = match quality_preset.as_str() {
+        "low" => (360, 6),
+        "high" => (720, 3),
+        _ => (480, 5),
+    };
+
+    tauri::async_runtime::spawn(async move {
+        tokio::task::spawn_blocking(move || {
+            let base_dir = match get_base_dir(&app_handle) {
+                Ok(d) => d,
+                Err(_) => return,
+            };
+            let bin_dir = match get_bin_dir(&app_handle) {
+                Ok(d) => d,
+                Err(_) => return,
+            };
+            let (_, ffmpeg_path, _) = get_binary_paths(&bin_dir);
+            if !ffmpeg_path.exists() {
+                return;
+            }
+
+            let thumb_dir = base_dir.join("Thumbnails");
+            if !thumb_dir.exists() {
+                return;
+            }
+
+            if let Ok(entries) = fs::read_dir(&thumb_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        let file_name = path.file_name().unwrap_or_default().to_string_lossy();
+                        if file_name.ends_with(".jpg")
+                            && !file_name.ends_with("_lq.jpg")
+                            && !file_name.starts_with("raw_")
+                        {
+                            let stem = path.file_stem().unwrap_or_default().to_string_lossy();
+                            let lq_path = thumb_dir.join(format!("{}_lq.jpg", stem));
+                            if force || !lq_path.exists() {
+                                let _ = generate_lq_thumbnail(&ffmpeg_path, &path, &lq_path, scale_width, q_val);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+}
+
+#[tauri::command]
+pub async fn sync_thumbnail_cache(app: AppHandle, quality: Option<String>) -> Result<(), String> {
+    optimize_all_thumbnails(&app, quality, true);
+    Ok(())
+}
+
