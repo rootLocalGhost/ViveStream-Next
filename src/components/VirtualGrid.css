@@ -1,0 +1,16 @@
+.virtual-grid-container {
+  position: relative;
+  width: 100%;
+  padding-top: 10px;
+  padding-bottom: 40px;
+  box-sizing: border-box;
+}
+
+.virtual-grid-content {
+  display: grid;
+  width: 100%;
+  box-sizing: border-box;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  contain: layout paint;
+}
