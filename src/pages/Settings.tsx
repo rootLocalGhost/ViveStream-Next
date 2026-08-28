@@ -11,6 +11,8 @@ import {
   toggleAlwaysShowSearchBar,
   showFpsCounter,
   toggleShowFpsCounter,
+  thumbnailQuality,
+  updateThumbnailQuality,
   concurrentDownloads,
   updateConcurrentDownloads,
   concurrentFragments,
@@ -296,6 +298,71 @@ export default function Settings() {
             />
             <span class="slider"></span>
           </label>
+        </div>
+
+        <div class="full-divider"></div>
+
+        <div class="flex-row-between" id="setting-appearance-thumb-quality">
+          <div>
+            <h3 class="settings-title">Thumbnail Quality (FPS & VRAM Optimization)</h3>
+            <p class="settings-desc">
+              Adjust thumbnail texture size. Lower settings deliver ultra-high frame rates (60–144 FPS) on dense fullscreen grids.
+            </p>
+          </div>
+          <div class="quality-slider-wrapper">
+            <div class="quality-step-labels">
+              <span
+                class={`step-label ${thumbnailQuality() === "low" ? "active" : ""}`}
+                onClick={() => updateThumbnailQuality("low")}
+              >
+                360p (Ultra FPS)
+              </span>
+              <span
+                class={`step-label ${thumbnailQuality() === "medium" ? "active" : ""}`}
+                onClick={() => updateThumbnailQuality("medium")}
+              >
+                480p (Balanced)
+              </span>
+              <span
+                class={`step-label ${thumbnailQuality() === "high" ? "active" : ""}`}
+                onClick={() => updateThumbnailQuality("high")}
+              >
+                Original (High)
+              </span>
+            </div>
+            <input
+              type="range"
+              class="setting-slider quality-range-slider"
+              min="1"
+              max="3"
+              step="1"
+              value={
+                thumbnailQuality() === "low"
+                  ? 1
+                  : thumbnailQuality() === "high"
+                    ? 3
+                    : 2
+              }
+              onInput={(e) => {
+                const val = parseInt(e.target.value);
+                const q = val === 1 ? "low" : val === 3 ? "high" : "medium";
+                updateThumbnailQuality(q);
+              }}
+              style={
+                {
+                  "--progress": `${
+                    ((((thumbnailQuality() === "low"
+                      ? 1
+                      : thumbnailQuality() === "high"
+                        ? 3
+                        : 2) - 1) /
+                      2) *
+                    100)
+                  }%`,
+                } as any
+              }
+            />
+          </div>
         </div>
 
         <div class="full-divider"></div>
