@@ -1,4 +1,4 @@
-import { createSignal, onMount, createMemo, For } from "solid-js";
+import { createSignal, onMount, createMemo, createEffect, For } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
@@ -9,8 +9,10 @@ import {
   favSortBy,
   favSortDirection,
   favRandomSeed,
+  getThumbnailUrl,
 } from "../store";
 import { sortVideos } from "../utils/sortUtils";
+import { preloadImages } from "../utils/imageLoader";
 import "./Favourites.css";
 
 export default function Favourites() {
@@ -36,6 +38,14 @@ export default function Favourites() {
       favSortDirection(),
       favRandomSeed(),
     );
+  });
+
+  createEffect(() => {
+    const list = displayedVideos();
+    if (list.length > 0) {
+      const urls = list.slice(0, 30).map((v) => getThumbnailUrl(v));
+      preloadImages(urls);
+    }
   });
 
   return (
