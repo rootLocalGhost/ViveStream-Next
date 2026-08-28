@@ -1,5 +1,20 @@
 import { render, screen, fireEvent } from "@solidjs/testing-library";
+import { vi } from "vitest";
 import Downloads from "../pages/Downloads";
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn((cmd) => {
+    if (cmd === "get_download_history") {
+      return Promise.resolve([]);
+    }
+    return Promise.resolve();
+  }),
+  convertFileSrc: vi.fn((path) => `asset://${path}`),
+}));
+
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(() => Promise.resolve(() => {})),
+}));
 
 describe("Downloads Component", () => {
   it("should toggle dropdown and change quality", async () => {
