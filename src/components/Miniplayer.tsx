@@ -68,6 +68,11 @@ export const Miniplayer: Component = () => {
     const playState = isPlaying();
     if (videoRef) {
       setCurrentTime(videoRef.currentTime);
+      try {
+        videoRef.pause();
+        videoRef.removeAttribute("src");
+        videoRef.load();
+      } catch {}
     }
     setIsPlaying(playState);
     const params = playerContextParams();
@@ -80,14 +85,13 @@ export const Miniplayer: Component = () => {
     const q = playerQueue();
     if (q.length > 0) {
       const nextVid = q[0];
+      setPlayerQueue(q.slice(1));
       setCurrentTime(0);
       setIsPlaying(true);
       setActiveVideo(nextVid);
-      const params = playerContextParams();
-      const qs = new URLSearchParams(
-        params as Record<string, string>,
-      ).toString();
-      navigate(`/player/${nextVid.id}${qs ? `?${qs}` : ""}`);
+    } else {
+      setIsPlaying(false);
+      setCurrentTime(0);
     }
   };
 
@@ -108,7 +112,6 @@ export const Miniplayer: Component = () => {
         setCurrentTime(0);
         setIsPlaying(true);
         setActiveVideo(prevVid);
-        navigate(`/player/${prevVid.id}`);
       }
     } catch (err) {
       console.error("Failed to play previous:", err);
@@ -139,6 +142,12 @@ export const Miniplayer: Component = () => {
       if (initialPlaying && videoRef.paused) {
         videoRef.play().catch(() => {});
       }
+    } else if (!shouldShow() && videoRef) {
+      try {
+        videoRef.pause();
+        videoRef.removeAttribute("src");
+        videoRef.load();
+      } catch {}
     }
   });
 
@@ -185,6 +194,11 @@ export const Miniplayer: Component = () => {
       window.removeEventListener("keydown", handleKeyDown);
       if (videoRef) {
         setCurrentTime(videoRef.currentTime);
+        try {
+          videoRef.pause();
+          videoRef.removeAttribute("src");
+          videoRef.load();
+        } catch {}
       }
     });
   });
@@ -232,21 +246,23 @@ export const Miniplayer: Component = () => {
                 }
               }}
               onPlay={() => {
-                if (isUnmounting) return;
+                if (isUnmounting || !shouldShow()) return;
                 setIsPlaying(true);
                 invoke("update_playback_status", { playing: true }).catch(
                   () => {},
                 );
               }}
               onPause={() => {
-                if (isUnmounting || (videoRef && videoRef.seeking)) return;
+                if (isUnmounting || !shouldShow() || (videoRef && videoRef.seeking)) return;
                 setIsPlaying(false);
                 invoke("update_playback_status", { playing: false }).catch(
                   () => {},
                 );
               }}
               onTimeUpdate={(e) => {
-                if (!isSeeking()) setCurrentTime(e.currentTarget.currentTime);
+                if (!isSeeking() && shouldShow() && !isUnmounting) {
+                  setCurrentTime(e.currentTarget.currentTime);
+                }
               }}
               onEnded={handlePlayNext}
             />
