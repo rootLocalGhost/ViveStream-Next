@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show } from "solid-js";
+import { createSignal, createMemo, createEffect, Show } from "solid-js";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import {
   VideoEntry,
@@ -6,7 +6,14 @@ import {
   addToast,
   favoritesSet,
   toggleFavoriteInCache,
+  getThumbnailUrl,
 } from "../store";
+import {
+  isImageDecoded,
+  markImageDecoded,
+  isImageFailed,
+  markImageFailed,
+} from "../utils/imageLoader";
 import "./VideoCard.css";
 
 export interface VideoCardProps {
@@ -31,6 +38,27 @@ export default function VideoCard(props: VideoCardProps) {
     return favoritesSet().has(props.video.id);
   });
   const [isDeleting, setIsDeleting] = createSignal(false);
+
+  const thumbUrl = createMemo(() => getThumbnailUrl(props.video));
+  const [thumbLoaded, setThumbLoaded] = createSignal(isImageDecoded(thumbUrl()));
+
+  createEffect(() => {
+    const url = thumbUrl();
+    setThumbLoaded(isImageDecoded(url));
+  });
+
+  const avatarUrl = createMemo(() => {
+    if (props.video.avatar_path) {
+      return convertFileSrc(props.video.avatar_path);
+    }
+    return `http://127.0.0.1:1422/Avatars/${encodeURIComponent(props.video.channel)}.jpg`;
+  });
+  const [avatarHidden, setAvatarHidden] = createSignal(isImageFailed(avatarUrl()));
+
+  createEffect(() => {
+    const url = avatarUrl();
+    setAvatarHidden(isImageFailed(url));
+  });
 
   const handleToggleFavorite = async (e: MouseEvent) => {
     e.stopPropagation();
@@ -99,11 +127,15 @@ export default function VideoCard(props: VideoCardProps) {
     >
       <div class="video-thumbnail-container">
         <img
-          src={convertFileSrc(props.video.thumbnail_path)}
+          src={thumbUrl()}
           alt={props.video.title}
-          class="video-thumbnail"
+          class={`video-thumbnail ${thumbLoaded() || isImageDecoded(thumbUrl()) ? "loaded" : ""}`}
           loading="lazy"
           decoding="async"
+          onLoad={() => {
+            markImageDecoded(thumbUrl());
+            setThumbLoaded(true);
+          }}
         />
       </div>
 
@@ -113,15 +145,15 @@ export default function VideoCard(props: VideoCardProps) {
         </h3>
         <div class="video-meta-row">
           <div class="video-channel-group">
-            <Show when={props.showAvatar !== false}>
+            <Show when={props.showAvatar !== false && !avatarHidden()}>
               <img
-                src={
-                  props.video.avatar_path
-                    ? convertFileSrc(props.video.avatar_path)
-                    : `http://127.0.0.1:1422/Avatars/${encodeURIComponent(props.video.channel)}.jpg`
-                }
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
+                src={avatarUrl()}
+                onError={() => {
+                  markImageFailed(avatarUrl());
+                  setAvatarHidden(true);
+                }}
+                onLoad={() => {
+                  markImageDecoded(avatarUrl());
                 }}
                 class="avatar-small"
                 loading="lazy"
