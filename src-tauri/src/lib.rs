@@ -70,6 +70,9 @@ pub fn run() {
                 eprintln!("Database initialization error: {}", e);
             }
 
+            // Asynchronously optimize thumbnails in background for smooth 60+ FPS performance
+            optimize_all_thumbnails(&app_handle, None, false);
+
             let server_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 if let Ok(base_dir) = crate::system::get_base_dir(&server_handle) {
@@ -176,7 +179,8 @@ pub fn run() {
             delete_video,
             get_download_history,
             clear_download_history_db,
-            delete_download_history_item
+            delete_download_history_item,
+            sync_thumbnail_cache
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
