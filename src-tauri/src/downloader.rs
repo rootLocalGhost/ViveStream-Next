@@ -26,6 +26,49 @@ pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf, PathBuf) {
     );
 }
 
+struct CachedPoToken {
+    token: String,
+    created_at: Instant,
+}
+
+static PO_TOKEN_CACHE: std::sync::Mutex<Option<CachedPoToken>> = std::sync::Mutex::new(None);
+
+pub fn extract_youtube_id(url: &str) -> String {
+    let trimmed = url.trim();
+    if let Some(idx) = trimmed.find("v=") {
+        return trimmed[idx + 2..]
+            .split('&')
+            .next()
+            .unwrap_or("bVYw5xR8xFg")
+            .to_string();
+    }
+    if let Some(idx) = trimmed.find("youtu.be/") {
+        return trimmed[idx + 9..]
+            .split('?')
+            .next()
+            .unwrap_or("bVYw5xR8xFg")
+            .to_string();
+    }
+    if let Some(idx) = trimmed.find("/shorts/") {
+        return trimmed[idx + 8..]
+            .split('?')
+            .next()
+            .unwrap_or("bVYw5xR8xFg")
+            .to_string();
+    }
+    if let Some(idx) = trimmed.find("/embed/") {
+        return trimmed[idx + 7..]
+            .split('?')
+            .next()
+            .unwrap_or("bVYw5xR8xFg")
+            .to_string();
+    }
+    if trimmed.len() == 11 && !trimmed.contains('/') {
+        return trimmed.to_string();
+    }
+    "bVYw5xR8xFg".to_string()
+}
+
 // Spawns a hidden native WebView, forces YouTube to calculate a BotGuard token via autoplay, and intercepts it
 async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
@@ -89,6 +132,41 @@ async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, Str
         _ => {
             let _ = webview.close();
             Err("Timeout".into())
+        }
+    }
+}
+
+pub async fn get_or_extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, String> {
+    {
+        if let Ok(guard) = PO_TOKEN_CACHE.lock() {
+            if let Some(ref cached) = *guard {
+                if cached.created_at.elapsed() < std::time::Duration::from_secs(3600) && !cached.token.is_empty() {
+                    return Ok(cached.token.clone());
+                }
+            }
+        }
+    }
+
+    match extract_po_token(app, video_id).await {
+        Ok(token) if !token.is_empty() => {
+            if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
+                *guard = Some(CachedPoToken {
+                    token: token.clone(),
+                    created_at: Instant::now(),
+                });
+            }
+            Ok(token)
+        }
+        Ok(token) => Ok(token),
+        Err(e) => {
+            if let Ok(guard) = PO_TOKEN_CACHE.lock() {
+                if let Some(ref cached) = *guard {
+                    if !cached.token.is_empty() {
+                        return Ok(cached.token.clone());
+                    }
+                }
+            }
+            Err(e)
         }
     }
 }
@@ -363,20 +441,16 @@ pub async fn get_video_metadata(
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
 
-    let temp_id = if let Some(idx) = url.find("v=") {
-        url[idx + 2..].split('&').next().unwrap_or("bVYw5xR8xFg")
-    } else {
-        "bVYw5xR8xFg"
-    };
+    let temp_id = extract_youtube_id(&url);
 
-    let po_token = match extract_po_token(&app, temp_id).await {
+    let po_token = match get_or_extract_po_token(&app, &temp_id).await {
         Ok(t) => t,
         Err(_) => String::new(),
     };
 
-    let mut client_args = format!("youtube:player_client={}", player_client);
+    let mut client_args = format!("youtube:player_client={};formats=missing_pot", player_client);
     if !po_token.is_empty() {
-        client_args.push_str(&format!(";po_token=web+{}", po_token));
+        client_args.push_str(&format!(";po_token=web.gvs+{0},web.player+{0}", po_token));
     }
 
     let mut cmd = Command::new(&ytdlp_path);
@@ -595,26 +669,27 @@ async fn download_video_inner(
         "Step 1: Spawning local WebView to intercept BotGuard PO Token...",
     );
 
-    let po_token = match extract_po_token(&app, &metadata.id).await {
+    let video_id_for_pot = extract_youtube_id(&url);
+    let po_token = match get_or_extract_po_token(&app, &video_id_for_pot).await {
         Ok(t) => {
             let _ = app.emit(
                 &progress_event,
-                "PO Token generated successfully. Initializing stream...",
+                "PO Token ready. Initializing stream...",
             );
             t
         }
         Err(_) => {
             let _ = app.emit(
                 &progress_event,
-                "PO Token extraction timed out, proceeding without token...",
+                "PO Token extraction bypassed, proceeding with stream...",
             );
             String::new()
         }
     };
 
-    let mut client_args = format!("youtube:player_client={}", player_client);
+    let mut client_args = format!("youtube:player_client={};formats=missing_pot", player_client);
     if !po_token.is_empty() {
-        client_args.push_str(&format!(";po_token=web+{}", po_token));
+        client_args.push_str(&format!(";po_token=web.gvs+{0},web.player+{0}", po_token));
     }
 
     let is_audio = dl_type == "Audio";
@@ -622,12 +697,12 @@ async fn download_video_inner(
         "bestaudio[ext=m4a]/bestaudio".to_string()
     } else {
         match quality.as_str() {
-            "720p" => "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "1080p" => "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "1440p" => "bestvideo[height<=1440][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "4K" => "bestvideo[height<=2160][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "Best" => "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            _ => "bestvideo[height<=1440][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "720p" => "bestvideo[height<=720]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720]/best",
+            "1080p" => "bestvideo[height<=1080]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+            "1440p" => "bestvideo[height<=1440]+bestaudio[ext=m4a]/bestvideo[height<=1440]+bestaudio/best[height<=1440]/best",
+            "4K" => "bestvideo[height<=2160]+bestaudio[ext=m4a]/bestvideo[height<=2160]+bestaudio/best[height<=2160]/best",
+            "Best" => "bestvideo+bestaudio[ext=m4a]/bestvideo+bestaudio/best",
+            _ => "bestvideo[height<=1440]+bestaudio[ext=m4a]/bestvideo[height<=1440]+bestaudio/best[height<=1440]/best",
         }
         .to_string()
     };
@@ -916,7 +991,7 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
     }
 
     // AWAIT BEFORE DB CONNECTION TO PREVENT THREAD PANICS
-    let po_token = match extract_po_token(&app, "bVYw5xR8xFg").await {
+    let po_token = match get_or_extract_po_token(&app, "bVYw5xR8xFg").await {
         Ok(t) => t,
         Err(_) => String::new(),
     };
@@ -970,9 +1045,9 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
     }
 
     if !missing_metadata_ids.is_empty() && ytdlp_path.exists() {
-        let mut client_args = format!("youtube:player_client={}", player_client);
+        let mut client_args = format!("youtube:player_client={};formats=missing_pot", player_client);
         if !po_token.is_empty() {
-            client_args.push_str(&format!(";po_token=web+{}", po_token));
+            client_args.push_str(&format!(";po_token=web.gvs+{0},web.player+{0}", po_token));
         }
 
         for chunk in missing_metadata_ids.chunks(20) {
