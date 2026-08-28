@@ -5,6 +5,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import VideoCard from "../components/VideoCard";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
+import VirtualGrid from "../components/VirtualGrid";
 import {
   VideoEntry,
   addToast,
@@ -108,7 +109,7 @@ export default function ArtistPage() {
   createEffect(() => {
     const list = displayedVideos();
     if (list.length > 0) {
-      const urls = list.slice(0, 30).map((v) => getThumbnailUrl(v));
+      const urls = list.map((v) => getThumbnailUrl(v));
       preloadImages(urls);
     }
   });
@@ -217,30 +218,33 @@ export default function ArtistPage() {
           iconName="microphone-stage"
         />
       ) : (
-        <div class="grid">
-          <For each={displayedVideos()}>
-            {(video) => (
-              <VideoCard
-                video={video}
-                showAvatar={false}
-                onClick={() =>
-                  navigate(
-                    `/player/${video.id}?context=artist&name=${encodeURIComponent(
-                      artistName(),
-                    )}`,
-                  )
-                }
-                onAddToPlaylist={(v) => {
-                  setSelectedVideoForAdd(v);
-                  setShowAddToModal(true);
-                }}
-                onDelete={(v) => {
-                  setVideos((prev) => prev.filter((x) => x.id !== v.id));
-                }}
-              />
-            )}
-          </For>
-        </div>
+        <VirtualGrid
+          items={displayedVideos()}
+          minItemWidth={340}
+          gap={16}
+          estimatedItemHeight={285}
+          overscan={2}
+          renderItem={(video) => (
+            <VideoCard
+              video={video}
+              showAvatar={false}
+              onClick={() =>
+                navigate(
+                  `/player/${video.id}?context=artist&name=${encodeURIComponent(
+                    artistName(),
+                  )}`,
+                )
+              }
+              onAddToPlaylist={(v) => {
+                setSelectedVideoForAdd(v);
+                setShowAddToModal(true);
+              }}
+              onDelete={(v) => {
+                setVideos((prev) => prev.filter((x) => x.id !== v.id));
+              }}
+            />
+          )}
+        />
       )}
     </div>
   );
