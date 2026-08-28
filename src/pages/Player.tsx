@@ -9,7 +9,7 @@ import {
   Show,
 } from "solid-js";
 import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
   VideoEntry,
@@ -41,6 +41,7 @@ import {
   setPlayerContextParams,
   setGlobalVideoRef,
   isSearchOpen,
+  getThumbnailUrl,
 } from "../store";
 import "./Player.css";
 
@@ -95,6 +96,11 @@ export default function Player() {
     const playState = isPlaying();
     if (videoRef) {
       setCurrentTime(videoRef.currentTime);
+      try {
+        videoRef.pause();
+        videoRef.removeAttribute("src");
+        videoRef.load();
+      } catch {}
     }
     setIsPlaying(playState);
     if (window.history.length > 1) {
@@ -688,6 +694,11 @@ export default function Player() {
     if (unlistenPrev) unlistenPrev();
     if (videoRef) {
       setCurrentTime(videoRef.currentTime);
+      try {
+        videoRef.pause();
+        videoRef.removeAttribute("src");
+        videoRef.load();
+      } catch {}
     }
   });
 
@@ -794,7 +805,7 @@ export default function Player() {
                 }
               }}
               onTimeUpdate={(e) => {
-                if (!isSeeking()) setCurrentTime(e.currentTarget.currentTime);
+                if (!isSeeking() && !isUnmounting) setCurrentTime(e.currentTarget.currentTime);
               }}
               onClick={() => {
                 setShowSettingsMenu(false);
@@ -1197,13 +1208,32 @@ export default function Player() {
             >
               <div class="queue-thumbnail-wrapper">
                 <img
-                  src={`http://127.0.0.1:1422/Thumbnails/${qVideo.id}.jpg`}
+                  src={getThumbnailUrl(qVideo)}
                   class="queue-thumbnail"
+                  alt={qVideo.title}
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
               <div class="queue-meta">
-                <span class="queue-title">{qVideo.title}</span>
-                <span class="queue-channel">{qVideo.channel}</span>
+                <span class="queue-title" title={qVideo.title}>{qVideo.title}</span>
+                <div class="queue-channel-group">
+                  <img
+                    src={
+                      qVideo.avatar_path
+                        ? convertFileSrc(qVideo.avatar_path)
+                        : `http://127.0.0.1:1422/Avatars/${encodeURIComponent(qVideo.channel)}.jpg`
+                    }
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                    class="queue-avatar"
+                    alt={qVideo.channel}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="queue-channel" title={qVideo.channel}>{qVideo.channel}</span>
+                </div>
               </div>
             </div>
           )}
