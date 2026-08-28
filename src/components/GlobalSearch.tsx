@@ -8,6 +8,7 @@ import {
   setIsSearchOpen,
   globalSearchQuery,
   setGlobalSearchQuery,
+  getThumbnailUrl,
 } from "../store";
 import "./GlobalSearch.css";
 
@@ -550,7 +551,7 @@ export default function GlobalSearch() {
                       >
                         <div class="result-thumb-wrapper">
                           <img
-                            src={convertFileSrc(video.thumbnail_path)}
+                            src={getThumbnailUrl(video)}
                             class="result-thumb-img"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
