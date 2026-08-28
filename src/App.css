@@ -607,21 +607,10 @@ input:checked + .slider:before {
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--primary-background);
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  will-change: scroll-position;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   transition: background-color 0.3s ease;
-}
-
-/* Fast-Scroll Optimization: temporarily suppress hover evaluations during active scrolling */
-.main-content.is-scrolling .video-card,
-.main-content.is-scrolling .playlist-card,
-.main-content.is-scrolling .artist-card,
-.main-content.is-scrolling .download-task-card,
-.main-content.is-scrolling .clay-card {
-  pointer-events: none !important;
 }
 
 .page-wrapper {
