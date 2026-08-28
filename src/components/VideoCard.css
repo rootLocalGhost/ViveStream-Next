@@ -9,15 +9,14 @@
   padding: 2px;
   cursor: pointer;
   position: relative;
-  content-visibility: auto;
-  contain-intrinsic-size: 340px 270px;
-  contain: layout style paint;
+  contain: layout paint;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 
 .video-card:hover {
   transform: var(--card-hover-transform);
-  will-change: transform;
 }
 
 .video-thumbnail-container {
@@ -26,9 +25,10 @@
   aspect-ratio: 16/9;
   border-radius: calc(var(--clay-radius) - 8px);
   overflow: hidden;
-  box-shadow: var(--clay-btn-shadow);
   background: #151518;
-  contain: strict;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .video-thumbnail {
@@ -38,6 +38,8 @@
   display: block;
   image-rendering: auto;
   opacity: 0;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
   transition: opacity 0.2s ease-out, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -47,7 +49,6 @@
 
 .video-card:hover .video-thumbnail {
   transform: scale3d(1.03, 1.03, 1);
-  will-change: transform;
 }
 
 .video-meta-row {
