@@ -120,4 +120,42 @@ describe("Player Component", () => {
     );
     expect(requestFullscreenMock).not.toHaveBeenCalled();
   });
+
+  it("handles queue advance in-place for activeVideo and playerQueue", async () => {
+    const { setActiveVideo, setPlayerQueue, activeVideo, playerQueue } = await import("../store");
+    const vid1 = {
+      id: "vid1",
+      title: "Video 1",
+      channel: "Channel 1",
+      video_path: "/mock/v1.mp4",
+      thumbnail_path: "",
+      avatar_path: "",
+      subtitle_path: "",
+      desc_path: "",
+    };
+    const vid2 = {
+      id: "vid2",
+      title: "Video 2",
+      channel: "Channel 2",
+      video_path: "/mock/v2.mp4",
+      thumbnail_path: "",
+      avatar_path: "",
+      subtitle_path: "",
+      desc_path: "",
+    };
+
+    setActiveVideo(vid1);
+    setPlayerQueue([vid2]);
+
+    expect(activeVideo()?.id).toBe("vid1");
+    expect(playerQueue().length).toBe(1);
+
+    // Simulate in-place miniplayer next
+    const nextVid = playerQueue()[0];
+    setPlayerQueue(playerQueue().slice(1));
+    setActiveVideo(nextVid);
+
+    expect(activeVideo()?.id).toBe("vid2");
+    expect(playerQueue().length).toBe(0);
+  });
 });
