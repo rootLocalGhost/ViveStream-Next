@@ -547,12 +547,23 @@ export const {
 });
 
 export function getThumbnailUrl(
-  video: { thumbnail_path?: string; lq_thumbnail_path?: string } | null | undefined,
+  video:
+    | { id?: string; thumbnail_path?: string; lq_thumbnail_path?: string }
+    | null
+    | undefined,
   highRes: boolean = false,
 ): string {
   if (!video) return "";
   const quality = thumbnailQuality ? thumbnailQuality() : "medium";
-  const path = !highRes && quality !== "high" && video.lq_thumbnail_path ? video.lq_thumbnail_path : video.thumbnail_path;
+  const isLq =
+    !highRes && quality !== "high" && Boolean(video.lq_thumbnail_path);
+  if (video.id) {
+    return `http://127.0.0.1:1422/Thumbnails/${video.id}${isLq ? "_lq" : ""}.jpg`;
+  }
+  const path =
+    isLq && video.lq_thumbnail_path
+      ? video.lq_thumbnail_path
+      : video.thumbnail_path;
   if (!path) return "";
   try {
     return convertFileSrc(path);
@@ -644,6 +655,14 @@ export const toggleGlobalPiP = async () => {
 };
 
 export const closeGlobalMiniplayer = () => {
+  if (globalVideoRef) {
+    try {
+      globalVideoRef.pause();
+      globalVideoRef.removeAttribute("src");
+      globalVideoRef.load();
+    } catch {}
+    setGlobalVideoRef(null);
+  }
   pauseGlobalPlay();
   setActiveVideo(null);
   setMiniplayerDismissed(true);
