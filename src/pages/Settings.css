@@ -199,3 +199,39 @@
 [data-palette="crimson"] .settings-page .setting-input:focus {
   outline: 2px solid rgba(239, 35, 60, 0.3);
 }
+
+.settings-page .quality-slider-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 280px;
+}
+
+.settings-page .quality-step-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.settings-page .step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--secondary-text);
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+  user-select: none;
+}
+
+.settings-page .step-label:hover {
+  color: var(--primary-text);
+}
+
+.settings-page .step-label.active {
+  color: var(--primary-accent);
+  font-weight: 700;
+}
+
+.settings-page .quality-range-slider {
+  width: 100%;
+}
+
