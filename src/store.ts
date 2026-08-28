@@ -1,5 +1,5 @@
 import { createSignal, createRoot } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 const isBrowser =
@@ -58,7 +58,10 @@ export interface VideoEntry {
   subtitle_path: string;
   desc_path: string;
   added_at?: string;
+  lq_thumbnail_path?: string;
 }
+
+export type ThumbnailQuality = "low" | "medium" | "high";
 
 export interface DownloadTask {
   id: string;
@@ -109,6 +112,8 @@ export const {
   setAlwaysShowSortBar,
   showFpsCounter,
   setShowFpsCounter,
+  thumbnailQuality,
+  setThumbnailQuality,
   isSearchOpen,
   setIsSearchOpen,
   isSortOpen,
@@ -259,6 +264,9 @@ export const {
   const [showFpsCounter, setShowFpsCounter] = createSignal(
     getBool("showFpsCounter", false),
   );
+  const [thumbnailQuality, setThumbnailQuality] = createSignal<ThumbnailQuality>(
+    (getStr("thumbnailQuality", "medium") as ThumbnailQuality) || "medium",
+  );
   const [isSearchOpen, setIsSearchOpen] = createSignal(false);
   const [isSortOpen, setIsSortOpen] = createSignal(false);
   const [globalSearchQuery, setGlobalSearchQuery] = createSignal("");
@@ -395,6 +403,8 @@ export const {
     setAlwaysShowSortBar,
     showFpsCounter,
     setShowFpsCounter,
+    thumbnailQuality,
+    setThumbnailQuality,
     isSearchOpen,
     setIsSearchOpen,
     isSortOpen,
@@ -535,6 +545,21 @@ export const {
     },
   };
 });
+
+export function getThumbnailUrl(
+  video: { thumbnail_path?: string; lq_thumbnail_path?: string } | null | undefined,
+  highRes: boolean = false,
+): string {
+  if (!video) return "";
+  const quality = thumbnailQuality ? thumbnailQuality() : "medium";
+  const path = !highRes && quality !== "high" && video.lq_thumbnail_path ? video.lq_thumbnail_path : video.thumbnail_path;
+  if (!path) return "";
+  try {
+    return convertFileSrc(path);
+  } catch {
+    return path;
+  }
+}
 
 let globalVideoRef: HTMLVideoElement | null = null;
 
@@ -683,6 +708,16 @@ export const toggleShowFpsCounter = (val: boolean) => {
   setShowFpsCounter(val);
   if (isBrowser)
     window.localStorage.setItem("showFpsCounter", val.toString());
+};
+
+export const updateThumbnailQuality = (val: ThumbnailQuality) => {
+  setThumbnailQuality(val);
+  if (isBrowser) {
+    window.localStorage.setItem("thumbnailQuality", val);
+  }
+  try {
+    invoke("sync_thumbnail_cache", { quality: val }).catch(() => {});
+  } catch {}
 };
 
 export const toggleAppTheme = (theme: "light" | "dark") => {
