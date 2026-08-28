@@ -12,6 +12,8 @@ pub struct VideoEntry {
     pub desc_path: String,
     #[serde(default)]
     pub added_at: Option<String>,
+    #[serde(default)]
+    pub lq_thumbnail_path: Option<String>,
 }
 
 #[derive(Serialize)]
