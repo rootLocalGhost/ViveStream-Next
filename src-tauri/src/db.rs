@@ -108,6 +108,13 @@ fn map_video_row(
         .to_string_lossy()
         .into_owned();
 
+    let lq_thumb = base_dir.join("Thumbnails").join(format!("{}_lq.jpg", id));
+    let lq_thumbnail_path = if lq_thumb.exists() {
+        Some(lq_thumb.to_string_lossy().into_owned())
+    } else {
+        None
+    };
+
     let added_at: Option<String> = row.get(5).ok();
 
     Ok(VideoEntry {
@@ -120,6 +127,7 @@ fn map_video_row(
         subtitle_path,
         desc_path,
         added_at,
+        lq_thumbnail_path,
     })
 }
 
@@ -559,6 +567,7 @@ pub async fn delete_video(app: AppHandle, video_id: String) -> Result<(), String
         let vid_file_webm = base_dir.join("Videos").join(format!("{}.webm", video_id));
         let vid_file_mkv = base_dir.join("Videos").join(format!("{}.mkv", video_id));
         let thumb_file = base_dir.join("Thumbnails").join(format!("{}.jpg", video_id));
+        let lq_thumb_file = base_dir.join("Thumbnails").join(format!("{}_lq.jpg", video_id));
         let desc_file = base_dir.join("Descriptions").join(format!("{}.txt", video_id));
         let sub_file = base_dir.join("Videos").join(format!("{}.vtt", video_id));
 
@@ -567,6 +576,7 @@ pub async fn delete_video(app: AppHandle, video_id: String) -> Result<(), String
         let _ = std::fs::remove_file(vid_file_webm);
         let _ = std::fs::remove_file(vid_file_mkv);
         let _ = std::fs::remove_file(thumb_file);
+        let _ = std::fs::remove_file(lq_thumb_file);
         let _ = std::fs::remove_file(desc_file);
         let _ = std::fs::remove_file(sub_file);
 
