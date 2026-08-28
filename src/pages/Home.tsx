@@ -1,9 +1,10 @@
-import { createSignal, onMount, createMemo, createEffect, For } from "solid-js";
+import { createSignal, onMount, createMemo, createEffect } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "@solidjs/router";
 import PremiumPlaceholder from "../components/PremiumPlaceholder";
 import VideoCard from "../components/VideoCard";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
+import VirtualGrid from "../components/VirtualGrid";
 import {
   homeVideos,
   setHomeVideos,
@@ -48,7 +49,7 @@ export default function Home() {
   createEffect(() => {
     const list = displayedVideos();
     if (list.length > 0) {
-      const urls = list.slice(0, 30).map((v) => getThumbnailUrl(v));
+      const urls = list.map((v) => getThumbnailUrl(v));
       preloadImages(urls);
     }
   });
@@ -72,23 +73,26 @@ export default function Home() {
           iconName="film-strip"
         />
       ) : (
-        <div class="grid">
-          <For each={displayedVideos()}>
-            {(video) => (
-              <VideoCard
-                video={video}
-                onClick={() => navigate(`/player/${video.id}`)}
-                onAddToPlaylist={(v) => {
-                  setSelectedVideoForAdd(v);
-                  setShowAddToModal(true);
-                }}
-                onDelete={(v) => {
-                  setHomeVideos((prev) => prev.filter((x) => x.id !== v.id));
-                }}
-              />
-            )}
-          </For>
-        </div>
+        <VirtualGrid
+          items={displayedVideos()}
+          minItemWidth={340}
+          gap={16}
+          estimatedItemHeight={285}
+          overscan={2}
+          renderItem={(video) => (
+            <VideoCard
+              video={video}
+              onClick={() => navigate(`/player/${video.id}`)}
+              onAddToPlaylist={(v) => {
+                setSelectedVideoForAdd(v);
+                setShowAddToModal(true);
+              }}
+              onDelete={(v) => {
+                setHomeVideos((prev) => prev.filter((x) => x.id !== v.id));
+              }}
+            />
+          )}
+        />
       )}
     </div>
   );
