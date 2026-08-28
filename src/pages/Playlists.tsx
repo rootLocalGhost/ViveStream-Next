@@ -1,8 +1,8 @@
-import { createSignal, onMount, onCleanup, createMemo, For, Show } from "solid-js";
+import { createSignal, onMount, onCleanup, createMemo, createEffect, For, Show } from "solid-js";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useNavigate } from "@solidjs/router";
-import { VideoEntry, showConfirmDialog, addToast, playlistsSortBy, playlistsSortDirection, playlistVideosSortBy, playlistVideosSortDirection, playlistVideosRandomSeed, setActivePlaylistDetail } from "../store";
+import { VideoEntry, showConfirmDialog, addToast, playlistsSortBy, playlistsSortDirection, playlistVideosSortBy, playlistVideosSortDirection, playlistVideosRandomSeed, setActivePlaylistDetail, getThumbnailUrl } from "../store";
 import VideoCard from "../components/VideoCard";
 import CreatePlaylistModal from "../components/CreatePlaylistModal";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
@@ -11,6 +11,7 @@ import {
   sortPlaylists,
   sortPlaylistVideos,
 } from "../utils/sortUtils";
+import { preloadImages } from "../utils/imageLoader";
 import "./Playlists.css";
 
 interface Playlist {
@@ -73,7 +74,7 @@ export default function Playlists() {
             });
             counts[pl.id] = vids.length;
             if (vids.length > 0 && vids[0].thumbnail_path) {
-              thumbs[pl.id] = vids[0].thumbnail_path;
+              thumbs[pl.id] = vids[0].lq_thumbnail_path || vids[0].thumbnail_path;
             }
           } catch {
             counts[pl.id] = 0;
@@ -293,6 +294,14 @@ export default function Playlists() {
       playlistVideosSortDirection(),
       playlistVideosRandomSeed(),
     );
+  });
+
+  createEffect(() => {
+    const list = displayedPlaylistVideos();
+    if (list.length > 0) {
+      const urls = list.slice(0, 30).map((v) => getThumbnailUrl(v));
+      preloadImages(urls);
+    }
   });
 
   return (
