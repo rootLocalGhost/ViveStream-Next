@@ -29,10 +29,15 @@ const initialAnimState = getBool("useAnimatedIcons", true);
 const initialHoverState = getBool("sidebarHoverMode", true);
 const initialTheme = getStr("appTheme", "dark");
 const initialPalette = getStr("appPalette", "sunset");
+const initialStyle =
+  (getStr("designStyle", "neo-brutalism") as
+    | "neo-brutalism"
+    | "claymorphism") || "neo-brutalism";
 
 if (isBrowser) {
   document.documentElement.setAttribute("data-theme", initialTheme);
   document.documentElement.setAttribute("data-palette", initialPalette);
+  document.documentElement.setAttribute("data-style", initialStyle);
 }
 
 export interface Toast {
@@ -124,6 +129,8 @@ export const {
   setAppTheme,
   appPalette,
   setAppPalette,
+  designStyle,
+  setDesignStyle,
   concurrentDownloads,
   setConcurrentDownloads,
   concurrentFragments,
@@ -272,6 +279,9 @@ export const {
   const [globalSearchQuery, setGlobalSearchQuery] = createSignal("");
   const [appTheme, setAppTheme] = createSignal(initialTheme);
   const [appPalette, setAppPalette] = createSignal(initialPalette);
+  const [designStyle, setDesignStyle] = createSignal<
+    "neo-brutalism" | "claymorphism"
+  >(initialStyle);
 
   const [concurrentDownloads, setConcurrentDownloads] = createSignal(
     getNum("concurrentDownloads", 3),
@@ -415,6 +425,8 @@ export const {
     setAppTheme,
     appPalette,
     setAppPalette,
+    designStyle,
+    setDesignStyle,
     concurrentDownloads,
     setConcurrentDownloads,
     concurrentFragments,
@@ -752,6 +764,14 @@ export const toggleAppPalette = (palette: string) => {
   if (isBrowser) {
     window.localStorage.setItem("appPalette", palette);
     document.documentElement.setAttribute("data-palette", palette);
+  }
+};
+
+export const toggleDesignStyle = (style: "neo-brutalism" | "claymorphism") => {
+  setDesignStyle(style);
+  if (isBrowser) {
+    window.localStorage.setItem("designStyle", style);
+    document.documentElement.setAttribute("data-style", style);
   }
 };
 
