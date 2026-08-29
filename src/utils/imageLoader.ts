@@ -1,4 +1,5 @@
 // High-Performance Image Caching, Pre-decoding & Error Memoization Engine
+const MAX_CACHE_SIZE = 600;
 
 // In-memory set of image URLs that have been successfully decoded in the current session
 const decodedImageCache = new Set<string>();
@@ -18,10 +19,14 @@ export function isImageDecoded(src: string): boolean {
 }
 
 /**
- * Marks an image as decoded in the cache.
+ * Marks an image as decoded in the cache with size bounding.
  */
 export function markImageDecoded(src: string): void {
   if (!src) return;
+  if (decodedImageCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = decodedImageCache.values().next().value;
+    if (firstKey) decodedImageCache.delete(firstKey);
+  }
   decodedImageCache.add(src);
 }
 
@@ -38,6 +43,10 @@ export function isImageFailed(src: string): boolean {
  */
 export function markImageFailed(src: string): void {
   if (!src) return;
+  if (failedImageUrls.size >= MAX_CACHE_SIZE) {
+    const firstKey = failedImageUrls.values().next().value;
+    if (firstKey) failedImageUrls.delete(firstKey);
+  }
   failedImageUrls.add(src);
 }
 
