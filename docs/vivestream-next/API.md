@@ -16,38 +16,38 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 - `wipe_dependencies()`: Safely deletes the downloaded binaries.
 - `clean_database_and_media()`: Truncates non-essential tables and removes temporary media.
 - `nuclear_wipe()`: Dangerously deletes all stored videos, database tables, config files, and binaries.
-- `reindex_library()`: Scans the local filesystem to rebuild the SQLite database based on existing video files and metadata.
+- `reindex_library(player_client: String)`: Scans the local filesystem to rebuild the SQLite database based on existing video files and metadata.
 
 ### Download & Extraction Management
 
-- `get_video_metadata(url: String, client: String)`: Extracts metadata (title, thumbnails, channel, duration) without downloading the media. Resolves PO Tokens natively if required.
-- `download_video(url: String, quality: String, format: String, download_path: String, use_cookie: bool)`: Initiates a concurrent download job. Progress is emitted asynchronously via Tauri events.
+- `get_video_metadata(url: String, player_client: String)`: Extracts metadata (title, thumbnails, channel, duration) without downloading the media. Resolves PO Tokens natively if required.
+- `download_video(url: String, metadata: VideoEntry, quality: String, dl_type: String, custom_path: Option<String>, use_cookie: bool, overwrite: bool, player_client: String)`: Initiates a concurrent download job. Progress is emitted asynchronously via Tauri events.
 
 ### Media Library: Videos & Playlists
 
 - `get_downloaded_videos()`: Retrieves all downloaded `VideoEntry` objects from the SQLite database.
 - `update_video_details(id: String, title: String, channel: String)`: Updates specific metadata for a video entry.
 - `update_video_added_at(id: String)`: Refreshes the insertion timestamp for sorting purposes.
-- `delete_video(id: String, delete_file: bool)`: Removes a video from the database and optionally from the local filesystem.
+- `delete_video(video_id: String)`: Removes a video from the database and optionally from the local filesystem.
 - `get_favorites()`: Returns a list of video objects marked as favorites.
 - `check_favorite(id: String)` -> `bool`: Checks if a specific video is marked as a favorite.
-- `toggle_favorite(id: String)`: Flips the favorite status of a video.
+- `toggle_favorite(id: String, is_favorite: bool)`: Flips the favorite status of a video.
 - `create_playlist(name: String)`: Instantiates a new playlist object in the database.
 - `get_playlists()`: Retrieves a list of all playlists.
 - `delete_playlist(id: String)`: Removes a playlist entirely (cascades to junction tables).
 - `add_video_to_playlist(playlist_id: String, video_id: String)`: Maps a video to a playlist.
 - `remove_video_from_playlist(playlist_id: String, video_id: String)`: Deletes the mapping.
 - `get_playlist_videos(playlist_id: String)`: Retrieves ordered `VideoEntry` items for a specific playlist.
-- `update_playlist_title(id: String, name: String)`: Renames a playlist.
+- `update_playlist_title(id: String, new_title: String)`: Renames a playlist.
 - `update_playlist_order(playlist_id: String, video_ids: Vec<String>)`: Persists custom drag-and-drop sorting order.
-- `upload_playlist_cover(id: String, path: String)` & `upload_playlist_banner(id: String, path: String)`: Manages custom image associations for playlists.
+- `upload_playlist_cover(id: String, image_path: String)` & `upload_playlist_banner(id: String, image_path: String)`: Manages custom image associations for playlists.
 - `sync_thumbnail_cache(quality: Option<String>)`: Synchronizes the local thumbnail cache.
 
 ### Media Library: Artists & History
 
 - `get_artists()`: Returns a list of all unique channel names and their avatar paths.
-- `get_videos_by_artist(artist: String)`: Retrieves videos associated with a specific channel/artist.
-- `upload_artist_avatar(artist: String, path: String)`: Manages custom avatars for channels.
+- `get_videos_by_artist(name: String)`: Retrieves videos associated with a specific channel/artist.
+- `upload_artist_avatar(name: String, image_path: String)`: Manages custom avatars for channels.
 - `get_download_history()`: Retrieves the persistent log of past download attempts and their statuses.
 - `clear_download_history_db()`: Flushes the history table.
 - `delete_download_history_item(id: String)`: Removes a single line item from the history.
