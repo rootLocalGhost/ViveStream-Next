@@ -4,39 +4,36 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.7);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .benchmark-modal-container {
-  background: var(--clay-bg, rgba(24, 24, 30, 0.95));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  border-radius: var(--clay-radius, 24px);
+  background: var(--secondary-background);
+  border: 2.5px solid var(--border-color);
+  border-radius: var(--neo-radius);
   width: 100%;
   max-width: 620px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.7),
-    var(--clay-card-shadow);
+  box-shadow: 8px 8px 0px var(--border-color);
   overflow: hidden;
-  animation: modalPopIn 0.25s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  animation: modalPopIn 0.18s var(--ease-spring) forwards;
 }
 
 .benchmark-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px 16px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 18px 24px 14px 24px;
+  border-bottom: 2px solid var(--border-color);
+  background: var(--clay-bg);
 }
 
 .benchmark-header-left {
@@ -53,34 +50,40 @@
 .benchmark-title {
   margin: 0;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--primary-text);
 }
 
 .benchmark-subtitle {
   margin: 3px 0 0 0;
   font-size: 12px;
+  font-weight: 600;
   color: var(--secondary-text);
   line-height: 1.4;
 }
 
 .benchmark-close-btn {
-  background: transparent;
-  border: none;
-  color: var(--secondary-text);
-  font-size: 20px;
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  color: var(--primary-text);
+  font-size: 16px;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
+  padding: 5px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  box-shadow: 1.5px 1.5px 0px var(--border-color);
+  transition:
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .benchmark-close-btn:hover {
-  color: var(--primary-text);
-  background: rgba(255, 255, 255, 0.08);
+  background: #ef233c;
+  color: #ffffff;
+  transform: translate3d(-1px, -1px, 0);
 }
 
 .benchmark-body {
@@ -98,32 +101,40 @@
   align-items: center;
   text-align: center;
   gap: 12px;
-  padding: 16px 8px;
+  padding: 20px;
+  background: var(--clay-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  box-shadow: 3px 3px 0px var(--border-color);
+  width: 100%;
 }
 
 .benchmark-icon-hero {
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  background: rgba(var(--primary-accent-rgb, 242, 92, 84), 0.15);
-  color: var(--primary-accent);
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: var(--primary-accent);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 28px;
   margin-bottom: 4px;
+  border: 2px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
 }
 
 .benchmark-intro-card h3 {
   margin: 0;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--primary-text);
 }
 
 .benchmark-intro-card p {
   margin: 0;
   font-size: 13px;
+  font-weight: 500;
   color: var(--secondary-text);
   line-height: 1.5;
   max-width: 460px;
@@ -147,7 +158,7 @@
 .benchmark-step-label {
   margin: 0;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--primary-text);
   text-align: center;
 }
@@ -155,23 +166,25 @@
 .benchmark-progress-bar {
   width: 100%;
   max-width: 380px;
-  height: 8px;
-  background: var(--primary-background, rgba(0, 0, 0, 0.4));
-  border-radius: 6px;
+  height: 12px;
+  background: var(--tertiary-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: 4px;
   overflow: hidden;
+  box-shadow: 1.5px 1.5px 0px var(--border-color);
 }
 
 .benchmark-progress-fill {
   height: 100%;
   background: var(--primary-accent);
-  border-radius: 6px;
-  transition: width 0.2s ease;
+  transition: width 0.15s ease;
 }
 
 .benchmark-progress-text {
   font-size: 12px;
-  font-weight: 700;
-  color: var(--secondary-text);
+  font-weight: 800;
+  font-family: monospace;
+  color: var(--primary-text);
 }
 
 /* Results View */
@@ -179,17 +192,18 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .benchmark-score-banner {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: var(--primary-background, rgba(20, 20, 26, 0.8));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background: var(--clay-bg);
+  border: 2px solid var(--border-color);
+  box-shadow: 3px 3px 0px var(--border-color);
   padding: 16px 20px;
-  border-radius: 16px;
+  border-radius: var(--neo-radius-sm);
 }
 
 .score-badge {
@@ -201,20 +215,20 @@
   padding: 8px 12px;
   background: var(--primary-accent);
   color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(var(--primary-accent-rgb, 242, 92, 84), 0.35);
+  border-radius: 6px;
+  border: 1.5px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
 }
 
 .score-grade {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   line-height: 1;
 }
 
 .score-num {
   font-size: 11px;
-  font-weight: 600;
-  opacity: 0.9;
+  font-weight: 700;
   margin-top: 2px;
 }
 
@@ -227,13 +241,14 @@
 .score-verdict {
   margin: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--primary-text);
 }
 
 .score-desc {
   margin: 0;
   font-size: 12px;
+  font-weight: 500;
   color: var(--secondary-text);
 }
 
@@ -249,15 +264,15 @@
   flex-direction: column;
   gap: 4px;
   background: var(--clay-bg);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
-  box-shadow: var(--clay-card-shadow);
-  border-radius: 14px;
+  border: 2px solid var(--border-color);
+  box-shadow: 2.5px 2.5px 0px var(--border-color);
+  border-radius: var(--neo-radius-sm);
   padding: 14px 16px;
 }
 
 .metric-label {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 800;
   color: var(--secondary-text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -271,21 +286,21 @@
 }
 
 .metric-value.fps-val {
-  color: #4ade80;
+  color: #22c55e;
 }
 
 .metric-value.fps-warn {
-  color: #facc15;
+  color: #eab308;
 }
 
 .metric-value small {
   font-size: 13px;
-  font-weight: 500;
-  opacity: 0.8;
+  font-weight: 600;
 }
 
 .metric-sub {
   font-size: 11px;
+  font-weight: 600;
   color: var(--secondary-text);
 }
 
@@ -296,32 +311,36 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  border-radius: 20px;
-  font-weight: 600;
+  border-radius: var(--neo-radius-sm);
+  font-weight: 700;
   font-size: 14px;
   cursor: pointer;
-  border: none;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  border: 1.5px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
+  transition:
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    box-shadow 0.08s ease;
 }
 
 .benchmark-action-btn:hover {
-  transform: translateY(-2px);
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
 }
 
 .benchmark-action-btn:active {
-  transform: scale(0.96);
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 .benchmark-action-btn.primary {
   background: var(--primary-accent);
   color: #ffffff;
-  box-shadow: var(--clay-btn-shadow);
 }
 
 .benchmark-action-btn.secondary {
-  background: var(--tertiary-background, rgba(255, 255, 255, 0.08));
+  background: var(--tertiary-background);
   color: var(--primary-text);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .benchmark-footer-actions {
@@ -331,3 +350,4 @@
   gap: 10px;
   margin-top: 6px;
 }
+
