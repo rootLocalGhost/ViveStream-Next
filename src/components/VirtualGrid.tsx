@@ -36,11 +36,16 @@ export default function VirtualGrid<T>(props: VirtualGridProps<T>) {
     }
   };
 
+  let rafId: number | null = null;
   const updateMeasurements = () => {
-    if (!containerRef || !scrollParent) return;
-    setContainerWidth(containerRef.clientWidth || 1200);
-    setViewportHeight(scrollParent.clientHeight || window.innerHeight);
-    setGridOffsetTop(containerRef.offsetTop || 0);
+    if (rafId !== null) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      if (!containerRef || !scrollParent) return;
+      setContainerWidth(containerRef.clientWidth || 1200);
+      setViewportHeight(scrollParent.clientHeight || window.innerHeight);
+      setGridOffsetTop(containerRef.offsetTop || 0);
+    });
   };
 
   onMount(() => {
