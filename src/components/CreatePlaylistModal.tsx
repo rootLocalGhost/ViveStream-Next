@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, createEffect, onCleanup, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { addToast } from "../store";
 import "./PlaylistModals.css";
@@ -18,6 +18,19 @@ interface CreatePlaylistModalProps {
 export default function CreatePlaylistModal(props: CreatePlaylistModalProps) {
   const [name, setName] = createSignal("");
   const [isLoading, setIsLoading] = createSignal(false);
+
+  createEffect(() => {
+    if (!props.isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        props.onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+  });
 
   const handleSubmit = async (e?: Event) => {
     if (e) e.preventDefault();
@@ -43,19 +56,26 @@ export default function CreatePlaylistModal(props: CreatePlaylistModalProps) {
 
   return (
     <Show when={props.isOpen}>
-      <div class="modal-backdrop" onClick={props.onClose}>
+      <div
+        class="modal-backdrop"
+        onClick={props.onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-playlist-modal-title"
+      >
         <div class="modal-container" onClick={(e) => e.stopPropagation()}>
           <div class="modal-header">
-            <h3 class="modal-title">
-              <i class="ph-fill ph-playlist"></i>
+            <h3 class="modal-title" id="create-playlist-modal-title">
+              <i class="ph-fill ph-playlist" aria-hidden="true"></i>
               Create New Playlist
             </h3>
             <button
               class="modal-close-btn"
               onClick={props.onClose}
-              title="Close"
+              title="Close (Esc)"
+              aria-label="Close modal"
             >
-              <i class="ph ph-x"></i>
+              <i class="ph ph-x" aria-hidden="true"></i>
             </button>
           </div>
 
