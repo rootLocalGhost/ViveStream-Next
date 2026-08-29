@@ -5,6 +5,8 @@ import {
   toggleAppTheme,
   appPalette,
   toggleAppPalette,
+  designStyle,
+  toggleDesignStyle,
   sidebarHoverMode,
   toggleSidebarHoverMode,
   alwaysShowSearchBar,
@@ -143,13 +145,30 @@ export default function Settings() {
     }
   };
 
+  const [activeSection, setActiveSection] = createSignal("sec-appearance");
+
+  const scrollToSection = (id: string) => {
+    setActiveSection(id);
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const handleCleanDatabase = async () => {
-    const yes = await showConfirmDialog(
-      "WARNING: This will permanently delete your SQLite database and all downloaded videos/media.\n\nYour core engines (yt-dlp/ffmpeg) will be kept. Are you sure?",
-      "Clean Database & Media",
+    const step1 = await showConfirmDialog(
+      "WARNING: This will permanently delete your SQLite database and all downloaded videos/media.\n\nYour core engines (yt-dlp/ffmpeg) will be kept. Are you sure you want to proceed?",
+      "Step 1 of 2: Clean Database",
       "warning",
     );
-    if (yes) {
+    if (!step1) return;
+
+    const step2 = await showConfirmDialog(
+      "FINAL CONFIRMATION: You are about to permanently wipe all downloaded media from disk. This cannot be undone.",
+      "Step 2 of 2: Confirm Destruction",
+      "error",
+    );
+    if (step2) {
       setLoadingClean(true);
       try {
         await invoke("clean_database_and_media");
@@ -163,12 +182,19 @@ export default function Settings() {
   };
 
   const handleNuclearWipe = async () => {
-    const yes = await showConfirmDialog(
-      "WARNING: This will permanently delete ALL core engines, your SQLite database, AND gigabytes of downloaded videos inside your ViveStream folder.\n\nThis cannot be undone. Are you absolutely sure?",
-      "NUCLEAR WIPE",
+    const step1 = await showConfirmDialog(
+      "WARNING: Nuclear wipe will delete all core engines (yt-dlp, FFmpeg), SQLite database, and all downloaded videos.\n\nContinue?",
+      "Step 1 of 2: Nuclear Wipe",
+      "warning",
+    );
+    if (!step1) return;
+
+    const step2 = await showConfirmDialog(
+      "FINAL WARNING: EVERYTHING will be destroyed permanently. Proceed with Nuclear Wipe?",
+      "Step 2 of 2: Execute Nuclear Wipe",
       "error",
     );
-    if (yes) {
+    if (step2) {
       setLoadingNuclear(true);
       try {
         await invoke("nuclear_wipe");
@@ -184,39 +210,279 @@ export default function Settings() {
     }
   };
 
+  const openExternalLink = async (url: string) => {
+    try {
+      const { openUrl } = await import("@tauri-apps/plugin-opener");
+      await openUrl(url);
+    } catch {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
     <div class="page-wrapper settings-page">
-      <h2 class="page-title">
-        <i class="ph-fill ph-gear"></i> Settings
+      {/* Sticky Quick-Jump Navigation Pill Bar */}
+      <div class="settings-nav-sticky" role="navigation" aria-label="Settings Categories">
+        <button
+          type="button"
+          class={`settings-nav-pill ${activeSection() === "sec-appearance" ? "active" : ""}`}
+          onClick={() => scrollToSection("sec-appearance")}
+        >
+          <i class="ph-fill ph-paint-brush"></i> Appearance
+        </button>
+        <button
+          type="button"
+          class={`settings-nav-pill ${activeSection() === "sec-library" ? "active" : ""}`}
+          onClick={() => scrollToSection("sec-library")}
+        >
+          <i class="ph-fill ph-sort-ascending"></i> Library
+        </button>
+        <button
+          type="button"
+          class={`settings-nav-pill ${activeSection() === "sec-engine" ? "active" : ""}`}
+          onClick={() => scrollToSection("sec-engine")}
+        >
+          <i class="ph-fill ph-sliders"></i> Engine
+        </button>
+        <button
+          type="button"
+          class={`settings-nav-pill ${activeSection() === "sec-diagnostics" ? "active" : ""}`}
+          onClick={() => scrollToSection("sec-diagnostics")}
+        >
+          <i class="ph-fill ph-gauge"></i> Diagnostics
+        </button>
+        <button
+          type="button"
+          class={`settings-nav-pill danger-pill ${activeSection() === "sec-danger" ? "active" : ""}`}
+          onClick={() => scrollToSection("sec-danger")}
+        >
+          <i class="ph-fill ph-warning-circle"></i> Danger Zone
+        </button>
+        <button
+          type="button"
+          class={`settings-nav-pill ${activeSection() === "sec-about" ? "active" : ""}`}
+          onClick={() => scrollToSection("sec-about")}
+        >
+          <i class="ph-fill ph-info"></i> About
+        </button>
+      </div>
+
+      <h2 class="page-title" id="sec-appearance">
+        <i class="ph-fill ph-gear"></i> Appearance & UI
       </h2>
 
       <div class="settings-card">
-        <div class="flex-row-between" id="setting-appearance-theme">
-          <div>
-            <h3 class="settings-title">Appearance</h3>
-            <p class="settings-desc">
-              Toggle between Light and Dark interface modes.
-            </p>
+        {/* App Theme (Light vs Dark) - Large Cards Only */}
+        <div class="theme-setting-container" id="setting-appearance-theme">
+          <div class="flex-row-between theme-setting-header">
+            <div>
+              <h3 class="settings-title">App Theme</h3>
+              <p class="settings-desc">
+                Choose between Light and Dark interface modes.
+              </p>
+            </div>
           </div>
-          <div class="toggle-group">
-            <button
+
+          <div class="theme-side-by-side-grid">
+            {/* Light Mode Card */}
+            <div
+              class={`theme-preview-card light-theme-preview ${appTheme() === "light" ? "selected" : ""}`}
               onClick={() => toggleAppTheme("light")}
-              class={`toggle-btn ${appTheme() === "light" ? "active" : ""}`}
             >
-              <i
-                class={appTheme() === "light" ? "ph-fill ph-sun" : "ph ph-sun"}
-              ></i>{" "}
-              Light
-            </button>
-            <button
+              <div class="theme-preview-mockup">
+                <div class="mockup-sidebar">
+                  <div class="mockup-bar mockup-logo"></div>
+                  <div class="mockup-bar"></div>
+                  <div class="mockup-bar"></div>
+                  <div class="mockup-bar"></div>
+                </div>
+                <div class="mockup-main">
+                  <div class="mockup-topbar">
+                    <div class="mockup-search"></div>
+                  </div>
+                  <div class="mockup-grid">
+                    <div class="mockup-card">
+                      <div class="mockup-card-thumb"></div>
+                      <div class="mockup-card-line"></div>
+                      <div class="mockup-card-line short"></div>
+                    </div>
+                    <div class="mockup-card">
+                      <div class="mockup-card-thumb"></div>
+                      <div class="mockup-card-line"></div>
+                      <div class="mockup-card-line short"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="theme-card-footer">
+                <div class="theme-card-info">
+                  <div class="theme-card-title-row">
+                    <i class="ph-fill ph-sun"></i>
+                    <span class="theme-card-name">Light Theme</span>
+                  </div>
+                  <span class="theme-card-desc">Warm & crisp daylight aesthetic</span>
+                </div>
+                <div class="theme-radio-indicator">
+                  <i class={appTheme() === "light" ? "ph-bold ph-check" : ""}></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Dark Mode Card */}
+            <div
+              class={`theme-preview-card dark-theme-preview ${appTheme() === "dark" ? "selected" : ""}`}
               onClick={() => toggleAppTheme("dark")}
-              class={`toggle-btn ${appTheme() === "dark" ? "active" : ""}`}
             >
-              <i
-                class={appTheme() === "dark" ? "ph-fill ph-moon" : "ph ph-moon"}
-              ></i>{" "}
-              Dark
-            </button>
+              <div class="theme-preview-mockup">
+                <div class="mockup-sidebar">
+                  <div class="mockup-bar mockup-logo"></div>
+                  <div class="mockup-bar"></div>
+                  <div class="mockup-bar"></div>
+                  <div class="mockup-bar"></div>
+                </div>
+                <div class="mockup-main">
+                  <div class="mockup-topbar">
+                    <div class="mockup-search"></div>
+                  </div>
+                  <div class="mockup-grid">
+                    <div class="mockup-card">
+                      <div class="mockup-card-thumb"></div>
+                      <div class="mockup-card-line"></div>
+                      <div class="mockup-card-line short"></div>
+                    </div>
+                    <div class="mockup-card">
+                      <div class="mockup-card-thumb"></div>
+                      <div class="mockup-card-line"></div>
+                      <div class="mockup-card-line short"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="theme-card-footer">
+                <div class="theme-card-info">
+                  <div class="theme-card-title-row">
+                    <i class="ph-fill ph-moon"></i>
+                    <span class="theme-card-name">Dark Theme</span>
+                  </div>
+                  <span class="theme-card-desc">Deep obsidian nighttime aesthetic</span>
+                </div>
+                <div class="theme-radio-indicator">
+                  <i class={appTheme() === "dark" ? "ph-bold ph-check" : ""}></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* Design Style (Neo-Brutalism vs Claymorphism) */}
+        <div class="theme-setting-container" id="setting-appearance-style">
+          <div class="flex-row-between theme-setting-header">
+            <div>
+              <h3 class="settings-title">Design Style</h3>
+              <p class="settings-desc">
+                Select your preferred interface style: Neo-Brutalism or Claymorphism.
+              </p>
+            </div>
+          </div>
+
+          <div class="theme-side-by-side-grid">
+            {/* Neo-Brutalism Card */}
+            <div
+              class={`theme-preview-card style-neo-preview ${designStyle() === "neo-brutalism" ? "selected" : ""}`}
+              onClick={() => toggleDesignStyle("neo-brutalism")}
+            >
+              <div class="theme-preview-mockup style-neo-mockup">
+                <div class="mockup-sidebar neo-mock-side">
+                  <div class="mockup-bar mockup-logo neo-mock-logo"></div>
+                  <div class="mockup-bar neo-mock-bar"></div>
+                  <div class="mockup-bar neo-mock-bar"></div>
+                  <div class="mockup-bar neo-mock-bar"></div>
+                </div>
+                <div class="mockup-main">
+                  <div class="mockup-topbar neo-mock-topbar">
+                    <div class="mockup-search neo-mock-search"></div>
+                  </div>
+                  <div class="mockup-grid">
+                    <div class="mockup-card neo-mock-card">
+                      <div class="mockup-card-thumb neo-mock-thumb"></div>
+                      <div class="mockup-card-line neo-mock-line"></div>
+                      <div class="mockup-card-line neo-mock-line short"></div>
+                    </div>
+                    <div class="mockup-card neo-mock-card">
+                      <div class="mockup-card-thumb neo-mock-thumb"></div>
+                      <div class="mockup-card-line neo-mock-line"></div>
+                      <div class="mockup-card-line neo-mock-line short"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="theme-card-footer">
+                <div class="theme-card-info">
+                  <div class="theme-card-title-row">
+                    <i class="ph-bold ph-square-half"></i>
+                    <span class="theme-card-name">Neo-Brutalism</span>
+                  </div>
+                  <span class="theme-card-desc">High-contrast solid borders & crisp hard shadows</span>
+                </div>
+                <div class="theme-radio-indicator">
+                  <i
+                    class={
+                      designStyle() === "neo-brutalism" ? "ph-bold ph-check" : ""
+                    }
+                  ></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Claymorphism Card */}
+            <div
+              class={`theme-preview-card style-clay-preview ${designStyle() === "claymorphism" ? "selected" : ""}`}
+              onClick={() => toggleDesignStyle("claymorphism")}
+            >
+              <div class="theme-preview-mockup style-clay-mockup">
+                <div class="mockup-sidebar clay-mock-side">
+                  <div class="mockup-bar mockup-logo clay-mock-logo"></div>
+                  <div class="mockup-bar clay-mock-bar"></div>
+                  <div class="mockup-bar clay-mock-bar"></div>
+                  <div class="mockup-bar clay-mock-bar"></div>
+                </div>
+                <div class="mockup-main">
+                  <div class="mockup-topbar clay-mock-topbar">
+                    <div class="mockup-search clay-mock-search"></div>
+                  </div>
+                  <div class="mockup-grid">
+                    <div class="mockup-card clay-mock-card">
+                      <div class="mockup-card-thumb clay-mock-thumb"></div>
+                      <div class="mockup-card-line clay-mock-line"></div>
+                      <div class="mockup-card-line clay-mock-line short"></div>
+                    </div>
+                    <div class="mockup-card clay-mock-card">
+                      <div class="mockup-card-thumb clay-mock-thumb"></div>
+                      <div class="mockup-card-line clay-mock-line"></div>
+                      <div class="mockup-card-line clay-mock-line short"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="theme-card-footer">
+                <div class="theme-card-info">
+                  <div class="theme-card-title-row">
+                    <i class="ph-bold ph-circles-three-plus"></i>
+                    <span class="theme-card-name">Claymorphism</span>
+                  </div>
+                  <span class="theme-card-desc">Soft floating 3D volume, diffuse Gaussian blurs & glows</span>
+                </div>
+                <div class="theme-radio-indicator">
+                  <i
+                    class={
+                      designStyle() === "claymorphism" ? "ph-bold ph-check" : ""
+                    }
+                  ></i>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -350,15 +616,14 @@ export default function Settings() {
               }}
               style={
                 {
-                  "--progress": `${
-                    ((((thumbnailQuality() === "low"
+                  "--progress": `${((((thumbnailQuality() === "low"
                       ? 1
                       : thumbnailQuality() === "high"
                         ? 3
                         : 2) - 1) /
                       2) *
-                    100)
-                  }%`,
+                      100)
+                    }%`,
                 } as any
               }
             />
@@ -384,7 +649,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <h2 class="page-title page-title-spaced">
+      <h2 class="page-title page-title-spaced" id="sec-library">
         <i class="ph-fill ph-sort-ascending"></i> Library Sorting & Presentation
       </h2>
 
@@ -488,7 +753,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <h2 class="page-title page-title-spaced">
+      <h2 class="page-title page-title-spaced" id="sec-engine">
         <i class="ph-fill ph-sliders"></i> Engine Preferences
       </h2>
 
@@ -513,7 +778,8 @@ export default function Settings() {
               }
               style={
                 {
-                  "--progress": `${((concurrentDownloads() - 1) / 4) * 100}%`,
+                  "--progress": `${((concurrentDownloads() - 1) / (5 - 1)) * 100
+                    }%`,
                 } as any
               }
             />
@@ -525,9 +791,10 @@ export default function Settings() {
 
         <div class="flex-row-between" id="setting-engine-concurrent-frag">
           <div>
-            <h3 class="settings-title">Concurrent Fragments</h3>
+            <h3 class="settings-title">Concurrent Fragments (HLS/DASH)</h3>
             <p class="settings-desc">
-              Speeds up HLS/DASH downloads by fetching parts in parallel.
+              Speeds up live streams and chunked videos by downloading multiple
+              fragments concurrently.
             </p>
           </div>
           <div class="flex-row-gap">
@@ -535,7 +802,7 @@ export default function Settings() {
               type="range"
               class="setting-slider"
               min="1"
-              max="5"
+              max="16"
               step="1"
               value={concurrentFragments()}
               onInput={(e) =>
@@ -543,7 +810,8 @@ export default function Settings() {
               }
               style={
                 {
-                  "--progress": `${((concurrentFragments() - 1) / 4) * 100}%`,
+                  "--progress": `${((concurrentFragments() - 1) / (16 - 1)) * 100
+                    }%`,
                 } as any
               }
             />
@@ -557,25 +825,73 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
             <p class="settings-desc">
-              e.g., 500K, 2.5M. Leave blank for no limit.
+              Throttle download bandwidth to preserve network balance (e.g., 500K, 2.5M, 10M).
             </p>
           </div>
-          <input
-            type="text"
-            class="setting-input"
-            placeholder="No limit"
-            value={speedLimit()}
-            onInput={(e) => updateSpeedLimit(e.target.value)}
-          />
+          <div class="speed-limit-control-box">
+            <div class="speed-limit-input-wrapper">
+              <i class="ph ph-gauge speed-input-icon"></i>
+              <input
+                type="text"
+                class="speed-limit-input"
+                placeholder="No limit"
+                value={speedLimit()}
+                onInput={(e) => updateSpeedLimit(e.currentTarget.value)}
+                aria-label="Download Speed Limit"
+              />
+              <Show when={speedLimit().trim()}>
+                <button
+                  type="button"
+                  class="speed-limit-clear-btn"
+                  onClick={() => updateSpeedLimit("")}
+                  title="Clear limit (No limit)"
+                  aria-label="Clear speed limit"
+                >
+                  <i class="ph ph-x"></i>
+                </button>
+              </Show>
+            </div>
+            <div class="speed-limit-presets" role="toolbar" aria-label="Speed limit presets">
+              <button
+                type="button"
+                class={`speed-preset-btn ${!speedLimit().trim() ? "active" : ""}`}
+                onClick={() => updateSpeedLimit("")}
+              >
+                Max
+              </button>
+              <button
+                type="button"
+                class={`speed-preset-btn ${speedLimit().trim().toUpperCase() === "2M" ? "active" : ""}`}
+                onClick={() => updateSpeedLimit("2M")}
+              >
+                2M
+              </button>
+              <button
+                type="button"
+                class={`speed-preset-btn ${speedLimit().trim().toUpperCase() === "5M" ? "active" : ""}`}
+                onClick={() => updateSpeedLimit("5M")}
+              >
+                5M
+              </button>
+              <button
+                type="button"
+                class={`speed-preset-btn ${speedLimit().trim().toUpperCase() === "10M" ? "active" : ""}`}
+                onClick={() => updateSpeedLimit("10M")}
+              >
+                10M
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="full-divider"></div>
 
         <div class="flex-row-between" id="setting-engine-browser-cookies">
           <div>
-            <h3 class="settings-title">Browser Cookies</h3>
+            <h3 class="settings-title">Browser Cookies Extraction</h3>
             <p class="settings-desc">
-              Use cookies from a browser to bypass login/age restrictions.
+              Bypass bot detection, login screens, and age gates by extracting
+              cookies from your local browser.
             </p>
           </div>
           <div
@@ -586,20 +902,29 @@ export default function Settings() {
               class="custom-select-trigger"
               onClick={() => setCookiesDropdownOpen(!cookiesDropdownOpen())}
             >
-              <span>{browserCookies()}</span>
+              <span>
+                {browserCookies() === "none"
+                  ? "None"
+                  : browserCookies().charAt(0).toUpperCase() +
+                  browserCookies().slice(1)}
+              </span>
               <i class="ph ph-caret-down"></i>
             </div>
             <div class="custom-select-menu">
               <For each={cookieOptions}>
-                {(cookie) => (
+                {(opt) => (
                   <div
-                    class={`custom-select-item ${browserCookies() === cookie ? "selected" : ""}`}
+                    class={`custom-select-item ${(browserCookies() === "none" && opt === "None") ||
+                        browserCookies().toLowerCase() === opt.toLowerCase()
+                        ? "selected"
+                        : ""
+                      }`}
                     onClick={() => {
-                      updateBrowserCookies(cookie);
+                      updateBrowserCookies(opt.toLowerCase());
                       setCookiesDropdownOpen(false);
                     }}
                   >
-                    {cookie}
+                    {opt}
                   </div>
                 )}
               </For>
@@ -611,10 +936,10 @@ export default function Settings() {
 
         <div class="flex-row-between" id="setting-engine-youtube-client">
           <div>
-            <h3 class="settings-title">YouTube API Client Fallback</h3>
+            <h3 class="settings-title">YouTube API Client Masquerade</h3>
             <p class="settings-desc">
-              Hot-swap client masquerading to bypass blocks (mweb requires PO
-              tokens).
+              Hot-swap client fallbacks when encountering YouTube throttling or
+              format lockouts.
             </p>
           </div>
           <div
@@ -630,15 +955,15 @@ export default function Settings() {
             </div>
             <div class="custom-select-menu">
               <For each={clientOptions}>
-                {(client) => (
+                {(opt) => (
                   <div
-                    class={`custom-select-item ${playerClient() === client ? "selected" : ""}`}
+                    class={`custom-select-item ${playerClient() === opt ? "selected" : ""}`}
                     onClick={() => {
-                      updatePlayerClient(client);
+                      updatePlayerClient(opt);
                       setClientDropdownOpen(false);
                     }}
                   >
-                    {client}
+                    {opt}
                   </div>
                 )}
               </For>
@@ -652,7 +977,8 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Download Automatic Subtitles</h3>
             <p class="settings-desc">
-              If official subtitles aren't found, download auto-generated ones.
+              Automatically fallback to YouTube auto-generated captions if
+              creator captions are missing.
             </p>
           </div>
           <label class="switch">
@@ -671,7 +997,8 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Remove Sponsored Segments</h3>
             <p class="settings-desc">
-              Automatically cut sponsored sections, intros, etc.
+              Automatically strip sponsor integrations, promos, intros, and
+              outros using SponsorBlock.
             </p>
           </div>
           <label class="switch">
@@ -684,26 +1011,23 @@ export default function Settings() {
           </label>
         </div>
 
+
+
         <div class="full-divider"></div>
 
         <div class="flex-row-between" id="setting-engine-reindex">
           <div>
             <h3 class="settings-title">Re-index Local Storage</h3>
             <p class="settings-desc">
-              Scans your video directory to re-align metadata profiles and clean
-              orphan database links.
+              Scan your media folder to link unindexed files, fix missing
+              metadata, and remove broken database pointers.
             </p>
           </div>
           <button
             onClick={handleReindexLibrary}
-            disabled={
-              loadingReindex() ||
-              loadingUpdate() ||
-              loadingDep() ||
-              loadingClean() ||
-              loadingNuclear()
-            }
+            disabled={loadingReindex()}
             class="command-btn secondary"
+            style="min-width: 150px;"
           >
             <i
               class={`ph-fill ${loadingReindex() ? "ph-spinner spinIcon" : "ph-database"}`}
@@ -713,7 +1037,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <h2 class="page-title page-title-spaced">
+      <h2 class="page-title page-title-spaced" id="sec-diagnostics">
         <i class="ph-fill ph-gauge"></i> Performance & Diagnostics
       </h2>
 
@@ -741,7 +1065,7 @@ export default function Settings() {
         onClose={() => setShowBenchmark(false)}
       />
 
-      <h2 class="page-title page-title-spaced page-title-danger">
+      <h2 class="page-title page-title-spaced page-title-danger" id="sec-danger">
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
 
@@ -871,6 +1195,173 @@ export default function Settings() {
             ></i>
             {loadingNuclear() ? "Destroying..." : "Delete Media & Database"}
           </button>
+        </div>
+      </div>
+
+      {/* ABOUT VIVESTREAM SECTION */}
+      <h2 class="page-title page-title-spaced" id="sec-about">
+        <i class="ph-fill ph-info"></i> About ViveStream
+      </h2>
+
+      <div class="settings-card about-app-card">
+        <div class="about-hero-row">
+          <div class="about-logo-badge">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 500 500"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill="var(--primary-accent)"
+                d="M83.333 0h333.334A83.333 83.333 0 0 1 500 83.333v333.334A83.333 83.333 0 0 1 416.667 500H83.333A83.333 83.333 0 0 1 0 416.667V83.333A83.333 83.333 0 0 1 83.333 0"
+              />
+              <path
+                d="M95 125 L250 385 L405 125"
+                stroke="#f1f1f1"
+                stroke-width="30"
+                fill="none"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M100 125 Q110 125 118 85 Q126 45 134 125 Q142 175 150 125 Q158 75 166 125 Q174 25 182 125 Q190 215 198 125 Q206 55 214 125 Q222 195 230 125 Q238 35 246 125 Q254 235 262 125 Q270 45 278 125 Q286 205 294 125 Q302 65 310 125 Q318 175 326 125 Q334 85 342 125 Q350 225 358 125 Q366 55 374 125 Q382 165 390 125 Q398 105 405 125"
+                stroke="#ffffff"
+                stroke-width="6"
+                fill="none"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <div class="about-hero-text">
+            <div class="about-title-row">
+              <h3 class="about-app-name">ViveStream Next</h3>
+              <span class="about-version-badge">v1.9.9</span>
+            </div>
+            <p class="about-tagline">
+              High-performance local video player, stream archiver & offline media suite.
+            </p>
+          </div>
+        </div>
+
+        <div class="about-features-grid">
+          <div class="about-feature-item">
+            <i class="ph-fill ph-lightning"></i>
+            <div>
+              <h4>Zero-VDOM Engine</h4>
+              <p>Powered by SolidJS, Rust & Tauri v2 for 300+ FPS responsiveness.</p>
+            </div>
+          </div>
+          <div class="about-feature-item">
+            <i class="ph-fill ph-shield-check"></i>
+            <div>
+              <h4>100% Offline & Private</h4>
+              <p>Local SQLite database. Zero telemetry, tracking, or remote analytics.</p>
+            </div>
+          </div>
+          <div class="about-feature-item">
+            <i class="ph-fill ph-paint-brush-broad"></i>
+            <div>
+              <h4>Tactile Neo-Brutalism</h4>
+              <p>Crisp mechanical drop-shadows and dark/light claymorphism palettes.</p>
+            </div>
+          </div>
+          <div class="about-feature-item">
+            <i class="ph-fill ph-cpu"></i>
+            <div>
+              <h4>Hardware Transcoding</h4>
+              <p>Automated integration with yt-dlp, FFmpeg (QSV/NVENC), and Deno.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="full-divider"></div>
+
+        <div class="about-dev-section">
+          <div class="about-dev-header">
+            <i class="ph-fill ph-heart about-heart-icon"></i>
+            <div>
+              <h4 class="about-dev-title">Support ViveStream Development</h4>
+              <p class="about-dev-desc">
+                ViveStream is 100% free, privacy-first, and open source with no ads or subscriptions. If this app brings value to your daily media workflow, please consider supporting ongoing maintenance and new features with a small donation!
+              </p>
+            </div>
+          </div>
+
+          {/* Direct Financial Support Tiers */}
+          <div class="about-donation-banner">
+            <span class="donation-banner-label">
+              <i class="ph-fill ph-sparkle"></i> Fund The Project
+            </span>
+            <div class="about-action-links donation-links" role="toolbar" aria-label="Financial Support options">
+              <button
+                type="button"
+                class="about-link-btn bmac-btn"
+                onClick={() => openExternalLink("https://buymeacoffee.com/Vivek_N_007")}
+                title="Buy Me a Coffee"
+              >
+                <i class="ph-fill ph-coffee"></i>
+                <span>Buy Me a Coffee</span>
+              </button>
+              <button
+                type="button"
+                class="about-link-btn sponsors-btn"
+                onClick={() => openExternalLink("https://github.com/sponsors/rootlocalghost")}
+                title="Sponsor on GitHub"
+              >
+                <i class="ph-fill ph-heart"></i>
+                <span>GitHub Sponsors</span>
+              </button>
+              <button
+                type="button"
+                class="about-link-btn kofi-btn"
+                onClick={() => openExternalLink("https://ko-fi.com/Vivek_N_007")}
+                title="Donate via Ko-fi"
+              >
+                <i class="ph-fill ph-hand-heart"></i>
+                <span>Ko-fi Tip</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="full-divider"></div>
+
+          {/* Open Source Community Actions */}
+          <div class="about-action-links" role="toolbar" aria-label="Community project links">
+            <button
+              type="button"
+              class="about-link-btn github-star-btn"
+              onClick={() => openExternalLink("https://github.com/rootlocalghost/ViveStream-Next")}
+              title="Star on GitHub"
+            >
+              <i class="ph-fill ph-star"></i>
+              <span>Star on GitHub</span>
+            </button>
+            <button
+              type="button"
+              class="about-link-btn"
+              onClick={() => openExternalLink("https://github.com/rootlocalghost/ViveStream-Next/issues")}
+              title="Report an issue or feature request"
+            >
+              <i class="ph-fill ph-bug"></i>
+              <span>Report Issue</span>
+            </button>
+            <button
+              type="button"
+              class="about-link-btn"
+              onClick={() => openExternalLink("https://github.com/rootlocalghost/ViveStream-Next/pulls")}
+              title="Contribute pull requests"
+            >
+              <i class="ph-fill ph-git-pull-request"></i>
+              <span>Contribute</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="about-footer-row">
+          <span>License: PolyForm Noncommercial License 1.0.0</span>
+          <span>ViveStream-Next © {new Date().getFullYear()}</span>
         </div>
       </div>
     </div>
