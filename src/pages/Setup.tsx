@@ -10,6 +10,7 @@ const AnimatedLogo = () => (
     height="84"
     viewBox="0 0 500 500"
     xmlns="http://www.w3.org/2000/svg"
+    class="setup-hero-logo"
   >
     <defs>
       <style>
@@ -19,13 +20,13 @@ const AnimatedLogo = () => (
             100% { stroke-dashoffset: 0; }
           }
           @keyframes pulseGlow {
-            0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 4px var(--primary-accent)) drop-shadow(0 0 8px var(--primary-accent)); }
+            0%, 100% { opacity: 0.7; filter: drop-shadow(0 0 4px var(--primary-accent)) drop-shadow(0 0 8px var(--primary-accent)); }
             50% { opacity: 1; filter: drop-shadow(0 0 8px var(--primary-accent)) drop-shadow(0 0 16px var(--primary-accent)); }
           }
           .animated-wave {
             stroke-dasharray: 2000;
             stroke-dashoffset: 2000;
-            animation: drawWave 10s forwards, pulseGlow 5s ease-in-out infinite;
+            animation: drawWave 2.6s cubic-bezier(0.16, 1, 0.3, 1) forwards, pulseGlow 4s ease-in-out infinite;
           }
         `}
       </style>
@@ -72,6 +73,7 @@ const AnimatedLogo = () => (
 export default function Setup(props: { onComplete?: () => void }) {
   const [loading, setLoading] = createSignal(false);
   const [isCompleted, setIsCompleted] = createSignal(false);
+  const [hasError, setHasError] = createSignal(false);
   const [showLogs, setShowLogs] = createSignal(false);
   const [logs, setLogs] = createSignal<string[]>([]);
   const [downloadProgress, setDownloadProgress] = createSignal<number>(0);
@@ -83,15 +85,16 @@ export default function Setup(props: { onComplete?: () => void }) {
         ffmpeg_exists: boolean;
         bin_folder: string;
       }>("check_binaries");
-      if (!status.ytdlp_exists || !status.ffmpeg_exists) {
-        addLog(`ViveStream v1.8.7 // Environment Check`);
-        if (!status.ytdlp_exists)
-          addLog(`[MISSING] yt-dlp core engine not found.`);
-        if (!status.ffmpeg_exists)
-          addLog(`[MISSING] FFmpeg hardware transcoder not found.`);
-        addLog(`Target Data Path: ${status.bin_folder}`);
-        addLog(`Ready to initiate secure deployment.`);
+      
+      addLog(`ViveStream v1.9.9 // Pre-flight Diagnostic`);
+      addLog(`[SYSTEM] Target Data Path: ${status.bin_folder || "~/.local/share/vivestream"}`);
+      if (!status.ytdlp_exists) {
+        addLog(`[ACTION REQUIRED] yt-dlp core stream engine needs setup.`);
       }
+      if (!status.ffmpeg_exists) {
+        addLog(`[ACTION REQUIRED] FFmpeg hardware transcoder needs setup.`);
+      }
+      addLog(`[READY] All network and deployment channels primed.`);
     } catch (e) {
       addLog(`[ERROR] System check failed: ${e}`);
     }
@@ -112,6 +115,7 @@ export default function Setup(props: { onComplete?: () => void }) {
 
   const startSetup = async () => {
     setLoading(true);
+    setHasError(false);
     setLogs([]);
     setDownloadProgress(0);
     addLog(`[SYSTEM] Initializing deployment sequence...`);
@@ -138,7 +142,9 @@ export default function Setup(props: { onComplete?: () => void }) {
       await invoke("download_binaries");
       setIsCompleted(true);
     } catch (e) {
-      addLog(`[CRITICAL FAILURE] Deployment aborted: ${e}`);
+      setHasError(true);
+      addLog(`[CRITICAL FAILURE] Deployment interrupted: ${e}`);
+      addLog(`> Please verify your internet connection and click "Retry Deployment".`);
     } finally {
       unlisten();
       setLoading(false);
@@ -148,17 +154,35 @@ export default function Setup(props: { onComplete?: () => void }) {
   return (
     <div class="immersive-setup-container">
       <div class="setup-content-card">
+        {/* Onboarding Stepper Indicator */}
+        <div class="setup-stepper" role="progressbar" aria-label="Setup progress">
+          <div class={`step-node ${!loading() && !isCompleted() ? "active" : "completed"}`}>
+            <span class="step-num">1</span>
+            <span class="step-text">System Check</span>
+          </div>
+          <div class="step-line"></div>
+          <div class={`step-node ${loading() ? "active" : isCompleted() ? "completed" : ""}`}>
+            <span class="step-num">2</span>
+            <span class="step-text">Deploy Engines</span>
+          </div>
+          <div class="step-line"></div>
+          <div class={`step-node ${isCompleted() ? "active completed" : ""}`}>
+            <span class="step-num">3</span>
+            <span class="step-text">Ready to Stream</span>
+          </div>
+        </div>
+
         <Show
           when={isCompleted()}
           fallback={
             <>
               <div class="setup-header">
                 <AnimatedLogo />
-                <h1 class="setup-title">VIVESTREAM</h1>
+                <h1 class="setup-title">WELCOME TO VIVESTREAM</h1>
                 <p class="setup-description">
-                  To enable local hardware transcoding (Intel QSV / NVIDIA
-                  NVENC) and stream extraction, ViveStream requires core media
-                  engines fetched securely from official repositories.
+                  To enable high-speed 4K streaming, offline collection caching,
+                  and hardware-accelerated playback, let's configure your local core
+                  media engines.
                 </p>
               </div>
               <div class="setup-terminal-wrapper">
@@ -166,31 +190,42 @@ export default function Setup(props: { onComplete?: () => void }) {
                   <div class="term-dot r"></div>
                   <div class="term-dot y"></div>
                   <div class="term-dot g"></div>
+                  <span class="terminal-title">Deployment Console</span>
                 </div>
                 <div id="setup-terminal" class="setup-terminal">
                   <For each={logs()}>
                     {(log) => (
                       <p
-                        class={`setup-log-line ${log.includes("[ERROR]") || log.includes("[CRITICAL") || log.includes("[MISSING]") ? "r" : ""}`}
+                        class={`setup-log-line ${
+                          log.includes("[ERROR]") ||
+                          log.includes("[CRITICAL") ||
+                          log.includes("[ACTION REQUIRED]")
+                            ? "r"
+                            : log.includes("[READY]")
+                              ? "g"
+                              : ""
+                        }`}
                       >
                         {log}
                       </p>
                     )}
                   </For>
                   {loading() && downloadProgress() === 0 && (
-                    <p class="setup-log-line processing">&gt; Working...</p>
+                    <p class="setup-log-line processing">&gt; Initializing high-speed secure download...</p>
                   )}
                   {logs().length === 0 && (
                     <p class="setup-log-line muted">
-                      Awaiting user authorization...
+                      Ready to initialize deployment...
                     </p>
                   )}
                 </div>
               </div>
               <button
-                class={`setup-btn ${loading() ? "loading" : ""}`}
+                type="button"
+                class={`setup-btn ${loading() ? "loading" : ""} ${hasError() ? "error-btn" : ""}`}
                 onClick={startSetup}
                 disabled={loading()}
+                aria-label="Start Core Engine Deployment"
                 style={
                   loading() && downloadProgress() > 0
                     ? {
@@ -201,15 +236,18 @@ export default function Setup(props: { onComplete?: () => void }) {
               >
                 {loading() ? (
                   <>
-                    <i class="ph ph-spinner spinIcon"></i>
+                    <i class="ph ph-spinner spinIcon" aria-hidden="true"></i>
                     {downloadProgress() > 0 && downloadProgress() < 100
-                      ? `DOWNLOADING... ${downloadProgress().toFixed(1)}%`
-                      : "DEPLOYING ENGINES"}
+                      ? `DOWNLOADING ENGINES... ${downloadProgress().toFixed(1)}%`
+                      : "DEPLOYING ENGINES..."}
+                  </>
+                ) : hasError() ? (
+                  <>
+                    <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> RETRY DEPLOYMENT
                   </>
                 ) : (
                   <>
-                    <i class="ph-fill ph-download-simple"></i> INITIALIZE
-                    DEPLOYMENT
+                    <i class="ph-fill ph-download-simple" aria-hidden="true"></i> INITIALIZE DEPLOYMENT
                   </>
                 )}
               </button>
