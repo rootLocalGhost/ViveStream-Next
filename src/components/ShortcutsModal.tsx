@@ -1,4 +1,4 @@
-import { createSignal, Show, For } from "solid-js";
+import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
 import "./ShortcutsModal.css";
 
 interface ShortcutsModalProps {
@@ -70,6 +70,19 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
 export default function ShortcutsModal(props: ShortcutsModalProps) {
   const [searchQuery, setSearchQuery] = createSignal("");
 
+  createEffect(() => {
+    if (!props.isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        props.onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+  });
+
   const filteredCategories = () => {
     const q = searchQuery().trim().toLowerCase();
     if (!q) return SHORTCUT_CATEGORIES;
@@ -86,22 +99,29 @@ export default function ShortcutsModal(props: ShortcutsModalProps) {
 
   return (
     <Show when={props.isOpen}>
-      <div class="shortcuts-backdrop" onClick={props.onClose}>
+      <div
+        class="shortcuts-backdrop"
+        onClick={props.onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-modal-title"
+      >
         <div
           class="shortcuts-modal-container"
           onClick={(e) => e.stopPropagation()}
         >
           <div class="shortcuts-modal-header">
             <div class="shortcuts-header-title">
-              <i class="ph-fill ph-keyboard"></i>
-              <h2>Keyboard Shortcuts</h2>
+              <i class="ph-fill ph-keyboard" aria-hidden="true"></i>
+              <h2 id="shortcuts-modal-title">Keyboard Shortcuts</h2>
             </div>
             <button
               class="shortcuts-close-btn"
               onClick={props.onClose}
               title="Close (Esc)"
+              aria-label="Close shortcuts modal"
             >
-              <i class="ph ph-x"></i>
+              <i class="ph ph-x" aria-hidden="true"></i>
             </button>
           </div>
 
