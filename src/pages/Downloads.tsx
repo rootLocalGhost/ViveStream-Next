@@ -140,7 +140,7 @@ export default function Downloads() {
       {/* URL Input & Options Bar */}
       <div class="clay-input-group">
         <div class="clay-input-row">
-          <i class="ph ph-link"></i>
+          <i class="ph ph-link" aria-hidden="true"></i>
           <input
             type="text"
             placeholder="Paste video or playlist URL..."
@@ -151,12 +151,40 @@ export default function Downloads() {
                 startDownloadQueue();
               }
             }}
+            aria-label="Video or Playlist Download URL"
           />
           <button
+            type="button"
+            class="clay-paste-btn"
+            onClick={async () => {
+              try {
+                const text = await navigator.clipboard.readText();
+                if (text && text.trim().startsWith("http")) {
+                  setDownloadUrl(text.trim());
+                  addToast("URL pasted from clipboard!", "success");
+                } else if (text) {
+                  setDownloadUrl(text.trim());
+                  addToast("Pasted clipboard text", "info");
+                } else {
+                  addToast("Clipboard is empty", "info");
+                }
+              } catch {
+                addToast("Clipboard access denied or unavailable", "error");
+              }
+            }}
+            title="Paste from Clipboard"
+            aria-label="Paste from Clipboard"
+          >
+            <i class="ph ph-clipboard-text" aria-hidden="true"></i>
+            <span class="paste-text">Paste</span>
+          </button>
+          <button
+            type="button"
             class="dl-action-btn"
             onClick={startDownloadQueue}
             disabled={isProcessingQueue() || !downloadUrl()}
             title="Download Video/Playlist"
+            aria-label="Start Download Queue"
           >
             <i
               class={
@@ -164,21 +192,76 @@ export default function Downloads() {
                   ? "ph-fill ph-spinner spinIcon"
                   : "ph-fill ph-download-simple"
               }
+              aria-hidden="true"
             ></i>
           </button>
         </div>
 
+        {/* Quick Format Presets */}
+        <div class="quick-presets-row" role="toolbar" aria-label="Format presets">
+          <span class="preset-label">Presets:</span>
+          <button
+            type="button"
+            class={`preset-chip ${downloadType() === "Audio" ? "active" : ""}`}
+            onClick={() => {
+              updateDownloadType("Audio");
+              addToast("Format preset: Audio Only (MP3)", "info");
+            }}
+          >
+            <i class="ph-fill ph-music-notes"></i> Audio Only
+          </button>
+          <button
+            type="button"
+            class={`preset-chip ${downloadType() === "Video" && downloadQuality() === "720p" ? "active" : ""}`}
+            onClick={() => {
+              updateDownloadType("Video");
+              updateDownloadQuality("720p");
+              addToast("Format preset: 720p HD Video", "info");
+            }}
+          >
+            <i class="ph-fill ph-lightning"></i> 720p Fast
+          </button>
+          <button
+            type="button"
+            class={`preset-chip ${downloadType() === "Video" && downloadQuality() === "1080p" ? "active" : ""}`}
+            onClick={() => {
+              updateDownloadType("Video");
+              updateDownloadQuality("1080p");
+              addToast("Format preset: 1080p Full HD Video", "info");
+            }}
+          >
+            <i class="ph-fill ph-film-slate"></i> 1080p FHD
+          </button>
+          <button
+            type="button"
+            class={`preset-chip ${downloadType() === "Video" && downloadQuality() === "Best" ? "active" : ""}`}
+            onClick={() => {
+              updateDownloadType("Video");
+              updateDownloadQuality("Best");
+              addToast("Format preset: Best Quality / 4K", "info");
+            }}
+          >
+            <i class="ph-fill ph-sparkle"></i> Best / 4K
+          </button>
+        </div>
+
         <div class="clay-options-row">
-          <div class="segmented-control">
+          <div class="segmented-control" role="radiogroup" aria-label="Download format type">
             <button
+              type="button"
               class={`segmented-btn ${downloadType() === "Video" ? "active" : ""}`}
               onClick={() => updateDownloadType("Video")}
+              role="radio"
+              aria-checked={downloadType() === "Video"}
             >
               Video
             </button>
             <button
+              type="button"
               class={`segmented-btn ${downloadType() === "Audio" ? "active" : ""}`}
               onClick={() => updateDownloadType("Audio")}
+              role="radio"
+              aria-checked={downloadType() === "Audio"}
             >
               Audio
             </button>
