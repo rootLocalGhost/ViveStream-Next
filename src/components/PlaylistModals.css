@@ -4,23 +4,20 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.7);
   pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .modal-container {
   background: var(--clay-bg);
-  border-radius: var(--clay-radius);
-  box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.5),
-    var(--clay-card-shadow);
+  border-radius: var(--neo-radius);
+  box-shadow: 8px 8px 0px var(--border-color);
+  border: 2.5px solid var(--border-color);
   padding: 24px;
   max-width: 480px;
   width: 90%;
@@ -29,8 +26,7 @@
   gap: 16px;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
-  animation: modalPopIn 0.28s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
-  border: var(--app-border);
+  animation: modalPopIn 0.18s var(--ease-spring) forwards;
   position: relative;
   max-height: 85vh;
   overflow: hidden;
@@ -40,14 +36,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .modal-title {
   margin: 0;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -61,25 +57,28 @@
 }
 
 .modal-close-btn {
-  background: transparent;
-  border: none;
-  color: var(--secondary-text);
-  font-size: 20px;
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  color: var(--primary-text);
+  font-size: 16px;
   cursor: pointer;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 1.5px 1.5px 0px var(--border-color);
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--primary-text);
+  background: #ef233c;
+  color: #ffffff;
+  transform: translate3d(-1px, -1px, 0);
 }
 
 .modal-body {
@@ -93,23 +92,21 @@
 
 .modal-input {
   width: 100%;
-  background: var(--input-bg);
-  border: var(--app-border);
-  border-radius: 12px;
-  padding: 12px 16px;
+  background: var(--secondary-background);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  padding: 10px 14px;
   color: var(--primary-text);
   font-size: 14px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  box-shadow: 2px 2px 0px var(--border-color);
   outline: none;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
   box-sizing: border-box;
 }
 
 .modal-input:focus {
   border-color: var(--primary-accent);
-  box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 100, 108, 255), 0.25);
+  box-shadow: 3px 3px 0px var(--primary-accent);
 }
 
 .modal-actions {
@@ -118,52 +115,65 @@
   justify-content: flex-end;
   gap: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 2px solid var(--border-color);
 }
 
 .modal-btn {
   padding: 10px 20px;
-  border-radius: 12px;
+  border-radius: var(--neo-radius-sm);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
+  border: 1.5px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
   transition:
-    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
-  border: none;
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    box-shadow 0.08s ease;
 }
 
 .modal-btn.cancel {
-  background: var(--clay-btn-bg);
-  color: var(--secondary-text);
-  box-shadow: var(--clay-btn-shadow);
+  background: var(--tertiary-background);
+  color: var(--primary-text);
 }
 
 .modal-btn.cancel:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--primary-text);
+  background: var(--secondary-background);
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.modal-btn.cancel:active {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 .modal-btn.primary {
   background: var(--primary-accent);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(var(--accent-rgb, 100, 108, 255), 0.4);
 }
 
 .modal-btn.primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(var(--accent-rgb, 100, 108, 255), 0.5);
+  background: var(--primary-accent-dark);
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.modal-btn.primary:active:not(:disabled) {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 .modal-btn.primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Add to Playlist specific styles */
@@ -171,15 +181,17 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--tertiary-background);
+  border: 1.5px solid var(--border-color);
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--neo-radius-sm);
   margin-bottom: 4px;
+  box-shadow: 2px 2px 0px var(--border-color);
 }
 
 .modal-video-title {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--primary-text);
   white-space: nowrap;
   overflow: hidden;
@@ -198,28 +210,40 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: var(--clay-btn-bg);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--secondary-background);
+  border-radius: var(--neo-radius-sm);
+  border: 1.5px solid var(--border-color);
   cursor: pointer;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
+  box-shadow: 2px 2px 0px var(--border-color);
   transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-  box-shadow: var(--clay-btn-shadow);
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    box-shadow 0.08s ease;
 }
 
 .playlist-select-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-  transform: translate3d(0, -1px, 0);
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.playlist-select-item:active {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 .playlist-select-item.in-playlist {
-  background: rgba(var(--accent-rgb, 100, 108, 255), 0.15);
-  border-color: var(--primary-accent);
+  background: var(--primary-accent);
+  color: #ffffff;
+}
+
+.playlist-select-item.in-playlist .playlist-select-name {
+  color: #ffffff;
+}
+
+.playlist-select-item.in-playlist .playlist-select-count {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .playlist-select-info {
@@ -232,8 +256,9 @@
 .playlist-select-icon {
   width: 38px;
   height: 38px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  background: #000000;
+  border: 1.5px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -258,7 +283,7 @@
 
 .playlist-select-name {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--primary-text);
   white-space: nowrap;
   overflow: hidden;
@@ -267,27 +292,27 @@
 
 .playlist-select-count {
   font-size: 12px;
+  font-weight: 600;
   color: var(--secondary-text);
 }
 
 .playlist-select-status {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   color: var(--secondary-text);
-  background: rgba(255, 255, 255, 0.05);
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+  background: var(--tertiary-background);
+  border: 1px solid var(--border-color);
 }
 
 .playlist-select-item.in-playlist .playlist-select-status {
-  background: var(--primary-accent);
-  color: #fff;
+  background: #ffffff;
+  color: #000000;
+  border-color: #000000;
 }
 
 .create-inline-row {
@@ -297,28 +322,43 @@
 }
 
 .create-inline-btn {
-  padding: 8px 14px;
+  padding: 8px 16px;
   background: var(--primary-accent);
   color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  font-weight: 700;
   font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  box-shadow: 2px 2px 0px var(--border-color);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   transition:
-    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.15s ease;
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    box-shadow 0.08s ease;
+}
+
+.create-inline-btn:hover:not(:disabled) {
+  background: var(--primary-accent-dark);
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.create-inline-btn:active:not(:disabled) {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 .create-inline-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 @keyframes modalFadeIn {
@@ -333,10 +373,11 @@
 @keyframes modalPopIn {
   from {
     opacity: 0;
-    transform: translate3d(0, 14px, 0) scale(0.95);
+    transform: translate3d(0, 10px, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
+
