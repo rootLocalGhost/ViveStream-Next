@@ -7,64 +7,61 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: 20px;
-  background: rgba(15, 15, 20, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  border-radius: var(--neo-radius-sm);
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
   font-family: monospace, var(--font-body);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   user-select: none;
   pointer-events: none;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
-  animation: fpsPillPop 0.3s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  animation: fpsPillPop 0.2s var(--ease-spring) forwards;
   transition:
-    color 0.25s ease,
-    border-color 0.25s ease,
-    background-color 0.25s ease;
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 @keyframes fpsPillPop {
   from {
     opacity: 0;
-    transform: translate3d(0, 10px, 0) scale(0.9);
+    transform: translate3d(0, 8px, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .fps-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid var(--border-color);
 }
 
 .fps-counter-pill.fps-good {
-  color: #4ade80;
+  color: #22c55e;
 }
 .fps-counter-pill.fps-good .fps-dot {
   background-color: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
 }
 
 .fps-counter-pill.fps-warn {
-  color: #facc15;
+  color: #eab308;
 }
 .fps-counter-pill.fps-warn .fps-dot {
   background-color: #eab308;
-  box-shadow: 0 0 8px #eab308;
 }
 
 .fps-counter-pill.fps-bad {
-  color: #f87171;
+  color: #ef4444;
 }
 .fps-counter-pill.fps-bad .fps-dot {
   background-color: #ef4444;
-  box-shadow: 0 0 8px #ef4444;
 }
 
 .fps-value {
@@ -74,6 +71,7 @@
 
 .fps-unit {
   font-size: 0.65rem;
-  opacity: 0.7;
+  opacity: 0.8;
   text-transform: uppercase;
 }
+
