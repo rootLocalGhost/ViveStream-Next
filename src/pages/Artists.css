@@ -7,40 +7,40 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 50px;
-  border: var(--app-border);
+  background: var(--clay-bg);
+  border-radius: var(--neo-radius);
+  border: 2px solid var(--border-color);
+  box-shadow: 4px 4px 0px var(--border-color);
   content-visibility: auto;
   contain-intrinsic-size: auto 150px auto 180px;
   contain: layout paint;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   will-change: transform;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
   cursor: pointer;
   gap: 12px;
-  aspect-ratio: 1;
+  padding: 16px;
 }
 
 .artist-card:hover {
-  transform: translate3d(0, -4px, 0) scale3d(1.04, 1.04, 1);
+  transform: var(--card-hover-transform);
+  box-shadow: 6px 6px 0px var(--border-color);
 }
 
 .artist-card .avatar-large {
-  width: 150px;
-  height: 150px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.18);
+  border: 2.5px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
   overflow: hidden;
   object-fit: cover;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
-  transition:
-    border-color 0.2s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-[data-theme="light"] .artist-card .avatar-large {
-  border-color: rgba(0, 0, 0, 0.12);
+  transition: border-color 0.12s ease;
 }
 
 .artist-card:hover .avatar-large {
@@ -50,9 +50,9 @@
 .artist-card-title {
   text-align: center;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 800;
   color: var(--primary-text);
-  transition: color 0.2s ease;
+  transition: color 0.12s ease;
 }
 
 .artist-card:hover .artist-card-title {
@@ -61,9 +61,10 @@
 
 .artist-video-count {
   font-size: 0.75rem;
+  font-weight: 700;
   color: var(--secondary-text);
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: -8px;
+  margin-top: -6px;
 }
