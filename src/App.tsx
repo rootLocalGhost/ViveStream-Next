@@ -74,35 +74,43 @@ const ImmersiveTitleBar = () => {
   return (
     <div class="immersive-titlebar-wrapper">
       <div data-tauri-drag-region class="drag-region"></div>
-      <div class="titlebar-controls">
-        <div
+      <div class="titlebar-controls" role="toolbar" aria-label="Window controls">
+        <button
+          type="button"
           class="titlebar-btn"
           onClick={() => win.hide()}
           title="Hide to Tray"
+          aria-label="Hide to Tray"
         >
-          <i class="ph ph-caret-down"></i>
-        </div>
-        <div
+          <i class="ph ph-caret-down" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
           class="titlebar-btn"
           onClick={() => win.minimize()}
           title="Minimize"
+          aria-label="Minimize Window"
         >
-          <i class="ph ph-minus"></i>
-        </div>
-        <div
+          <i class="ph ph-minus" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
           class="titlebar-btn"
           onClick={() => win.toggleMaximize()}
           title="Maximize"
+          aria-label="Maximize or Restore Window"
         >
-          <i class="ph ph-square"></i>
-        </div>
-        <div
+          <i class="ph ph-square" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
           class="titlebar-btn close-btn"
           onClick={() => win.close()}
           title="Close"
+          aria-label="Close Application"
         >
-          <i class="ph ph-x"></i>
-        </div>
+          <i class="ph ph-x" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
   );
