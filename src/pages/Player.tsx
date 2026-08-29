@@ -71,6 +71,10 @@ export default function Player() {
   const [isFavorite, setIsFavorite] = createSignal(false);
   const [showSettingsMenu, setShowSettingsMenu] = createSignal(false);
   const [showCCMenu, setShowCCMenu] = createSignal(false);
+  const [hoverTime, setHoverTime] = createSignal(0);
+  const [hoverX, setHoverX] = createSignal(0);
+  const [showHoverTooltip, setShowHoverTooltip] = createSignal(false);
+  const [bufferedPercent, setBufferedPercent] = createSignal(0);
 
   const [searchParams] = useSearchParams();
   const [isEditingMeta, setIsEditingMeta] = createSignal(false);
@@ -78,6 +82,7 @@ export default function Player() {
   const [editChannel, setEditChannel] = createSignal("");
 
   let videoRef: HTMLVideoElement | undefined;
+  let timelineContainerRef: HTMLDivElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
   let settingsMenuRef: HTMLDivElement | undefined;
   let settingsBtnRef: HTMLButtonElement | undefined;
@@ -807,6 +812,12 @@ export default function Player() {
               onTimeUpdate={(e) => {
                 if (!isSeeking() && !isUnmounting) setCurrentTime(e.currentTarget.currentTime);
               }}
+              onProgress={() => {
+                if (videoRef && videoRef.buffered.length > 0 && duration() > 0) {
+                  const end = videoRef.buffered.end(videoRef.buffered.length - 1);
+                  setBufferedPercent(Math.min(100, (end / duration()) * 100));
+                }
+              }}
               onClick={() => {
                 setShowSettingsMenu(false);
                 setShowCCMenu(false);
@@ -823,7 +834,7 @@ export default function Player() {
 
             <Show when={osdMessage()}>
               <div class="player-osd-badge">
-                <i class={`ph-fill ${osdMessage()!.icon}`}></i>
+                <i class={`ph-fill ${osdMessage()!.icon}`} aria-hidden="true"></i>
                 <span>{osdMessage()!.text}</span>
               </div>
             </Show>
@@ -835,18 +846,51 @@ export default function Player() {
                   : "player-controls-overlay"
               }
             >
-              <input
-                class="custom-slider"
-                type="range"
-                min="0"
-                max={duration() || 0}
-                value={currentTime()}
-                step="0.1"
-                onInput={handleSeek}
-                onMouseDown={() => setIsSeeking(true)}
-                onMouseUp={() => setIsSeeking(false)}
-                style={{ "--progress": `${seekProgress()}%` } as any}
-              />
+              <div
+                class="timeline-scrubber-container"
+                ref={timelineContainerRef}
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+                  const pct = x / rect.width;
+                  setHoverX(x);
+                  setHoverTime(pct * (duration() || 0));
+                  setShowHoverTooltip(true);
+                }}
+                onMouseLeave={() => setShowHoverTooltip(false)}
+              >
+                {/* Buffered track layer */}
+                <div
+                  class="timeline-buffered-layer"
+                  style={{ width: `${bufferedPercent()}%` }}
+                ></div>
+
+                {/* Hover time tooltip */}
+                <Show when={showHoverTooltip() && duration() > 0}>
+                  <div
+                    class="timeline-hover-tooltip"
+                    style={{
+                      left: `${hoverX()}px`,
+                    }}
+                  >
+                    {formatTime(hoverTime())}
+                  </div>
+                </Show>
+
+                <input
+                  class="custom-slider"
+                  type="range"
+                  min="0"
+                  max={duration() || 0}
+                  value={currentTime()}
+                  step="0.1"
+                  onInput={handleSeek}
+                  onMouseDown={() => setIsSeeking(true)}
+                  onMouseUp={() => setIsSeeking(false)}
+                  aria-label="Seek Video Timeline"
+                  style={{ "--progress": `${seekProgress()}%` } as any}
+                />
+              </div>
 
               <div class="flex-row-between player-controls-bar">
                 <div class="flex-row-gap gap-4">
