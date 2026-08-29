@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Floating Sort Bar (Beside Floating Search Bar)
+   Floating Sort Bar (Neo-Brutalism Style)
    ========================================================================== */
 
 .floating-sort-container {
@@ -10,17 +10,17 @@
   z-index: 9500;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
-  animation: floatingSortFadeIn 0.22s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  animation: floatingSortFadeIn 0.18s var(--ease-spring) forwards;
 }
 
 @keyframes floatingSortFadeIn {
   from {
     opacity: 0;
-    transform: translate3d(0, -6px, 0) scale(0.96);
+    transform: translate3d(0, -4px, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -28,36 +28,30 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--clay-bg, #25262c);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  border-radius: 18px;
-  padding: 3px 6px 3px 10px;
-  height: 36px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--clay-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius);
+  padding: 4px 8px 4px 10px;
+  height: 38px;
+  box-shadow: 3px 3px 0px var(--border-color);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background-color 0.2s ease;
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    background-color 0.15s ease;
   user-select: none;
   -webkit-app-region: no-drag;
 }
 
-[data-theme="light"] .floating-sort-bar {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(242, 92, 84, 0.18);
-  box-shadow: 0 4px 16px rgba(247, 157, 101, 0.2), inset 0 1px 0 #ffffff;
-}
-
 .floating-sort-bar:hover {
-  border-color: var(--primary-accent, #f25c54);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 10px rgba(242, 92, 84, 0.18);
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 4px 4px 0px var(--border-color);
 }
 
 .floating-sort-container.is-active-modal .floating-sort-bar {
-  border-color: var(--primary-accent, #f25c54);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(242, 92, 84, 0.24);
+  border-color: var(--primary-accent);
+  box-shadow: 4px 4px 0px var(--primary-accent);
 }
 
 /* Trigger Button */
@@ -70,13 +64,13 @@
   color: var(--primary-text);
   font-family: inherit;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   padding: 3px 6px;
-  border-radius: 12px;
+  border-radius: var(--neo-radius-sm);
   transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
+    color 0.12s ease,
+    background-color 0.12s ease;
   white-space: nowrap;
 }
 
@@ -96,7 +90,7 @@
 .sort-caret {
   font-size: 0.72rem;
   color: var(--secondary-text);
-  transition: transform 0.2s ease;
+  transition: transform 0.15s ease;
 }
 
 .sort-caret.open {
@@ -111,31 +105,32 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  color: var(--primary-accent);
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  color: var(--primary-text);
   font-size: 0.95rem;
   cursor: pointer;
+  box-shadow: 2px 2px 0px var(--border-color);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   transition:
-    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
-[data-theme="light"] .floating-sort-dir-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.08s ease;
 }
 
 .floating-sort-dir-btn:hover {
   background: var(--primary-accent);
-  border-color: var(--primary-accent);
   color: #ffffff;
-  transform: scale3d(1.08, 1.08, 1) translate3d(0, 0, 0);
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.floating-sort-dir-btn:active {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 /* Shuffle Button */
@@ -145,26 +140,32 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: rgba(242, 92, 84, 0.1);
-  border: 1px solid rgba(242, 92, 84, 0.2);
-  border-radius: 50%;
-  color: var(--primary-accent);
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  color: var(--primary-text);
   font-size: 0.95rem;
   cursor: pointer;
+  box-shadow: 2px 2px 0px var(--border-color);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   transition:
-    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.08s ease;
 }
 
 .floating-sort-shuffle-btn:hover {
   background: var(--primary-accent);
-  border-color: var(--primary-accent);
   color: #ffffff;
-  transform: rotate(15deg) scale3d(1.08, 1.08, 1) translate3d(0, 0, 0);
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.floating-sort-shuffle-btn:active {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 .floating-sort-shuffle-btn.active {
@@ -174,39 +175,37 @@
 
 /* Esc tag */
 .floating-sort-close kbd {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: 4px;
   padding: 2px 6px;
   font-size: 0.72rem;
-  color: var(--secondary-text);
+  color: var(--primary-text);
   font-family: monospace;
+  font-weight: 700;
+  box-shadow: 1px 1px 0px var(--border-color);
   cursor: pointer;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .floating-sort-close:hover kbd {
   background: #ef233c;
-  border-color: #ef233c;
   color: #ffffff;
 }
 
 /* Dropdown Menu */
 .floating-sort-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
-  min-width: 170px;
-  background: var(--clay-bg, rgba(28, 28, 36, 0.96));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  padding: 5px;
+  min-width: 180px;
+  background: var(--secondary-background);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius);
+  box-shadow: 4px 4px 0px var(--border-color);
+  padding: 6px;
   z-index: 9600;
   animation: sortDropdownFade 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -214,17 +213,17 @@
 @keyframes sortDropdownFade {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.97);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 .floating-sort-menu-header {
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--secondary-text);
@@ -236,18 +235,18 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 6px 10px;
+  padding: 7px 10px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--neo-radius-sm);
   color: var(--primary-text);
   font-family: inherit;
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color 0.12s ease,
+    color 0.12s ease;
   text-align: left;
 }
 
@@ -263,12 +262,12 @@
 }
 
 .floating-sort-menu-item:hover {
-  background: rgba(242, 92, 84, 0.12);
-  color: var(--primary-accent);
+  background: var(--primary-accent);
+  color: #ffffff;
 }
 
 .floating-sort-menu-item:hover .item-left i {
-  color: var(--primary-accent);
+  color: #ffffff;
 }
 
 .floating-sort-menu-item.active {
@@ -284,3 +283,4 @@
   font-size: 0.85rem;
   color: #ffffff;
 }
+
