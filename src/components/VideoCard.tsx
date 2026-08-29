@@ -165,50 +165,61 @@ export default function VideoCard(props: VideoCardProps) {
             </p>
           </div>
 
-          <div class="video-card-actions">
+          <div class="video-card-actions" role="toolbar" aria-label="Media card actions">
             {/* Favorite Button */}
             <button
+              type="button"
               class={`card-action-btn fav-btn ${isFavorite() ? "is-fav" : ""}`}
               onClick={handleToggleFavorite}
               title={
                 isFavorite() ? "Remove from Favourites" : "Add to Favourites"
               }
+              aria-label={
+                isFavorite() ? "Remove from Favourites" : "Add to Favourites"
+              }
             >
               <i
-                class={`ph-fill ${isFavorite() ? "ph-heart" : "ph-heart"}`}
+                class={`ph-fill ph-heart ${isFavorite() ? "fav-pulse" : ""}`}
+                aria-hidden="true"
               ></i>
             </button>
 
             {/* Add to Playlist Button */}
             <Show when={props.onAddToPlaylist}>
               <button
+                type="button"
                 class="card-action-btn playlist-btn"
                 onClick={handleAddToPlaylist}
                 title="Add to Playlist"
+                aria-label="Add to Playlist"
               >
-                <i class="ph-fill ph-list-plus"></i>
+                <i class="ph-fill ph-list-plus" aria-hidden="true"></i>
               </button>
             </Show>
 
             {/* Remove from Playlist Button */}
             <Show when={props.onRemoveFromPlaylist}>
               <button
+                type="button"
                 class="card-action-btn remove-pl-btn"
                 onClick={handleRemoveFromPlaylist}
                 title="Remove from this Playlist"
+                aria-label="Remove from this Playlist"
               >
-                <i class="ph-fill ph-minus-circle"></i>
+                <i class="ph-fill ph-minus-circle" aria-hidden="true"></i>
               </button>
             </Show>
 
             {/* Delete Button */}
             <Show when={props.onDelete}>
               <button
+                type="button"
                 class="card-action-btn delete-btn"
                 onClick={handleDelete}
                 title="Delete permanently"
+                aria-label="Delete video permanently"
               >
-                <i class="ph-fill ph-trash"></i>
+                <i class="ph-fill ph-trash" aria-hidden="true"></i>
               </button>
             </Show>
           </div>
