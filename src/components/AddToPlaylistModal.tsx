@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createSignal, createEffect, onCleanup, For, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { addToast } from "../store";
 import "./PlaylistModals.css";
@@ -27,6 +27,19 @@ export default function AddToPlaylistModal(props: AddToPlaylistModalProps) {
   const [newPlaylistName, setNewPlaylistName] = createSignal("");
   const [isCreating, setIsCreating] = createSignal(false);
   const [isLoading, setIsLoading] = createSignal(false);
+
+  createEffect(() => {
+    if (!props.isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        props.onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+  });
 
   const loadPlaylistsAndStatus = async () => {
     if (!props.isOpen || !props.videoId) return;
