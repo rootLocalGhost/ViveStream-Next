@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Sleek Floating Sort Bar Styles
+   Sort Bar Styles (Neo-Brutalism Style)
    ========================================================================== */
 
 .sort-bar-container {
@@ -8,26 +8,23 @@
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 18px;
-  padding: 6px 12px;
-  background: var(--clay-bg, rgba(30, 30, 36, 0.75));
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  padding: 8px 14px;
+  background: var(--clay-bg);
+  border-radius: var(--neo-radius);
+  box-shadow: 3px 3px 0px var(--border-color);
+  border: 2px solid var(--border-color);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   transition:
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease;
-  animation: sortBarFadeIn 0.22s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+    box-shadow 0.08s ease,
+    background-color 0.15s ease;
+  animation: sortBarFadeIn 0.18s var(--ease-spring) forwards;
 }
 
 @keyframes sortBarFadeIn {
   from {
     opacity: 0;
-    transform: translate3d(0, -6px, 0);
+    transform: translate3d(0, -4px, 0);
   }
   to {
     opacity: 1;
@@ -39,8 +36,7 @@
   position: sticky;
   top: 12px;
   z-index: 8000;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 16px rgba(242, 92, 84, 0.2);
-  border-color: var(--primary-accent, #f25c54);
+  box-shadow: 5px 5px 0px var(--border-color);
 }
 
 .sort-bar-left {
@@ -56,58 +52,61 @@
   margin-left: auto;
 }
 
-/* Clay Button Base */
+/* Clay / Neo Button Base */
 .clay-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   height: 34px;
-  background: var(--primary-background, rgba(20, 20, 26, 0.8));
+  background: var(--secondary-background);
   color: var(--primary-text);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
   font-family: var(--font-body);
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 2px 2px 0px var(--border-color);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   transition:
-    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.08s ease;
   user-select: none;
 }
 
 .clay-btn:hover {
-  border-color: var(--primary-accent);
-  color: var(--primary-accent);
-  transform: translate3d(0, -1px, 0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 8px rgba(242, 92, 84, 0.15);
+  background: var(--primary-accent);
+  color: #ffffff;
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
 }
 
 .clay-btn:active {
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 /* Item Count Badge */
 .sort-item-count {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  background: var(--primary-background, rgba(20, 20, 26, 0.6));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
-  border-radius: 10px;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--tertiary-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
   font-size: 0.8rem;
-  color: var(--secondary-text);
+  font-weight: 700;
+  color: var(--primary-text);
+  box-shadow: 2px 2px 0px var(--border-color);
 }
 
 .sort-item-count .count-number {
-  font-weight: 700;
+  font-weight: 800;
   color: var(--primary-accent);
 }
 
@@ -129,13 +128,13 @@
 
 .sort-prefix {
   color: var(--secondary-text);
-  font-weight: 400;
+  font-weight: 600;
   font-size: 0.78rem;
 }
 
 .dropdown-caret {
   font-size: 0.75rem;
-  transition: transform 0.2s ease;
+  transition: transform 0.15s ease;
   color: var(--secondary-text);
 }
 
@@ -146,34 +145,32 @@
 
 .sort-dropdown-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
   min-width: 180px;
-  background: var(--clay-bg, rgba(28, 28, 36, 0.96));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--secondary-background);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius);
+  box-shadow: 4px 4px 0px var(--border-color);
   padding: 6px;
   z-index: 8500;
-  animation: sortDropdownSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: sortDropdownSlide 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes sortDropdownSlide {
   from {
     opacity: 0;
-    transform: translateY(-6px) scale(0.97);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 .sort-dropdown-header {
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--secondary-text);
@@ -188,15 +185,15 @@
   padding: 7px 10px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--neo-radius-sm);
   color: var(--primary-text);
   font-family: var(--font-body);
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color 0.12s ease,
+    color 0.12s ease;
   text-align: left;
 }
 
@@ -209,16 +206,16 @@
 .sort-dropdown-item .item-left i {
   font-size: 0.95rem;
   color: var(--secondary-text);
-  transition: color 0.15s ease;
+  transition: color 0.12s ease;
 }
 
 .sort-dropdown-item:hover {
-  background: rgba(242, 92, 84, 0.12);
-  color: var(--primary-accent);
+  background: var(--primary-accent);
+  color: #ffffff;
 }
 
 .sort-dropdown-item:hover .item-left i {
-  color: var(--primary-accent);
+  color: #ffffff;
 }
 
 .sort-dropdown-item.active {
@@ -242,15 +239,15 @@
 }
 
 .sort-direction-btn i {
-  color: var(--primary-accent);
+  color: inherit;
   font-size: 0.95rem;
 }
 
 /* Shuffle Button */
 .sort-reshuffle-btn {
-  background: rgba(242, 92, 84, 0.12);
-  border-color: rgba(242, 92, 84, 0.3);
-  color: var(--primary-accent);
+  background: var(--secondary-background);
+  border-color: var(--border-color);
+  color: var(--primary-text);
 }
 
 .sort-reshuffle-btn:hover {
@@ -269,8 +266,8 @@
 }
 
 .sort-close-floating-btn:hover {
-  color: #ef233c;
-  border-color: #ef233c;
+  color: #ffffff;
+  background: #ef233c;
 }
 
 @media (max-width: 600px) {
@@ -283,3 +280,4 @@
     justify-content: space-between;
   }
 }
+
