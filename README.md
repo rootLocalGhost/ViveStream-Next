@@ -45,12 +45,6 @@ ViveStream-Next is an advanced, ultra-lightweight, offline-first media downloade
 - **Browser Cookie Integration**: Automatic cookie extraction from 8+ desktop browsers (Chrome, Firefox, Brave, Edge, Opera, Vivaldi, Chromium, Safari) for restricted or premium media.
 - **Zero-Config Setup Wizard**: Automated initial provisioning and integrity verification for `yt-dlp` and `ffmpeg` binaries (downloaded on-the-fly to reduce installer bloat).
 
-* **Smart Hardware Transcoding**: Automatic hardware-accelerated transcoding via NVIDIA NVENC, Intel QSV, AMD AMF, and Linux VAAPI (with smooth CPU fallback).
-* **Multi-Fragment Downloads**: Parallel fragment fetching for blazing-fast HLS/DASH downloads.
-* **Concurrent Queue Management**: Configurable parallel download slots (1–5 simultaneous jobs) with real-time progress logging and status tracking.
-* **Browser Cookie Integration**: Automatic cookie extraction from 8+ desktop browsers (Chrome, Firefox, Brave, Edge, Opera, Vivaldi, Chromium, Safari) for restricted or premium media.
-* **Zero-Config Setup Wizard**: Automated initial provisioning and integrity verification for `yt-dlp` and `ffmpeg` binaries.
-
 ### 📚 Media Library, Playlists & Artists
 
 - **Automated Playlist Ingestion**: Paste any YouTube playlist URL to automatically create the playlist locally, download the media, deduplicate existing files, and link them.
@@ -67,12 +61,6 @@ ViveStream-Next is an advanced, ultra-lightweight, offline-first media downloade
 - **On-Screen Display (OSD)**: Sleek glassmorphic OSD badges providing instant visual feedback for seeking, volume, and playback modes.
 - **Smart Context Queue**: Seamlessly plays next items in context of current playlist or artist.
 - **Native Media Controls**: Integration with system media controls (play/pause, next/prev) via the `souvlaki` crate.
-
-* **Local Streaming**: Instant playback powered by an embedded local HTTP server.
-* **Display Modes**: Toggle between Standard View, **Theater Mode**, **Fullscreen**, and Picture-in-Picture (**Miniplayer**).
-* **Custom Subtitles & Playback Speed**: Multi-track `.vtt` caption rendering and variable playback speeds (0.25x – 2.0x).
-* **On-Screen Display (OSD)**: Sleek glassmorphic OSD badges providing instant visual feedback for seeking, volume, and playback modes.
-* **Smart Context Queue**: Seamlessly plays next items in context of current playlist or artist.
 
 ### 🎨 Claymorphism Design & Themes
 
