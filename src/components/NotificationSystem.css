@@ -24,19 +24,19 @@
 
 .toast-msg {
   background: var(--clay-bg);
-  box-shadow: var(--clay-card-shadow);
-  border-radius: 20px;
-  padding: 14px 24px;
+  box-shadow: 4px 4px 0px var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  padding: 12px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   color: var(--primary-text);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
-  animation: toastSlideDown 0.35s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
-  border: var(--app-border);
+  animation: toastSlideDown 0.2s var(--ease-spring) forwards;
+  border: 2px solid var(--border-color);
   max-width: 500px;
 }
 
@@ -59,23 +59,21 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.7);
   pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10002;
-  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .dialog-box {
   background: var(--clay-bg);
-  border-radius: var(--clay-radius);
-  box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.4),
-    var(--clay-card-shadow);
-  padding: 30px;
+  border-radius: var(--neo-radius);
+  box-shadow: 8px 8px 0px var(--border-color);
+  border: 2.5px solid var(--border-color);
+  padding: 26px;
   max-width: 450px;
   width: 90%;
   display: flex;
@@ -83,13 +81,13 @@
   gap: 16px;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
-  animation: modalPopIn 0.28s var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
-  border: var(--app-border);
+  animation: modalPopIn 0.18s var(--ease-spring) forwards;
 }
 
 .dialog-title {
   margin: 0;
   font-size: 20px;
+  font-weight: 800;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -113,6 +111,7 @@
   color: var(--secondary-text);
   line-height: 1.6;
   white-space: pre-wrap;
+  font-weight: 500;
 }
 
 .dialog-actions {
@@ -124,44 +123,47 @@
 
 .dialog-btn {
   padding: 10px 20px;
-  border-radius: 24px;
-  font-weight: 600;
+  border-radius: var(--neo-radius-sm);
+  font-weight: 700;
   font-size: 14px;
   cursor: pointer;
   transform: translate3d(0, 0, 0);
+  border: 1.5px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
   transition:
-    transform 0.15s ease,
-    box-shadow 0.2s ease;
-  border: none;
+    transform 0.08s ease,
+    background-color 0.12s ease,
+    box-shadow 0.08s ease;
+}
+
+.dialog-btn:hover {
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.dialog-btn:active {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 0px 0px 0px var(--border-color);
 }
 
 .dialog-btn.cancel {
   background: var(--tertiary-background);
   color: var(--primary-text);
-  box-shadow: var(--clay-inset-shadow);
-}
-.dialog-btn.cancel:active {
-  transform: scale(0.95);
 }
 
 .dialog-btn.confirm {
   background: var(--primary-accent);
   color: white;
-  box-shadow: var(--clay-btn-shadow);
-}
-.dialog-btn.confirm:active {
-  transform: scale(0.95);
-  box-shadow: var(--clay-btn-active);
 }
 
 @keyframes toastSlideDown {
   from {
     opacity: 0;
-    transform: translate3d(0, -24px, 0) scale(0.95);
+    transform: translate3d(0, -16px, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -176,11 +178,11 @@
 
 @keyframes modalPopIn {
   from {
+    transform: translate3d(0, 10px, 0);
     opacity: 0;
-    transform: translate3d(0, 16px, 0) scale(0.95);
   }
   to {
+    transform: translate3d(0, 0, 0);
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
   }
 }
