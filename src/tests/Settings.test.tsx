@@ -102,4 +102,29 @@ describe("Settings Component", () => {
     const randomizeSection = screen.getByText("Randomize Library on Startup");
     expect(randomizeSection).toBeInTheDocument();
   });
+
+  it("handles side-by-side app theme and design style switching", async () => {
+    render(() => <Settings />);
+
+    const lightCard = screen.getByText("Light Theme");
+    expect(lightCard).toBeInTheDocument();
+    fireEvent.click(lightCard);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+
+    const darkCard = screen.getByText("Dark Theme");
+    expect(darkCard).toBeInTheDocument();
+    fireEvent.click(darkCard);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+
+    const clayCard = screen.getByText("Claymorphism");
+    expect(clayCard).toBeInTheDocument();
+    fireEvent.click(clayCard);
+    expect(document.documentElement.getAttribute("data-style")).toBe("claymorphism");
+
+    const neoCard = screen.getByText("Neo-Brutalism");
+    expect(neoCard).toBeInTheDocument();
+    fireEvent.click(neoCard);
+    expect(document.documentElement.getAttribute("data-style")).toBe("neo-brutalism");
+  });
 });
+
