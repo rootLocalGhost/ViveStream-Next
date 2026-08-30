@@ -750,6 +750,162 @@
   margin-bottom: 2px;
 }
 
+/* ==========================================================================
+   Color Palette Mockup Rules (Sunset vs Crimson)
+   ========================================================================== */
+
+/* Sunset Palette Mockup */
+.palette-sunset-mockup {
+  background: #fdf6f0;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.sunset-mock-side {
+  background: #ffffff;
+  border-right: 2px solid #000000;
+  width: 48px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sunset-mock-logo {
+  background: #f25c54;
+  height: 10px;
+  border-radius: 2px;
+  border: 1.5px solid #000000;
+}
+
+.sunset-mock-bar {
+  background: #f1e4d8;
+  height: 6px;
+  border-radius: 2px;
+  border: 1px solid #000000;
+}
+
+.sunset-mock-topbar {
+  background: #ffffff;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid #000000;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+}
+
+.sunset-mock-search {
+  background: #f1e4d8;
+  height: 8px;
+  width: 60px;
+  border-radius: 2px;
+  border: 1px solid #000000;
+}
+
+.sunset-mock-card {
+  background: #ffffff;
+  border: 1.5px solid #000000;
+  border-radius: 4px;
+  padding: 5px;
+  box-shadow: 1.5px 1.5px 0px #000000;
+}
+
+.sunset-mock-thumb {
+  background: #f25c54;
+  height: 34px;
+  border-radius: 2px;
+  margin-bottom: 4px;
+  border: 1px solid #000000;
+}
+
+.sunset-mock-line {
+  background: #000000;
+  height: 3px;
+  border-radius: 1px;
+  margin-bottom: 2px;
+}
+
+.sunset-mock-line.short {
+  width: 55%;
+}
+
+/* Crimson Palette Mockup */
+.palette-crimson-mockup {
+  background: #fff0f2;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.crimson-mock-side {
+  background: #ffffff;
+  border-right: 2px solid #000000;
+  width: 48px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.crimson-mock-logo {
+  background: #ef233c;
+  height: 10px;
+  border-radius: 2px;
+  border: 1.5px solid #000000;
+}
+
+.crimson-mock-bar {
+  background: #ffe0e4;
+  height: 6px;
+  border-radius: 2px;
+  border: 1px solid #000000;
+}
+
+.crimson-mock-topbar {
+  background: #ffffff;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid #000000;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+}
+
+.crimson-mock-search {
+  background: #ffe0e4;
+  height: 8px;
+  width: 60px;
+  border-radius: 2px;
+  border: 1px solid #000000;
+}
+
+.crimson-mock-card {
+  background: #ffffff;
+  border: 1.5px solid #000000;
+  border-radius: 4px;
+  padding: 5px;
+  box-shadow: 1.5px 1.5px 0px #000000;
+}
+
+.crimson-mock-thumb {
+  background: #ef233c;
+  height: 34px;
+  border-radius: 2px;
+  margin-bottom: 4px;
+  border: 1px solid #000000;
+}
+
+.crimson-mock-line {
+  background: #000000;
+  height: 3px;
+  border-radius: 1px;
+  margin-bottom: 2px;
+}
+
+.crimson-mock-line.short {
+  width: 55%;
+}
+
 /* SPEED LIMIT CONTROLS */
 .settings-page .speed-limit-control-box {
   display: flex;
@@ -1124,6 +1280,413 @@
   flex-wrap: wrap;
   gap: 8px;
   padding-top: 4px;
+}
+
+/* ==========================================================================
+   Ambient Lighting Studio Styles
+   ========================================================================== */
+
+.ambient-studio-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0 0 0;
+}
+
+.ambient-studio-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ambient-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ambient-mode-card {
+  background: var(--secondary-background);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius);
+  box-shadow: 3px 3px 0px var(--border-color);
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  user-select: none;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    border-color 0.12s ease;
+}
+
+.ambient-mode-card:hover {
+  transform: translate3d(-2px, -2px, 0);
+  box-shadow: 5px 5px 0px var(--border-color);
+}
+
+.ambient-mode-card.selected {
+  border-color: var(--primary-accent);
+  box-shadow: 4px 4px 0px var(--primary-accent);
+}
+
+.ambient-mode-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ambient-mode-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--neo-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border: 1.5px solid var(--border-color);
+  box-shadow: 1.5px 1.5px 0px var(--border-color);
+  flex-shrink: 0;
+}
+
+.ambient-mode-icon.dynamic {
+  background: linear-gradient(135deg, #f25c54, #ff9e00);
+  color: #ffffff;
+}
+
+.ambient-mode-icon.static {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  color: #ffffff;
+}
+
+.ambient-mode-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ambient-mode-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--primary-text);
+}
+
+.ambient-mode-desc {
+  font-size: 12px;
+  color: var(--secondary-text);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Static Color Customizer */
+.ambient-color-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--tertiary-background);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius);
+  padding: 16px;
+  box-shadow: 2px 2px 0px var(--border-color);
+  animation: fadeIn 0.15s ease;
+}
+
+.ambient-section-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--primary-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ambient-swatches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.ambient-swatch-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  box-shadow: 2px 2px 0px var(--border-color);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-text);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    border-color 0.12s ease;
+  user-select: none;
+}
+
+.ambient-swatch-chip:hover {
+  transform: translate3d(-1px, -1px, 0);
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.ambient-swatch-chip.selected {
+  border-color: var(--primary-accent);
+  box-shadow: 3px 3px 0px var(--primary-accent);
+  background: var(--primary-background);
+}
+
+.ambient-swatch-chip .swatch-circle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid #000000;
+  flex-shrink: 0;
+}
+
+.ambient-swatch-chip .swatch-label {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ambient-swatch-chip .swatch-check {
+  font-size: 14px;
+  color: var(--primary-accent);
+  margin-left: auto;
+}
+
+.ambient-custom-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+}
+
+.ambient-color-picker-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  box-shadow: 2px 2px 0px var(--border-color);
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-text);
+}
+
+.ambient-native-picker {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.ambient-picker-preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1.5px solid #000000;
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.ambient-hex-input-group {
+  display: flex;
+  align-items: center;
+  background: var(--secondary-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  box-shadow: 2px 2px 0px var(--border-color);
+  padding: 0 10px;
+}
+
+.ambient-hex-input-group .hex-hash {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--secondary-text);
+  margin-right: 4px;
+}
+
+.ambient-hex-input {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 8px 0 !important;
+  width: 90px !important;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Sliders Grid */
+.ambient-sliders-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ambient-slider-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--secondary-background);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius);
+  padding: 14px 16px;
+  box-shadow: 2px 2px 0px var(--border-color);
+}
+
+.ambient-slider-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--primary-text);
+}
+
+.ambient-slider-badge {
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--primary-accent);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--border-color);
+  box-shadow: 1px 1px 0px var(--border-color);
+}
+
+.ambient-full-slider {
+  width: 100% !important;
+}
+
+/* Live Preview Stage */
+.ambient-preview-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--secondary-background);
+  border: 2px solid var(--border-color);
+  border-radius: var(--neo-radius);
+  padding: 16px;
+  box-shadow: 3px 3px 0px var(--border-color);
+}
+
+.ambient-stage-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--primary-text);
+}
+
+.ambient-stage-canvas {
+  position: relative;
+  height: 180px;
+  background: #0f1015;
+  border: 2px solid #000000;
+  border-radius: calc(var(--neo-radius) - 2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ambient-mock-glow {
+  position: absolute;
+  width: 240px;
+  height: 120px;
+  border-radius: var(--neo-radius);
+  pointer-events: none;
+  transition:
+    background 0.3s ease,
+    filter 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.ambient-mock-screen {
+  position: relative;
+  z-index: 2;
+  width: 240px;
+  height: 135px;
+  background: #181920;
+  border: 2px solid #000000;
+  border-radius: var(--neo-radius-sm);
+  box-shadow: 4px 4px 0px #000000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ambient-mock-header-bar {
+  height: 16px;
+  background: #25262c;
+  border-bottom: 1.5px solid #000000;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+}
+
+.ambient-mock-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #444;
+  border: 0.5px solid #000;
+}
+
+.ambient-mock-video-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #121318;
+}
+
+.ambient-mock-play {
+  font-size: 32px;
+  color: var(--primary-accent);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.ambient-mock-title-strip {
+  font-size: 10px;
+  font-weight: 700;
+  color: #a0a0a0;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+  .ambient-mode-grid {
+    grid-template-columns: 1fr;
+  }
+  .ambient-sliders-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 
