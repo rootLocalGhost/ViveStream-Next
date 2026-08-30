@@ -7,6 +7,16 @@ import {
   toggleAppPalette,
   designStyle,
   toggleDesignStyle,
+  playerAmbientMode,
+  togglePlayerAmbientMode,
+  playerAmbientType,
+  togglePlayerAmbientType,
+  playerAmbientColor,
+  updatePlayerAmbientColor,
+  playerAmbientIntensity,
+  updatePlayerAmbientIntensity,
+  playerAmbientBlur,
+  updatePlayerAmbientBlur,
   sidebarHoverMode,
   toggleSidebarHoverMode,
   alwaysShowSearchBar,
@@ -488,25 +498,342 @@ export default function Settings() {
 
         <div class="full-divider"></div>
 
-        <div class="flex-row-between" id="setting-appearance-palette">
-          <div>
-            <h3 class="settings-title">Color Palette</h3>
-            <p class="settings-desc">Choose a primary accent scheme.</p>
+        {/* Color Palette (Sunset vs Crimson) */}
+        <div class="theme-setting-container" id="setting-appearance-palette">
+          <div class="flex-row-between theme-setting-header">
+            <div>
+              <h3 class="settings-title">Color Palette</h3>
+              <p class="settings-desc">
+                Select a primary color scheme and vibrant brand accents.
+              </p>
+            </div>
           </div>
-          <div class="toggle-group">
-            <button
+
+          <div class="theme-side-by-side-grid">
+            {/* Sunset Palette Card */}
+            <div
+              class={`theme-preview-card palette-sunset-preview ${appPalette() === "sunset" ? "selected" : ""}`}
               onClick={() => toggleAppPalette("sunset")}
-              class={`toggle-btn ${appPalette() === "sunset" ? "active" : ""}`}
             >
-              <div class="color-swatch sunset"></div> Sunset
-            </button>
-            <button
+              <div class="theme-preview-mockup palette-sunset-mockup">
+                <div class="mockup-sidebar sunset-mock-side">
+                  <div class="mockup-bar mockup-logo sunset-mock-logo"></div>
+                  <div class="mockup-bar sunset-mock-bar"></div>
+                  <div class="mockup-bar sunset-mock-bar"></div>
+                  <div class="mockup-bar sunset-mock-bar"></div>
+                </div>
+                <div class="mockup-main">
+                  <div class="mockup-topbar sunset-mock-topbar">
+                    <div class="mockup-search sunset-mock-search"></div>
+                  </div>
+                  <div class="mockup-grid">
+                    <div class="mockup-card sunset-mock-card">
+                      <div class="mockup-card-thumb sunset-mock-thumb"></div>
+                      <div class="mockup-card-line sunset-mock-line"></div>
+                      <div class="mockup-card-line sunset-mock-line short"></div>
+                    </div>
+                    <div class="mockup-card sunset-mock-card">
+                      <div class="mockup-card-thumb sunset-mock-thumb"></div>
+                      <div class="mockup-card-line sunset-mock-line"></div>
+                      <div class="mockup-card-line sunset-mock-line short"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="theme-card-footer">
+                <div class="theme-card-info">
+                  <div class="theme-card-title-row">
+                    <i class="ph-fill ph-sun-horizon"></i>
+                    <span class="theme-card-name">Sunset</span>
+                  </div>
+                  <span class="theme-card-desc">Warm Tangerine & Coral energized highlights</span>
+                </div>
+                <div class="theme-radio-indicator">
+                  <i
+                    class={
+                      appPalette() === "sunset" ? "ph-bold ph-check" : ""
+                    }
+                  ></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Crimson Palette Card */}
+            <div
+              class={`theme-preview-card palette-crimson-preview ${appPalette() === "crimson" ? "selected" : ""}`}
               onClick={() => toggleAppPalette("crimson")}
-              class={`toggle-btn ${appPalette() === "crimson" ? "active" : ""}`}
             >
-              <div class="color-swatch crimson"></div> Crimson
-            </button>
+              <div class="theme-preview-mockup palette-crimson-mockup">
+                <div class="mockup-sidebar crimson-mock-side">
+                  <div class="mockup-bar mockup-logo crimson-mock-logo"></div>
+                  <div class="mockup-bar crimson-mock-bar"></div>
+                  <div class="mockup-bar crimson-mock-bar"></div>
+                  <div class="mockup-bar crimson-mock-bar"></div>
+                </div>
+                <div class="mockup-main">
+                  <div class="mockup-topbar crimson-mock-topbar">
+                    <div class="mockup-search crimson-mock-search"></div>
+                  </div>
+                  <div class="mockup-grid">
+                    <div class="mockup-card crimson-mock-card">
+                      <div class="mockup-card-thumb crimson-mock-thumb"></div>
+                      <div class="mockup-card-line crimson-mock-line"></div>
+                      <div class="mockup-card-line crimson-mock-line short"></div>
+                    </div>
+                    <div class="mockup-card crimson-mock-card">
+                      <div class="mockup-card-thumb crimson-mock-thumb"></div>
+                      <div class="mockup-card-line crimson-mock-line"></div>
+                      <div class="mockup-card-line crimson-mock-line short"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="theme-card-footer">
+                <div class="theme-card-info">
+                  <div class="theme-card-title-row">
+                    <i class="ph-fill ph-fire"></i>
+                    <span class="theme-card-name">Crimson</span>
+                  </div>
+                  <span class="theme-card-desc">Bold Scarlet & Ruby intense high-contrast tones</span>
+                </div>
+                <div class="theme-radio-indicator">
+                  <i
+                    class={
+                      appPalette() === "crimson" ? "ph-bold ph-check" : ""
+                    }
+                  ></i>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* Ambient Lighting Studio */}
+        <div class="ambient-studio-container" id="setting-appearance-ambient">
+          <div class="flex-row-between theme-setting-header">
+            <div>
+              <h3 class="settings-title">Ambient Lighting (Cinematic Glow)</h3>
+              <p class="settings-desc">
+                Cast an immersive diffuse glow around the video player onto the background canvas.
+              </p>
+            </div>
+            <label class="switch">
+              <input
+                type="checkbox"
+                checked={playerAmbientMode()}
+                onChange={(e) => togglePlayerAmbientMode(e.target.checked)}
+              />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <Show when={playerAmbientMode()}>
+            <div class="ambient-studio-body">
+              {/* Mode Selection Cards */}
+              <div class="ambient-mode-grid">
+                <div
+                  class={`ambient-mode-card ${playerAmbientType() === "dynamic" ? "selected" : ""}`}
+                  onClick={() => togglePlayerAmbientType("dynamic")}
+                >
+                  <div class="ambient-mode-card-header">
+                    <div class="ambient-mode-icon dynamic">
+                      <i class="ph-fill ph-video-camera"></i>
+                    </div>
+                    <div class="ambient-mode-title-col">
+                      <span class="ambient-mode-name">Dynamic Mode</span>
+                      <span class="ambient-mode-desc">
+                        Extracts dominant colors dynamically from active video playback in real time
+                      </span>
+                    </div>
+                  </div>
+                  <div class="theme-radio-indicator">
+                    <i class={playerAmbientType() === "dynamic" ? "ph-bold ph-check" : ""}></i>
+                  </div>
+                </div>
+
+                <div
+                  class={`ambient-mode-card ${playerAmbientType() === "static" ? "selected" : ""}`}
+                  onClick={() => togglePlayerAmbientType("static")}
+                >
+                  <div class="ambient-mode-card-header">
+                    <div class="ambient-mode-icon static">
+                      <i class="ph-fill ph-palette"></i>
+                    </div>
+                    <div class="ambient-mode-title-col">
+                      <span class="ambient-mode-name">Static Mode</span>
+                      <span class="ambient-mode-desc">
+                        Custom color aura with zero CPU overhead and fixed ambient radiance
+                      </span>
+                    </div>
+                  </div>
+                  <div class="theme-radio-indicator">
+                    <i class={playerAmbientType() === "static" ? "ph-bold ph-check" : ""}></i>
+                  </div>
+                </div>
+              </div>
+
+              {/* Static Color Customizer (Shown when Static mode is selected) */}
+              <Show when={playerAmbientType() === "static"}>
+                <div class="ambient-color-section">
+                  <div class="ambient-section-subtitle">
+                    <i class="ph-bold ph-paint-brush-broad"></i>
+                    <span>Aura Color Palette</span>
+                  </div>
+
+                  <div class="ambient-swatches-grid">
+                    {[
+                      { name: "Sunset Coral", color: "#f25c54" },
+                      { name: "Crimson Red", color: "#ef233c" },
+                      { name: "Cyber Cyan", color: "#00f0ff" },
+                      { name: "Electric Purple", color: "#a855f7" },
+                      { name: "Emerald", color: "#10b981" },
+                      { name: "Golden Amber", color: "#f59e0b" },
+                      { name: "Cobalt Blue", color: "#3b82f6" },
+                      { name: "Hot Pink", color: "#ec4899" },
+                      { name: "Studio White", color: "#f8fafc" },
+                    ].map((preset) => (
+                      <button
+                        type="button"
+                        class={`ambient-swatch-chip ${playerAmbientColor().toLowerCase() === preset.color.toLowerCase() ? "selected" : ""}`}
+                        style={{ "--swatch-color": preset.color } as any}
+                        onClick={() => updatePlayerAmbientColor(preset.color)}
+                        title={preset.name}
+                      >
+                        <span class="swatch-circle" style={{ background: preset.color }}></span>
+                        <span class="swatch-label">{preset.name}</span>
+                        <Show when={playerAmbientColor().toLowerCase() === preset.color.toLowerCase()}>
+                          <i class="ph-bold ph-check swatch-check"></i>
+                        </Show>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div class="ambient-custom-picker-row">
+                    <div class="ambient-color-picker-wrapper">
+                      <input
+                        type="color"
+                        class="ambient-native-picker"
+                        value={playerAmbientColor()}
+                        onInput={(e) => updatePlayerAmbientColor(e.currentTarget.value)}
+                        aria-label="Custom Ambient Color Picker"
+                      />
+                      <span
+                        class="ambient-picker-preview"
+                        style={{ background: playerAmbientColor() }}
+                      ></span>
+                      <span class="ambient-picker-label">Custom Palette Color</span>
+                    </div>
+
+                    <div class="ambient-hex-input-group">
+                      <span class="hex-hash">#</span>
+                      <input
+                        type="text"
+                        class="setting-input ambient-hex-input"
+                        value={playerAmbientColor().replace("#", "")}
+                        onInput={(e) => {
+                          const val = e.currentTarget.value.trim().replace("#", "");
+                          if (/^[0-9A-Fa-f]{6}$/.test(val)) {
+                            updatePlayerAmbientColor("#" + val);
+                          }
+                        }}
+                        placeholder="f25c54"
+                        maxLength="6"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Show>
+
+              {/* Sliders: Intensity & Blur Radius */}
+              <div class="ambient-sliders-grid">
+                <div class="ambient-slider-card">
+                  <div class="flex-row-between">
+                    <span class="ambient-slider-label">
+                      <i class="ph-bold ph-sun"></i> Glow Intensity
+                    </span>
+                    <span class="ambient-slider-badge">{playerAmbientIntensity()}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    class="setting-slider ambient-full-slider"
+                    min="20"
+                    max="150"
+                    step="5"
+                    value={playerAmbientIntensity()}
+                    onInput={(e) =>
+                      updatePlayerAmbientIntensity(parseInt(e.currentTarget.value, 10))
+                    }
+                    style={
+                      {
+                        "--progress": `${((playerAmbientIntensity() - 20) / (150 - 20)) * 100}%`,
+                      } as any
+                    }
+                  />
+                </div>
+
+                <div class="ambient-slider-card">
+                  <div class="flex-row-between">
+                    <span class="ambient-slider-label">
+                      <i class="ph-bold ph-faders"></i> Diffusion Blur Radius
+                    </span>
+                    <span class="ambient-slider-badge">{playerAmbientBlur()}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    class="setting-slider ambient-full-slider"
+                    min="20"
+                    max="100"
+                    step="2"
+                    value={playerAmbientBlur()}
+                    onInput={(e) =>
+                      updatePlayerAmbientBlur(parseInt(e.currentTarget.value, 10))
+                    }
+                    style={
+                      {
+                        "--progress": `${((playerAmbientBlur() - 20) / (100 - 20)) * 100}%`,
+                      } as any
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Live Mockup Preview */}
+              <div class="ambient-preview-stage">
+                <div class="ambient-stage-header">
+                  <i class="ph-bold ph-eye"></i>
+                  <span>Live Ambient Studio Preview</span>
+                </div>
+                <div class="ambient-stage-canvas">
+                  <div
+                    class="ambient-mock-glow"
+                    style={{
+                      background:
+                        playerAmbientType() === "dynamic"
+                          ? "linear-gradient(135deg, #f25c54, #ff9e00, #a855f7)"
+                          : playerAmbientColor(),
+                      filter: `blur(${playerAmbientBlur() * 0.55}px)`,
+                      opacity: `${playerAmbientIntensity() / 100}`,
+                    }}
+                  ></div>
+                  <div class="ambient-mock-screen">
+                    <div class="ambient-mock-header-bar">
+                      <div class="ambient-mock-dot"></div>
+                      <div class="ambient-mock-dot"></div>
+                      <div class="ambient-mock-dot"></div>
+                    </div>
+                    <div class="ambient-mock-video-area">
+                      <i class="ph-fill ph-play-circle ambient-mock-play"></i>
+                      <div class="ambient-mock-title-strip">
+                        <span>ViveStream Cinema</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Show>
         </div>
 
         <div class="full-divider"></div>
