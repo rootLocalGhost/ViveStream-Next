@@ -38,11 +38,20 @@ import {
   setMiniplayerDismissed,
   theaterMode,
   setTheaterMode,
+  playerAmbientMode,
+  togglePlayerAmbientMode,
+  playerAmbientType,
+  togglePlayerAmbientType,
+  playerAmbientColor,
+  updatePlayerAmbientColor,
+  playerAmbientIntensity,
+  playerAmbientBlur,
   setPlayerContextParams,
   setGlobalVideoRef,
   isSearchOpen,
   getThumbnailUrl,
 } from "../store";
+import AddToPlaylistModal from "../components/AddToPlaylistModal";
 import "./Player.css";
 
 const formatTime = (timeInSeconds: number) => {
@@ -77,13 +86,28 @@ export default function Player() {
   const [bufferedPercent, setBufferedPercent] = createSignal(0);
 
   const [searchParams] = useSearchParams();
+  const [showAddToModal, setShowAddToModal] = createSignal(false);
   const [isEditingMeta, setIsEditingMeta] = createSignal(false);
   const [editTitle, setEditTitle] = createSignal("");
   const [editChannel, setEditChannel] = createSignal("");
+  const [currentDominantColor, setCurrentDominantColor] = createSignal("#f25c54");
+  const [extractedVideoColors, setExtractedVideoColors] = createSignal<string[]>([
+    "#f25c54",
+    "#ef233c",
+    "#3b82f6",
+    "#10b981",
+    "#a855f7",
+  ]);
 
   let videoRef: HTMLVideoElement | undefined;
   let timelineContainerRef: HTMLDivElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
+  let ambientCanvasRef: HTMLCanvasElement | undefined;
+  let ambientCtx: CanvasRenderingContext2D | null = null;
+  let offscreenCanvas: HTMLCanvasElement | null = null;
+  let offscreenCtx: CanvasRenderingContext2D | null = null;
+  let ambientRafId: number | null = null;
+  let lastAmbientDraw = 0;
   let settingsMenuRef: HTMLDivElement | undefined;
   let settingsBtnRef: HTMLButtonElement | undefined;
   let ccMenuRef: HTMLDivElement | undefined;
@@ -95,6 +119,176 @@ export default function Player() {
   let unlistenPrev: UnlistenFn | undefined;
   let currentLoadingId: string | null = null;
   let isUnmounting = false;
+
+  const rgbToHex = (r: number, g: number, b: number) => {
+    return (
+      "#" +
+      [r, g, b]
+        .map((x) => {
+          const hex = Math.min(255, Math.max(0, x)).toString(16);
+          return hex.length === 1 ? "0" + hex : hex;
+        })
+        .join("")
+    );
+  };
+
+  const extractDominantVideoColors = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+  ): { dominant: string; palette: string[] } => {
+    try {
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+      const buckets = new Map<
+        string,
+        { r: number; g: number; b: number; count: number; sat: number }
+      >();
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+
+        if (a < 128) continue;
+
+        // Group nearby colors to eliminate micro-variations
+        const qr = Math.round(r / 28) * 28;
+        const qg = Math.round(g / 28) * 28;
+        const qb = Math.round(b / 28) * 28;
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const delta = max - min;
+        const sat = max === 0 ? 0 : delta / max;
+
+        // Skip dark letterbox bars or near-black pixels
+        if (max < 30) continue;
+
+        const key = `${qr},${qg},${qb}`;
+        const existing = buckets.get(key);
+        // Give higher weight to colorful/saturated pixels
+        const weight = 1 + sat * 2.5;
+
+        if (existing) {
+          existing.count += weight;
+        } else {
+          buckets.set(key, { r: qr, g: qg, b: qb, count: weight, sat });
+        }
+      }
+
+      if (buckets.size === 0) {
+        return {
+          dominant: "#f25c54",
+          palette: ["#f25c54", "#ef233c", "#3b82f6", "#10b981", "#a855f7"],
+        };
+      }
+
+      const sorted = Array.from(buckets.values()).sort(
+        (a, b) => b.count - a.count,
+      );
+      const top = sorted[0];
+      const dominantHex = rgbToHex(top.r, top.g, top.b);
+
+      const palette: string[] = [];
+      for (const item of sorted) {
+        const hex = rgbToHex(item.r, item.g, item.b);
+        const isDistinct = palette.every((existingHex) => {
+          const er = parseInt(existingHex.slice(1, 3), 16);
+          const eg = parseInt(existingHex.slice(3, 5), 16);
+          const eb = parseInt(existingHex.slice(5, 7), 16);
+          const dist = Math.sqrt(
+            (item.r - er) ** 2 + (item.g - eg) ** 2 + (item.b - eb) ** 2,
+          );
+          return dist > 45;
+        });
+        if (isDistinct) {
+          palette.push(hex);
+          if (palette.length >= 6) break;
+        }
+      }
+
+      if (palette.length === 0) palette.push(dominantHex);
+
+      return { dominant: dominantHex, palette };
+    } catch {
+      return {
+        dominant: "#f25c54",
+        palette: ["#f25c54", "#ef233c", "#3b82f6", "#10b981", "#a855f7"],
+      };
+    }
+  };
+
+  const drawAmbientFrame = (now?: number) => {
+    if (
+      !videoRef ||
+      !playerAmbientMode() ||
+      isFullscreen()
+    ) {
+      return;
+    }
+    const time = now ?? performance.now();
+    if (time - lastAmbientDraw >= 40) {
+      if (!offscreenCanvas) {
+        offscreenCanvas = document.createElement("canvas");
+        offscreenCanvas.width = 32;
+        offscreenCanvas.height = 18;
+        offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
+      }
+
+      if (offscreenCtx && videoRef.readyState >= 2) {
+        try {
+          offscreenCtx.drawImage(videoRef, 0, 0, 32, 18);
+          const { dominant, palette } = extractDominantVideoColors(offscreenCtx, 32, 18);
+          setCurrentDominantColor(dominant);
+          if (palette.length > 0) {
+            setExtractedVideoColors(palette);
+          }
+        } catch {}
+      }
+
+      if (playerAmbientType() === "dynamic" && ambientCanvasRef) {
+        if (!ambientCtx) {
+          ambientCtx = ambientCanvasRef.getContext("2d", { willReadFrequently: false });
+        }
+        if (ambientCtx && videoRef.readyState >= 2) {
+          try {
+            ambientCtx.drawImage(
+              videoRef,
+              0,
+              0,
+              ambientCanvasRef.width,
+              ambientCanvasRef.height,
+            );
+          } catch {}
+        }
+      }
+      lastAmbientDraw = time;
+    }
+    if (isPlaying() && !isUnmounting) {
+      ambientRafId = requestAnimationFrame(drawAmbientFrame);
+    }
+  };
+
+  createEffect(() => {
+    const playing = isPlaying();
+    const ambient = playerAmbientMode();
+    const full = isFullscreen();
+    const vid = video();
+    if (playing && ambient && !full && !isUnmounting) {
+      if (ambientRafId) cancelAnimationFrame(ambientRafId);
+      ambientRafId = requestAnimationFrame(drawAmbientFrame);
+    } else {
+      if (ambientRafId) {
+        cancelAnimationFrame(ambientRafId);
+        ambientRafId = null;
+      }
+      if (ambient && !full && videoRef && videoRef.readyState >= 2) {
+        drawAmbientFrame();
+      }
+    }
+  });
 
   const toggleMiniplayerMode = () => {
     isUnmounting = true;
@@ -688,6 +882,10 @@ export default function Player() {
 
   onCleanup(() => {
     isUnmounting = true;
+    if (ambientRafId) {
+      cancelAnimationFrame(ambientRafId);
+      ambientRafId = null;
+    }
     window.removeEventListener("keydown", handleKeyDown);
     document.removeEventListener("mousedown", handleClickOutside);
     document.removeEventListener("fullscreenchange", handleFullscreenChange);
@@ -766,31 +964,74 @@ export default function Player() {
           fallback={<div class="flex-row-gap">Loading engine...</div>}
         >
           <div
-            class="player-video-wrapper"
-            ref={playerContainerRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() =>
-              isPlaying() &&
-              !showSettingsMenu() &&
-              !showCCMenu() &&
-              setShowControls(false)
-            }
+            class="player-video-outer"
+            style={{
+              "--ambient-blur": `${playerAmbientBlur()}px`,
+              "--ambient-opacity": `${playerAmbientIntensity() / 100}`,
+              "--ambient-dominant-color": currentDominantColor(),
+              "--ambient-static-color": playerAmbientColor(),
+            } as any}
           >
+            {/* Real-time dominant color aura glow layer */}
+            <div
+              class={`player-ambient-glow ${!playerAmbientMode() || isFullscreen() ? "hidden" : ""}`}
+              style={{
+                background:
+                  playerAmbientType() === "dynamic"
+                    ? currentDominantColor()
+                    : playerAmbientColor(),
+                filter: `blur(${playerAmbientBlur()}px) saturate(190%) brightness(1.25)`,
+                opacity: `${playerAmbientIntensity() / 100}`,
+              }}
+              aria-hidden="true"
+            />
+
+            {/* Dynamic spatial canvas light bleed */}
+            <Show when={playerAmbientType() === "dynamic"}>
+              <canvas
+                ref={ambientCanvasRef}
+                class={`player-ambient-canvas ${!playerAmbientMode() || isFullscreen() ? "hidden" : ""}`}
+                width="160"
+                height="90"
+                aria-hidden="true"
+              />
+            </Show>
+
+            <div
+              class="player-video-wrapper"
+              ref={playerContainerRef}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={() =>
+                isPlaying() &&
+                !showSettingsMenu() &&
+                !showCCMenu() &&
+                setShowControls(false)
+              }
+            >
             <video
               class="player-video-element"
               ref={videoRef}
               preload="auto"
+              crossOrigin="anonymous"
               autoplay
               onEnded={handleVideoEnd}
               onPlay={() => {
                 if (isUnmounting) return;
                 invoke("update_playback_status", { playing: true });
                 setIsPlaying(true);
+                drawAmbientFrame();
               }}
               onPause={() => {
                 if (isUnmounting || (videoRef && videoRef.seeking)) return;
                 invoke("update_playback_status", { playing: false });
                 setIsPlaying(false);
+                drawAmbientFrame();
+              }}
+              onLoadedData={() => {
+                drawAmbientFrame();
+              }}
+              onSeeked={() => {
+                drawAmbientFrame();
               }}
               onLoadedMetadata={(e) => {
                 setDuration(e.currentTarget.duration);
@@ -803,14 +1044,21 @@ export default function Player() {
                 if (isPlaying() || untrack(isPlaying)) {
                   handlePlay();
                 }
+                drawAmbientFrame();
               }}
               onCanPlay={() => {
                 if (isPlaying() || untrack(isPlaying)) {
                   handlePlay();
                 }
+                drawAmbientFrame();
               }}
               onTimeUpdate={(e) => {
-                if (!isSeeking() && !isUnmounting) setCurrentTime(e.currentTarget.currentTime);
+                if (!isSeeking() && !isUnmounting) {
+                  setCurrentTime(e.currentTarget.currentTime);
+                  if (!isPlaying()) {
+                    drawAmbientFrame();
+                  }
+                }
               }}
               onProgress={() => {
                 if (videoRef && videoRef.buffered.length > 0 && duration() > 0) {
@@ -1003,8 +1251,76 @@ export default function Player() {
                     ))}
 
                     <div class="player-popup-header" style="margin-top: 8px;">
-                      <i class="ph-fill ph-nut"></i> Options
+                      <i class="ph-fill ph-nut"></i> Ambient Lighting
                     </div>
+                    <button
+                      class={`player-popup-item ${playerAmbientMode() ? "selected" : ""}`}
+                      onClick={() => {
+                        togglePlayerAmbientMode();
+                      }}
+                    >
+                      <span>Enable Glow</span>
+                      <i
+                        class={`ph-fill ph-toggle-${playerAmbientMode() ? "right" : "left"}`}
+                      ></i>
+                    </button>
+                    <Show when={playerAmbientMode()}>
+                      <div class="player-ambient-menu-group">
+                        <div class="player-ambient-mode-row">
+                          <button
+                            class={`player-ambient-mode-btn ${playerAmbientType() === "dynamic" ? "active" : ""}`}
+                            onClick={() => togglePlayerAmbientType("dynamic")}
+                          >
+                            <i class="ph-bold ph-video-camera"></i>
+                            <span>Auto Dynamic</span>
+                          </button>
+                          <button
+                            class={`player-ambient-mode-btn ${playerAmbientType() === "static" ? "active" : ""}`}
+                            onClick={() => togglePlayerAmbientType("static")}
+                          >
+                            <i class="ph-bold ph-palette"></i>
+                            <span>Static Aura</span>
+                          </button>
+                        </div>
+
+                        {/* Extracted Video Color Swatches */}
+                        <div class="player-ambient-palette-section">
+                          <div class="player-ambient-palette-label">
+                            <span>Video Frame Colors</span>
+                          </div>
+                          <div class="player-ambient-palette-swatches">
+                            {extractedVideoColors().map((col) => (
+                              <button
+                                type="button"
+                                class={`player-video-color-swatch ${playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase() ? "selected" : ""}`}
+                                style={{ background: col }}
+                                onClick={() => {
+                                  updatePlayerAmbientColor(col);
+                                  togglePlayerAmbientType("static");
+                                }}
+                                title={`Set ambient color to ${col}`}
+                              >
+                                <Show when={playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase()}>
+                                  <i class="ph-bold ph-check"></i>
+                                </Show>
+                              </button>
+                            ))}
+                            {/* Native color picker */}
+                            <label class="player-video-color-picker-label" title="Custom color picker">
+                              <input
+                                type="color"
+                                value={playerAmbientColor()}
+                                onInput={(e) => {
+                                  updatePlayerAmbientColor(e.currentTarget.value);
+                                  togglePlayerAmbientType("static");
+                                }}
+                              />
+                              <i class="ph-bold ph-plus"></i>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </Show>
                     <button
                       class={`player-popup-item ${isLooping() ? "selected" : ""}`}
                       onClick={() => {
@@ -1096,6 +1412,7 @@ export default function Player() {
               </div>
             </div>
           </div>
+        </div>
 
           <div class="player-meta-block">
             <Show
@@ -1198,15 +1515,27 @@ export default function Player() {
                 </div>
               </div>
 
-              <button
-                class={`clay-btn player-favorite-status ${isFavorite() ? "active" : ""}`}
-                onClick={toggleFavoriteStatus}
-              >
-                <i
-                  class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}
-                ></i>
-                {isFavorite() ? "Saved" : "Save"}
-              </button>
+              <div class="player-meta-actions">
+                <button
+                  class="clay-btn player-add-playlist-btn"
+                  onClick={() => setShowAddToModal(true)}
+                  title="Add to Playlist"
+                >
+                  <i class="ph-bold ph-plus-circle"></i>
+                  Add to Playlist
+                </button>
+
+                <button
+                  class={`clay-btn player-favorite-status ${isFavorite() ? "active" : ""}`}
+                  onClick={toggleFavoriteStatus}
+                  title={isFavorite() ? "Remove from Favourites" : "Add to Favourites"}
+                >
+                  <i
+                    class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}
+                  ></i>
+                  {isFavorite() ? "Favourited" : "Favourite"}
+                </button>
+              </div>
             </div>
 
             <div
@@ -1283,6 +1612,12 @@ export default function Player() {
           )}
         </For>
       </div>
+      <AddToPlaylistModal
+        isOpen={showAddToModal()}
+        videoId={video()?.id || null}
+        videoTitle={video()?.title}
+        onClose={() => setShowAddToModal(false)}
+      />
     </div>
   );
 }
