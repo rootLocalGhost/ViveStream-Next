@@ -241,6 +241,16 @@ export const {
   setMiniplayerDismissed,
   theaterMode,
   setTheaterMode,
+  playerAmbientMode,
+  setPlayerAmbientMode,
+  playerAmbientType,
+  setPlayerAmbientType,
+  playerAmbientColor,
+  setPlayerAmbientColor,
+  playerAmbientIntensity,
+  setPlayerAmbientIntensity,
+  playerAmbientBlur,
+  setPlayerAmbientBlur,
   playerContextParams,
   setPlayerContextParams,
   favoritesSet,
@@ -390,6 +400,24 @@ export const {
   const [playerQueue, setPlayerQueue] = createSignal<VideoEntry[]>([]);
   const [miniplayerDismissed, setMiniplayerDismissed] = createSignal(false);
   const [theaterMode, setTheaterMode] = createSignal(false);
+  const [playerAmbientMode, setPlayerAmbientMode] = createSignal(
+    getBool("playerAmbientMode", true),
+  );
+  const [playerAmbientType, setPlayerAmbientType] = createSignal<
+    "dynamic" | "static"
+  >(
+    (getStr("playerAmbientType", "dynamic") as "dynamic" | "static") ||
+      "dynamic",
+  );
+  const [playerAmbientColor, setPlayerAmbientColor] = createSignal(
+    getStr("playerAmbientColor", "#f25c54"),
+  );
+  const [playerAmbientIntensity, setPlayerAmbientIntensity] = createSignal(
+    getNum("playerAmbientIntensity", 85),
+  );
+  const [playerAmbientBlur, setPlayerAmbientBlur] = createSignal(
+    getNum("playerAmbientBlur", 60),
+  );
   const [playerContextParams, setPlayerContextParams] = createSignal<{
     context?: string;
     id?: string;
@@ -535,6 +563,16 @@ export const {
     setMiniplayerDismissed,
     theaterMode,
     setTheaterMode,
+    playerAmbientMode,
+    setPlayerAmbientMode,
+    playerAmbientType,
+    setPlayerAmbientType,
+    playerAmbientColor,
+    setPlayerAmbientColor,
+    playerAmbientIntensity,
+    setPlayerAmbientIntensity,
+    playerAmbientBlur,
+    setPlayerAmbientBlur,
     playerContextParams,
     setPlayerContextParams,
     favoritesSet,
@@ -772,6 +810,42 @@ export const toggleDesignStyle = (style: "neo-brutalism" | "claymorphism") => {
   if (isBrowser) {
     window.localStorage.setItem("designStyle", style);
     document.documentElement.setAttribute("data-style", style);
+  }
+};
+
+export const togglePlayerAmbientMode = (val?: boolean) => {
+  const next = val !== undefined ? val : !playerAmbientMode();
+  setPlayerAmbientMode(next);
+  if (isBrowser) {
+    window.localStorage.setItem("playerAmbientMode", String(next));
+  }
+};
+
+export const togglePlayerAmbientType = (type: "dynamic" | "static") => {
+  setPlayerAmbientType(type);
+  if (isBrowser) {
+    window.localStorage.setItem("playerAmbientType", type);
+  }
+};
+
+export const updatePlayerAmbientColor = (color: string) => {
+  setPlayerAmbientColor(color);
+  if (isBrowser) {
+    window.localStorage.setItem("playerAmbientColor", color);
+  }
+};
+
+export const updatePlayerAmbientIntensity = (val: number) => {
+  setPlayerAmbientIntensity(val);
+  if (isBrowser) {
+    window.localStorage.setItem("playerAmbientIntensity", val.toString());
+  }
+};
+
+export const updatePlayerAmbientBlur = (val: number) => {
+  setPlayerAmbientBlur(val);
+  if (isBrowser) {
+    window.localStorage.setItem("playerAmbientBlur", val.toString());
   }
 };
 
