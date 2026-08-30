@@ -125,6 +125,34 @@ describe("Settings Component", () => {
     expect(neoCard).toBeInTheDocument();
     fireEvent.click(neoCard);
     expect(document.documentElement.getAttribute("data-style")).toBe("neo-brutalism");
+
+    const sunsetCard = screen.getByText("Sunset");
+    expect(sunsetCard).toBeInTheDocument();
+    fireEvent.click(sunsetCard);
+    expect(document.documentElement.getAttribute("data-palette")).toBe("sunset");
+
+    const crimsonCard = screen.getByText("Crimson");
+    expect(crimsonCard).toBeInTheDocument();
+    fireEvent.click(crimsonCard);
+    expect(document.documentElement.getAttribute("data-palette")).toBe("crimson");
+  });
+
+  it("handles ambient lighting studio controls (dynamic vs static mode, color swatches)", async () => {
+    render(() => <Settings />);
+
+    expect(screen.getByText("Ambient Lighting (Cinematic Glow)")).toBeInTheDocument();
+
+    const staticModeCard = screen.getByText("Static Mode");
+    expect(staticModeCard).toBeInTheDocument();
+    fireEvent.click(staticModeCard);
+
+    const cyberCyanSwatch = screen.getByText("Cyber Cyan");
+    expect(cyberCyanSwatch).toBeInTheDocument();
+    fireEvent.click(cyberCyanSwatch);
+
+    const dynamicModeCard = screen.getByText("Dynamic Mode");
+    expect(dynamicModeCard).toBeInTheDocument();
+    fireEvent.click(dynamicModeCard);
   });
 });
 

@@ -158,4 +158,36 @@ describe("Player Component", () => {
     expect(activeVideo()?.id).toBe("vid2");
     expect(playerQueue().length).toBe(0);
   });
+
+  it("renders ambient lighting glow layer and action buttons correctly", async () => {
+    const { container } = render(() => <Player />);
+    await waitFor(() => {
+      expect(screen.getByText("Test Video")).toBeInTheDocument();
+    });
+
+    const ambientGlow = container.querySelector(".player-ambient-glow");
+    expect(ambientGlow).toBeInTheDocument();
+
+    const addToPlaylistBtn = screen.getByText("Add to Playlist");
+    expect(addToPlaylistBtn).toBeInTheDocument();
+
+    const favouriteBtn = screen.getByText("Favourite");
+    expect(favouriteBtn).toBeInTheDocument();
+  });
+
+  it("supports switching between dynamic and static ambient glow modes", async () => {
+    const { togglePlayerAmbientType } = await import("../store");
+    togglePlayerAmbientType("static");
+
+    const { container } = render(() => <Player />);
+    await waitFor(() => {
+      expect(screen.getByText("Test Video")).toBeInTheDocument();
+    });
+
+    const ambientGlow = container.querySelector(".player-ambient-glow");
+    expect(ambientGlow).toBeInTheDocument();
+
+    // Reset back to dynamic
+    togglePlayerAmbientType("dynamic");
+  });
 });
