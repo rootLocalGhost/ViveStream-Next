@@ -134,13 +134,18 @@ export const Miniplayer: Component = () => {
       const initialTime = untrack(() => currentTime());
       if (
         initialTime > 0 &&
-        Math.abs(videoRef.currentTime - initialTime) > 1.5
+        Math.abs(videoRef.currentTime - initialTime) > 0.5
       ) {
         videoRef.currentTime = initialTime;
       }
       const initialPlaying = untrack(() => isPlaying());
       if (initialPlaying && videoRef.paused) {
-        videoRef.play().catch(() => {});
+        videoRef
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch(() => {
+            setIsPlaying(false);
+          });
       }
     } else if (!shouldShow() && videoRef) {
       try {
@@ -229,7 +234,10 @@ export const Miniplayer: Component = () => {
                     videoRef.currentTime = savedTime;
                   }
                   if (untrack(isPlaying) && videoRef.paused) {
-                    videoRef.play().catch(() => {});
+                    videoRef
+                      .play()
+                      .then(() => setIsPlaying(true))
+                      .catch(() => setIsPlaying(false));
                   }
                 }
               }}
@@ -241,8 +249,19 @@ export const Miniplayer: Component = () => {
                     videoRef.currentTime = savedTime;
                   }
                   if (untrack(isPlaying) && videoRef.paused) {
-                    videoRef.play().catch(() => {});
+                    videoRef
+                      .play()
+                      .then(() => setIsPlaying(true))
+                      .catch(() => setIsPlaying(false));
                   }
+                }
+              }}
+              onSeeked={() => {
+                if (videoRef && untrack(isPlaying) && videoRef.paused) {
+                  videoRef
+                    .play()
+                    .then(() => setIsPlaying(true))
+                    .catch(() => setIsPlaying(false));
                 }
               }}
               onPlay={() => {
@@ -262,6 +281,10 @@ export const Miniplayer: Component = () => {
               onTimeUpdate={(e) => {
                 if (!isSeeking() && shouldShow() && !isUnmounting) {
                   setCurrentTime(e.currentTarget.currentTime);
+                  // Ensure state matches reality if paused
+                  if (videoRef && videoRef.paused && isPlaying() && !videoRef.seeking) {
+                    setIsPlaying(false);
+                  }
                 }
               }}
               onEnded={handlePlayNext}
