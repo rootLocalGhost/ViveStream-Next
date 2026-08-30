@@ -607,9 +607,9 @@ export default function Playlists() {
                   renderItem={(video, index) => (
                     <VideoCard
                       video={video}
-                      draggable={vidSortBy() === "custom"}
+                      draggable={playlistVideosSortBy() === "custom"}
                       onDragStart={(e) => {
-                        if (vidSortBy() === "custom") {
+                        if (playlistVideosSortBy() === "custom") {
                           e.dataTransfer?.setData(
                             "text/plain",
                             video.id,
@@ -618,12 +618,12 @@ export default function Playlists() {
                         }
                       }}
                       onDragOver={(e) => {
-                        if (vidSortBy() === "custom") {
+                        if (playlistVideosSortBy() === "custom") {
                           e.preventDefault();
                         }
                       }}
                       onDrop={(e) => {
-                        if (vidSortBy() === "custom") {
+                        if (playlistVideosSortBy() === "custom") {
                           handleDrop(e, index());
                         }
                       }}
