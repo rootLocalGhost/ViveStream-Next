@@ -20,6 +20,8 @@ import {
   setGlobalSearchQuery,
   activeVideo,
   playerContextParams,
+  miniplayerDismissed,
+  setMiniplayerDismissed,
 } from "./store";
 import NotificationSystem from "./components/NotificationSystem";
 import ShortcutsModal from "./components/ShortcutsModal";
@@ -296,11 +298,15 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           const vid = activeVideo();
           if (vid) {
             e.preventDefault();
-            const params = playerContextParams();
-            const qs = new URLSearchParams(
-              params as Record<string, string>,
-            ).toString();
-            navigate(`/player/${vid.id}${qs ? `?${qs}` : ""}`);
+            if (miniplayerDismissed()) {
+              setMiniplayerDismissed(false);
+            } else {
+              const params = playerContextParams();
+              const qs = new URLSearchParams(
+                params as Record<string, string>,
+              ).toString();
+              navigate(`/player/${vid.id}${qs ? `?${qs}` : ""}`);
+            }
             return;
           }
         }
