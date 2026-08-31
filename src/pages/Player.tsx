@@ -293,13 +293,9 @@ export default function Player() {
   const toggleMiniplayerMode = () => {
     isUnmounting = true;
     const playState = isPlaying();
+    setMiniplayerDismissed(false);
     if (videoRef) {
       setCurrentTime(videoRef.currentTime);
-      try {
-        videoRef.pause();
-        videoRef.removeAttribute("src");
-        videoRef.load();
-      } catch {}
     }
     setIsPlaying(playState);
     if (window.history.length > 1) {
@@ -897,11 +893,6 @@ export default function Player() {
     if (unlistenPrev) unlistenPrev();
     if (videoRef) {
       setCurrentTime(videoRef.currentTime);
-      try {
-        videoRef.pause();
-        videoRef.removeAttribute("src");
-        videoRef.load();
-      } catch {}
     }
   });
 
@@ -1031,6 +1022,9 @@ export default function Player() {
                 drawAmbientFrame();
               }}
               onSeeked={() => {
+                if ((isPlaying() || untrack(isPlaying)) && videoRef && videoRef.paused) {
+                  handlePlay();
+                }
                 drawAmbientFrame();
               }}
               onLoadedMetadata={(e) => {
