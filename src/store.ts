@@ -632,15 +632,23 @@ export const getGlobalVideoRef = () => globalVideoRef;
 
 export const toggleGlobalPlay = () => {
   if (globalVideoRef) {
-    if (isPlaying()) {
-      globalVideoRef.pause();
-      setIsPlaying(false);
-    } else {
+    if (globalVideoRef.paused) {
       globalVideoRef
         .play()
-        .then(() => setIsPlaying(true))
-        .catch(() => {});
+        .then(() => {
+          setIsPlaying(true);
+          invoke("update_playback_status", { playing: true }).catch(() => {});
+        })
+        .catch(() => {
+          setIsPlaying(false);
+        });
+    } else {
+      globalVideoRef.pause();
+      setIsPlaying(false);
+      invoke("update_playback_status", { playing: false }).catch(() => {});
     }
+  } else {
+    setIsPlaying(!isPlaying());
   }
 };
 

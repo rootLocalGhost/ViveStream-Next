@@ -34,6 +34,7 @@ vi.mock("@solidjs/router", () => ({
   useParams: () => ({ id: "video123" }),
   useNavigate: () => vi.fn(),
   useSearchParams: () => [{}],
+  useLocation: () => ({ pathname: "/" }),
 }));
 
 beforeAll(() => {
@@ -189,5 +190,31 @@ describe("Player Component", () => {
 
     // Reset back to dynamic
     togglePlayerAmbientType("dynamic");
+  });
+
+  it("renders miniplayer with ambient glow and controls when not on player page", async () => {
+    const { Miniplayer } = await import("../components/Miniplayer");
+    const { setActiveVideo, setMiniplayerDismissed, setIsPlaying } = await import("../store");
+
+    setActiveVideo({
+      id: "vid_mini",
+      title: "Mini Video",
+      channel: "Mini Channel",
+      video_path: "/mock/vid_mini.mp4",
+      thumbnail_path: "",
+      avatar_path: "",
+      subtitle_path: "",
+      desc_path: "",
+    });
+    setMiniplayerDismissed(false);
+    setIsPlaying(true);
+
+    const { container } = render(() => <Miniplayer />);
+
+    expect(screen.getByText("Mini Video")).toBeInTheDocument();
+    expect(screen.getByText("Mini Channel")).toBeInTheDocument();
+
+    const ambientGlow = container.querySelector(".miniplayer-ambient-glow");
+    expect(ambientGlow).toBeInTheDocument();
   });
 });
