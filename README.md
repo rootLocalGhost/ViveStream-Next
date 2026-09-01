@@ -136,6 +136,18 @@ Because core engines (`yt-dlp`/`ffmpeg`) and downloaded media are stored locally
 
 ---
 
+## ⚙️ Environment Variables (Linux)
+
+To workaround WebKitGTK and Linux compositor issues, the application sets or accepts the following environment variables. You can set them before launching the application:
+
+- `VIVESTREAM_SAFE_GRAPHICS=1`: If set to `1`, disables DMA-BUF hardware acceleration in WebKitGTK by setting `WEBKIT_DISABLE_DMABUF_RENDERER=1`. Useful if running in a virtual machine or experiencing graphical glitches.
+- `WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1`: Automatically set by the app to prevent spurious WebKitWebProcess seccomp crash traps (often seen on Arch Linux / Wayland / Hyprland).
+- `WEBKIT_FORCE_COMPOSITING_MODE=1`: Automatically set to force hardware-accelerated compositor mode.
+- `WEBKIT_GPU_POLICY=force`: Automatically set to force dedicated GPU rasterization.
+- `GDK_FRAME_CLOCK_FPS=0`: Automatically set to uncap the GTK frame clock to match high refresh rate monitors (100Hz+).
+
+---
+
 ## 💻 Developer Setup
 
 ### Prerequisites

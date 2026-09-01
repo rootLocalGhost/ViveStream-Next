@@ -21,7 +21,7 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 ### Download & Extraction Management
 
 - `get_video_metadata(url: String, player_client: String)`: Extracts metadata (title, thumbnails, channel, duration) without downloading the media. Resolves PO Tokens natively if required.
-- `download_video(url: String, metadata: VideoEntry, quality: String, dl_type: String, custom_path: Option<String>, use_cookie: bool, overwrite: bool, player_client: String)`: Initiates a concurrent download job. Progress is emitted asynchronously via Tauri events.
+- `download_video(url: String, metadata: VideoEntry, quality: String, dl_type: String, cookies: String, speed_limit: String, concurrent_fragments: u8, auto_subs: bool, dl_subs: bool, sponsorblock: bool, live_from_start: bool, player_client: String)`: Initiates a concurrent download job. Progress is emitted asynchronously via Tauri events.
 
 ### Media Library: Videos & Playlists
 
