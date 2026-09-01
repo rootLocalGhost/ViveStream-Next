@@ -698,7 +698,10 @@ export default function Settings() {
                         type="button"
                         class={`ambient-swatch-chip ${playerAmbientColor().toLowerCase() === preset.color.toLowerCase() ? "selected" : ""}`}
                         style={{ "--swatch-color": preset.color } as any}
-                        onClick={() => updatePlayerAmbientColor(preset.color)}
+                        onClick={() => {
+                          updatePlayerAmbientColor(preset.color);
+                          togglePlayerAmbientType("static");
+                        }}
                         title={preset.name}
                       >
                         <span class="swatch-circle" style={{ background: preset.color }}></span>
@@ -716,7 +719,10 @@ export default function Settings() {
                         type="color"
                         class="ambient-native-picker"
                         value={playerAmbientColor()}
-                        onInput={(e) => updatePlayerAmbientColor(e.currentTarget.value)}
+                        onInput={(e) => {
+                          updatePlayerAmbientColor(e.currentTarget.value);
+                          togglePlayerAmbientType("static");
+                        }}
                         aria-label="Custom Ambient Color Picker"
                       />
                       <span
@@ -736,6 +742,7 @@ export default function Settings() {
                           const val = e.currentTarget.value.trim().replace("#", "");
                           if (/^[0-9A-Fa-f]{6}$/.test(val)) {
                             updatePlayerAmbientColor("#" + val);
+                            togglePlayerAmbientType("static");
                           }
                         }}
                         placeholder="f25c54"
