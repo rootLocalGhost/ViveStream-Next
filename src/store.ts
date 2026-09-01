@@ -727,6 +727,33 @@ export const closeGlobalMiniplayer = () => {
   invoke("update_playback_status", { playing: false }).catch(() => {});
 };
 
+export const getSystemClipboardText = async (): Promise<string> => {
+  try {
+    const text = await invoke<string>("get_clipboard_text");
+    if (text) return text;
+  } catch {}
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      return await navigator.clipboard.readText();
+    }
+  } catch {}
+  return "";
+};
+
+export const setSystemClipboardText = async (text: string): Promise<boolean> => {
+  try {
+    await invoke("set_clipboard_text", { text });
+    return true;
+  } catch {}
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {}
+  return false;
+};
+
 export const addToast = (
   message: string,
   type: "info" | "error" | "success" = "info",
