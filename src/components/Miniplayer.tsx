@@ -85,6 +85,7 @@ export const Miniplayer: Component = () => {
   let ambientCtx: CanvasRenderingContext2D | null = null;
   let ambientRafId: number | null = null;
   let lastAmbientDraw = 0;
+  let currentSmoothedRgb = { r: 242, g: 92, b: 84 };
 
   const isPlayerPage = () => {
     try {
@@ -100,6 +101,34 @@ export const Miniplayer: Component = () => {
     return !isPlayerPage() && activeVideo() !== null && !miniplayerDismissed();
   };
 
+  const hexToRgb = (hex: string) => {
+    const clean = hex.replace("#", "");
+    if (clean.length === 3) {
+      return {
+        r: parseInt(clean[0] + clean[0], 16) || 0,
+        g: parseInt(clean[1] + clean[1], 16) || 0,
+        b: parseInt(clean[2] + clean[2], 16) || 0,
+      };
+    }
+    return {
+      r: parseInt(clean.slice(0, 2), 16) || 0,
+      g: parseInt(clean.slice(2, 4), 16) || 0,
+      b: parseInt(clean.slice(4, 6), 16) || 0,
+    };
+  };
+
+  const lerpColor = (
+    current: { r: number; g: number; b: number },
+    target: { r: number; g: number; b: number },
+    factor: number,
+  ) => {
+    return {
+      r: current.r + (target.r - current.r) * factor,
+      g: current.g + (target.g - current.g) * factor,
+      b: current.b + (target.b - current.b) * factor,
+    };
+  };
+
   const extractDominantVideoColors = (
     ctx: CanvasRenderingContext2D,
     width: number,
@@ -108,7 +137,7 @@ export const Miniplayer: Component = () => {
     try {
       const imgData = ctx.getImageData(0, 0, width, height);
       const data = imgData.data;
-      const buckets = new Map<string, { r: number; g: number; b: number; count: number; sat: number }>();
+      const buckets = new Map<string, { r: number; g: number; b: number; count: number }>();
 
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
@@ -117,25 +146,19 @@ export const Miniplayer: Component = () => {
         const a = data[i + 3];
 
         if (a < 128) continue;
-        const qr = Math.round(r / 28) * 28;
-        const qg = Math.round(g / 28) * 28;
-        const qb = Math.round(b / 28) * 28;
+        if (r < 16 && g < 16 && b < 16) continue;
 
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        const delta = max - min;
-        const sat = max === 0 ? 0 : delta / max;
-
-        if (max < 30) continue;
+        const qr = Math.round(r / 16) * 16;
+        const qg = Math.round(g / 16) * 16;
+        const qb = Math.round(b / 16) * 16;
 
         const key = `${qr},${qg},${qb}`;
         const existing = buckets.get(key);
-        const weight = 1 + sat * 2.5;
 
         if (existing) {
-          existing.count += weight;
+          existing.count += 1;
         } else {
-          buckets.set(key, { r: qr, g: qg, b: qb, count: weight, sat });
+          buckets.set(key, { r: qr, g: qg, b: qb, count: 1 });
         }
       }
 
@@ -158,11 +181,11 @@ export const Miniplayer: Component = () => {
           const eg = parseInt(existingHex.slice(3, 5), 16);
           const eb = parseInt(existingHex.slice(5, 7), 16);
           const dist = Math.sqrt((item.r - er) ** 2 + (item.g - eg) ** 2 + (item.b - eb) ** 2);
-          return dist > 45;
+          return dist > 35;
         });
         if (isDistinct) {
           palette.push(hex);
-          if (palette.length >= 6) break;
+          if (palette.length >= 8) break;
         }
       }
 
@@ -177,50 +200,114 @@ export const Miniplayer: Component = () => {
     }
   };
 
-  const drawAmbientFrame = (now?: number) => {
-    if (!videoRef || !playerAmbientMode()) {
+  let isFetchingRustColors = false;
+  let lastRustFetchTime = -10;
+
+  const fetchRustDominantColors = async (targetId: string, time: number) => {
+    if (isFetchingRustColors || !playerAmbientMode()) return;
+    if (Math.abs(time - lastRustFetchTime) < 1.0) return;
+    isFetchingRustColors = true;
+    lastRustFetchTime = time;
+    try {
+      const res = await invoke<{ dominant: string; palette: string[] }>(
+        "extract_video_dominant_colors",
+        {
+          videoId: targetId,
+          timestamp: time,
+        },
+      );
+      if (res && res.dominant) {
+        setCurrentDominantColor(res.dominant);
+        if (res.palette && res.palette.length > 0) {
+          setExtractedVideoColors(res.palette);
+        }
+      }
+    } catch {} finally {
+      isFetchingRustColors = false;
+    }
+  };
+
+  const drawAmbientFrame = (now?: number, force = false) => {
+    if (!videoRef || !playerAmbientMode() || !shouldShow()) {
       return;
     }
     const time = now ?? performance.now();
-    if (time - lastAmbientDraw >= 40) {
-      if (!offscreenCanvas) {
-        offscreenCanvas = document.createElement("canvas");
-        offscreenCanvas.width = 32;
-        offscreenCanvas.height = 18;
-        offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
-      }
+    const isDynamic = playerAmbientType() === "dynamic";
 
-      if (offscreenCtx && videoRef.readyState >= 2) {
-        try {
-          offscreenCtx.drawImage(videoRef, 0, 0, 32, 18);
-          const { dominant, palette } = extractDominantVideoColors(offscreenCtx, 32, 18);
-          setCurrentDominantColor(dominant);
-          if (palette.length > 0) {
-            setExtractedVideoColors(palette);
-          }
-        } catch {}
-      }
+    if (force || time - lastAmbientDraw >= 33) {
       lastAmbientDraw = time;
+
+      if (videoRef.readyState >= 2 && videoRef.videoWidth > 0) {
+        if (isDynamic && ambientCanvasRef) {
+          if (!ambientCtx || ambientCtx.canvas !== ambientCanvasRef) {
+            ambientCtx = ambientCanvasRef.getContext("2d", {
+              alpha: false,
+              desynchronized: true,
+            });
+          }
+          if (ambientCtx) {
+            try {
+              ambientCtx.drawImage(
+                videoRef,
+                0,
+                0,
+                ambientCanvasRef.width,
+                ambientCanvasRef.height,
+              );
+            } catch {}
+          }
+        }
+
+        if (!offscreenCanvas) {
+          offscreenCanvas = document.createElement("canvas");
+          offscreenCanvas.width = 32;
+          offscreenCanvas.height = 18;
+          offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
+        }
+
+        if (offscreenCtx) {
+          try {
+            offscreenCtx.drawImage(videoRef, 0, 0, 32, 18);
+            const { dominant, palette } = extractDominantVideoColors(offscreenCtx, 32, 18);
+            const targetRgb = hexToRgb(dominant);
+            currentSmoothedRgb = lerpColor(currentSmoothedRgb, targetRgb, force ? 1.0 : 0.25);
+            const smoothedHex = rgbToHex(currentSmoothedRgb.r, currentSmoothedRgb.g, currentSmoothedRgb.b);
+
+            setCurrentDominantColor(smoothedHex);
+            if (palette.length > 0) {
+              setExtractedVideoColors(palette);
+            }
+          } catch {
+            if (activeVideo()?.id) {
+              fetchRustDominantColors(activeVideo()!.id, videoRef.currentTime);
+            }
+          }
+        }
+      } else if (activeVideo()?.id) {
+        fetchRustDominantColors(activeVideo()!.id, videoRef?.currentTime ?? 0);
+      }
     }
     if (isPlaying() && shouldShow()) {
-      ambientRafId = requestAnimationFrame(drawAmbientFrame);
+      ambientRafId = requestAnimationFrame((ts) => drawAmbientFrame(ts));
     }
   };
 
   createEffect(() => {
     const playing = isPlaying();
     const ambient = playerAmbientMode();
+    const type = playerAmbientType();
     const show = shouldShow();
-    if (playing && ambient && show) {
-      if (ambientRafId) cancelAnimationFrame(ambientRafId);
-      ambientRafId = requestAnimationFrame(drawAmbientFrame);
-    } else {
-      if (ambientRafId) {
-        cancelAnimationFrame(ambientRafId);
-        ambientRafId = null;
-      }
-      if (ambient && show && videoRef && videoRef.readyState >= 2) {
-        drawAmbientFrame();
+
+    if (ambientRafId) {
+      cancelAnimationFrame(ambientRafId);
+      ambientRafId = null;
+    }
+
+    if (ambient && show) {
+      if (playing) {
+        ambientRafId = requestAnimationFrame((ts) => drawAmbientFrame(ts));
+      } else if (videoRef && videoRef.readyState >= 2) {
+        drawAmbientFrame(undefined, true);
       }
     }
   });
@@ -402,7 +489,22 @@ export const Miniplayer: Component = () => {
         } as any}
       >
         <Show when={playerAmbientMode()}>
-          <div class="miniplayer-ambient-glow" aria-hidden="true"></div>
+          <div
+            class="miniplayer-ambient-glow"
+            style={{
+              background: effectiveAmbientColor(),
+              filter: `blur(${Math.min(50, playerAmbientBlur())}px) saturate(180%) brightness(1.2)`,
+              opacity: `${(playerAmbientIntensity() / 100) * (playerAmbientType() === "dynamic" ? 0.65 : 1)}`,
+            }}
+            aria-hidden="true"
+          />
+          <canvas
+            ref={ambientCanvasRef}
+            class={`miniplayer-ambient-canvas ${playerAmbientType() !== "dynamic" ? "hidden" : ""}`}
+            width="120"
+            height="68"
+            aria-hidden="true"
+          />
         </Show>
 
         <div class="miniplayer-card" onClick={handleExpand}>
