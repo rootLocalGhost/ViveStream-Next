@@ -177,8 +177,9 @@ describe("Player Component", () => {
   });
 
   it("supports switching between dynamic and static ambient glow modes", async () => {
-    const { togglePlayerAmbientType } = await import("../store");
-    togglePlayerAmbientType("static");
+    const { togglePlayerAmbientType, togglePlayerAmbientMode, updatePlayerAmbientColor } = await import("../store");
+    togglePlayerAmbientMode(true);
+    togglePlayerAmbientType("dynamic");
 
     const { container } = render(() => <Player />);
     await waitFor(() => {
@@ -186,9 +187,22 @@ describe("Player Component", () => {
     });
 
     const ambientGlow = container.querySelector(".player-ambient-glow");
+    const ambientCanvas = container.querySelector(".player-ambient-canvas");
     expect(ambientGlow).toBeInTheDocument();
+    expect(ambientCanvas).toBeInTheDocument();
+    expect(ambientCanvas).not.toHaveClass("hidden");
 
-    // Reset back to dynamic
+    // Switch to static
+    togglePlayerAmbientType("static");
+    updatePlayerAmbientColor("#3b82f6");
+
+    // Switch to disabled
+    togglePlayerAmbientMode(false);
+    expect(ambientGlow).toHaveClass("hidden");
+    expect(ambientCanvas).toHaveClass("hidden");
+
+    // Reset back to dynamic enabled
+    togglePlayerAmbientMode(true);
     togglePlayerAmbientType("dynamic");
   });
 
@@ -216,5 +230,7 @@ describe("Player Component", () => {
 
     const ambientGlow = container.querySelector(".miniplayer-ambient-glow");
     expect(ambientGlow).toBeInTheDocument();
+    const ambientCanvas = container.querySelector(".miniplayer-ambient-canvas");
+    expect(ambientCanvas).toBeInTheDocument();
   });
 });
