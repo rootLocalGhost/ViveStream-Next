@@ -24,6 +24,8 @@ import {
   toggleLiveFromStart,
   clearDownloadHistory,
   addToast,
+  getSystemClipboardText,
+  setSystemClipboardText,
   isFetchingInfo,
   fetchingUrl,
   downloadHistory,
@@ -158,11 +160,11 @@ export default function Downloads() {
             class="clay-paste-btn"
             onClick={async () => {
               try {
-                const text = await navigator.clipboard.readText();
+                const text = await getSystemClipboardText();
                 if (text && text.trim().startsWith("http")) {
                   setDownloadUrl(text.trim());
                   addToast("URL pasted from clipboard!", "success");
-                } else if (text) {
+                } else if (text && text.trim()) {
                   setDownloadUrl(text.trim());
                   addToast("Pasted clipboard text", "info");
                 } else {
@@ -615,8 +617,8 @@ export default function Downloads() {
                         <span class="terminal-title">Console Output</span>
                         <button
                           class="task-copy-btn"
-                          onClick={() => {
-                            navigator.clipboard.writeText(task.logs.join("\n"));
+                          onClick={async () => {
+                            await setSystemClipboardText(task.logs.join("\n"));
                             addToast("Logs copied to clipboard", "success");
                           }}
                           title="Copy Logs"
@@ -737,8 +739,8 @@ export default function Downloads() {
 
                         <button
                           class="history-action-btn icon-only copy"
-                          onClick={() => {
-                            navigator.clipboard.writeText(item.url);
+                          onClick={async () => {
+                            await setSystemClipboardText(item.url);
                             addToast("URL copied to clipboard", "success");
                           }}
                           title="Copy Original URL"
