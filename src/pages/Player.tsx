@@ -54,6 +54,18 @@ import {
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
 import "./Player.css";
 
+const PRESET_AURA_COLORS = [
+  "#f25c54",
+  "#ef233c",
+  "#00f0ff",
+  "#a855f7",
+  "#10b981",
+  "#f59e0b",
+  "#3b82f6",
+  "#ec4899",
+  "#f8fafc",
+];
+
 const formatTime = (timeInSeconds: number) => {
   if (isNaN(timeInSeconds)) return "0:00";
   const h = Math.floor(timeInSeconds / 3600);
@@ -108,6 +120,7 @@ export default function Player() {
   let offscreenCtx: CanvasRenderingContext2D | null = null;
   let ambientRafId: number | null = null;
   let lastAmbientDraw = 0;
+  let currentSmoothedRgb = { r: 242, g: 92, b: 84 };
   let settingsMenuRef: HTMLDivElement | undefined;
   let settingsBtnRef: HTMLButtonElement | undefined;
   let ccMenuRef: HTMLDivElement | undefined;
@@ -125,11 +138,39 @@ export default function Player() {
       "#" +
       [r, g, b]
         .map((x) => {
-          const hex = Math.min(255, Math.max(0, x)).toString(16);
+          const hex = Math.min(255, Math.max(0, Math.round(x))).toString(16);
           return hex.length === 1 ? "0" + hex : hex;
         })
         .join("")
     );
+  };
+
+  const hexToRgb = (hex: string) => {
+    const clean = hex.replace("#", "");
+    if (clean.length === 3) {
+      return {
+        r: parseInt(clean[0] + clean[0], 16) || 0,
+        g: parseInt(clean[1] + clean[1], 16) || 0,
+        b: parseInt(clean[2] + clean[2], 16) || 0,
+      };
+    }
+    return {
+      r: parseInt(clean.slice(0, 2), 16) || 0,
+      g: parseInt(clean.slice(2, 4), 16) || 0,
+      b: parseInt(clean.slice(4, 6), 16) || 0,
+    };
+  };
+
+  const lerpColor = (
+    current: { r: number; g: number; b: number },
+    target: { r: number; g: number; b: number },
+    factor: number,
+  ) => {
+    return {
+      r: current.r + (target.r - current.r) * factor,
+      g: current.g + (target.g - current.g) * factor,
+      b: current.b + (target.b - current.b) * factor,
+    };
   };
 
   const extractDominantVideoColors = (
@@ -142,7 +183,7 @@ export default function Player() {
       const data = imgData.data;
       const buckets = new Map<
         string,
-        { r: number; g: number; b: number; count: number; sat: number }
+        { r: number; g: number; b: number; count: number }
       >();
 
       for (let i = 0; i < data.length; i += 4) {
@@ -152,29 +193,21 @@ export default function Player() {
         const a = data[i + 3];
 
         if (a < 128) continue;
+        // Ignore pure black letterbox / border pixels
+        if (r < 16 && g < 16 && b < 16) continue;
 
-        // Group nearby colors to eliminate micro-variations
-        const qr = Math.round(r / 28) * 28;
-        const qg = Math.round(g / 28) * 28;
-        const qb = Math.round(b / 28) * 28;
-
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        const delta = max - min;
-        const sat = max === 0 ? 0 : delta / max;
-
-        // Skip dark letterbox bars or near-black pixels
-        if (max < 30) continue;
+        // Quantize into 16-step RGB buckets
+        const qr = Math.round(r / 16) * 16;
+        const qg = Math.round(g / 16) * 16;
+        const qb = Math.round(b / 16) * 16;
 
         const key = `${qr},${qg},${qb}`;
         const existing = buckets.get(key);
-        // Give higher weight to colorful/saturated pixels
-        const weight = 1 + sat * 2.5;
 
         if (existing) {
-          existing.count += weight;
+          existing.count += 1;
         } else {
-          buckets.set(key, { r: qr, g: qg, b: qb, count: weight, sat });
+          buckets.set(key, { r: qr, g: qg, b: qb, count: 1 });
         }
       }
 
@@ -201,11 +234,11 @@ export default function Player() {
           const dist = Math.sqrt(
             (item.r - er) ** 2 + (item.g - eg) ** 2 + (item.b - eb) ** 2,
           );
-          return dist > 45;
+          return dist > 35;
         });
         if (isDistinct) {
           palette.push(hex);
-          if (palette.length >= 6) break;
+          if (palette.length >= 8) break;
         }
       }
 
@@ -220,72 +253,123 @@ export default function Player() {
     }
   };
 
-  const drawAmbientFrame = (now?: number) => {
+  let isFetchingRustColors = false;
+  let lastRustFetchTime = -10;
+
+  const fetchRustDominantColors = async (targetId: string, time: number) => {
+    if (isFetchingRustColors || !playerAmbientMode()) return;
+    if (Math.abs(time - lastRustFetchTime) < 1.0) return;
+    isFetchingRustColors = true;
+    lastRustFetchTime = time;
+    try {
+      const res = await invoke<{ dominant: string; palette: string[] }>(
+        "extract_video_dominant_colors",
+        {
+          videoId: targetId,
+          timestamp: time,
+        },
+      );
+      if (res && res.dominant) {
+        setCurrentDominantColor(res.dominant);
+        if (res.palette && res.palette.length > 0) {
+          setExtractedVideoColors(res.palette);
+        }
+      }
+    } catch {} finally {
+      isFetchingRustColors = false;
+    }
+  };
+
+  const drawAmbientFrame = (now?: number, force = false) => {
     if (
       !videoRef ||
       !playerAmbientMode() ||
-      isFullscreen()
+      isFullscreen() ||
+      isUnmounting
     ) {
       return;
     }
     const time = now ?? performance.now();
-    if (time - lastAmbientDraw >= 40) {
-      if (!offscreenCanvas) {
-        offscreenCanvas = document.createElement("canvas");
-        offscreenCanvas.width = 32;
-        offscreenCanvas.height = 18;
-        offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
-      }
+    const isDynamic = playerAmbientType() === "dynamic";
 
-      if (offscreenCtx && videoRef.readyState >= 2) {
-        try {
-          offscreenCtx.drawImage(videoRef, 0, 0, 32, 18);
-          const { dominant, palette } = extractDominantVideoColors(offscreenCtx, 32, 18);
-          setCurrentDominantColor(dominant);
-          if (palette.length > 0) {
-            setExtractedVideoColors(palette);
-          }
-        } catch {}
-      }
-
-      if (playerAmbientType() === "dynamic" && ambientCanvasRef) {
-        if (!ambientCtx) {
-          ambientCtx = ambientCanvasRef.getContext("2d", { willReadFrequently: false });
-        }
-        if (ambientCtx && videoRef.readyState >= 2) {
-          try {
-            ambientCtx.drawImage(
-              videoRef,
-              0,
-              0,
-              ambientCanvasRef.width,
-              ambientCanvasRef.height,
-            );
-          } catch {}
-        }
-      }
+    if (force || time - lastAmbientDraw >= 33) {
       lastAmbientDraw = time;
+
+      if (videoRef.readyState >= 2 && videoRef.videoWidth > 0) {
+        // 1. Render dynamic canvas frame
+        if (isDynamic && ambientCanvasRef) {
+          if (!ambientCtx || ambientCtx.canvas !== ambientCanvasRef) {
+            ambientCtx = ambientCanvasRef.getContext("2d", {
+              alpha: false,
+              desynchronized: true,
+            });
+          }
+          if (ambientCtx) {
+            try {
+              ambientCtx.drawImage(
+                videoRef,
+                0,
+                0,
+                ambientCanvasRef.width,
+                ambientCanvasRef.height,
+              );
+            } catch {}
+          }
+        }
+
+        // 2. Extract colors using offscreen sampling canvas
+        if (!offscreenCanvas) {
+          offscreenCanvas = document.createElement("canvas");
+          offscreenCanvas.width = 32;
+          offscreenCanvas.height = 18;
+          offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
+        }
+
+        if (offscreenCtx) {
+          try {
+            offscreenCtx.drawImage(videoRef, 0, 0, 32, 18);
+            const { dominant, palette } = extractDominantVideoColors(offscreenCtx, 32, 18);
+            const targetRgb = hexToRgb(dominant);
+            currentSmoothedRgb = lerpColor(currentSmoothedRgb, targetRgb, force ? 1.0 : 0.25);
+            const smoothedHex = rgbToHex(currentSmoothedRgb.r, currentSmoothedRgb.g, currentSmoothedRgb.b);
+
+            setCurrentDominantColor(smoothedHex);
+            if (palette.length > 0) {
+              setExtractedVideoColors(palette);
+            }
+          } catch {
+            if (video()?.id) {
+              fetchRustDominantColors(video()!.id, videoRef.currentTime);
+            }
+          }
+        }
+      } else if (video()?.id) {
+        fetchRustDominantColors(video()!.id, videoRef?.currentTime ?? 0);
+      }
     }
+
     if (isPlaying() && !isUnmounting) {
-      ambientRafId = requestAnimationFrame(drawAmbientFrame);
+      ambientRafId = requestAnimationFrame((ts) => drawAmbientFrame(ts));
     }
   };
 
   createEffect(() => {
     const playing = isPlaying();
     const ambient = playerAmbientMode();
+    const type = playerAmbientType();
     const full = isFullscreen();
     const vid = video();
-    if (playing && ambient && !full && !isUnmounting) {
-      if (ambientRafId) cancelAnimationFrame(ambientRafId);
-      ambientRafId = requestAnimationFrame(drawAmbientFrame);
-    } else {
-      if (ambientRafId) {
-        cancelAnimationFrame(ambientRafId);
-        ambientRafId = null;
-      }
-      if (ambient && !full && videoRef && videoRef.readyState >= 2) {
-        drawAmbientFrame();
+
+    if (ambientRafId) {
+      cancelAnimationFrame(ambientRafId);
+      ambientRafId = null;
+    }
+
+    if (ambient && !full && !isUnmounting) {
+      if (playing) {
+        ambientRafId = requestAnimationFrame((ts) => drawAmbientFrame(ts));
+      } else if (videoRef && videoRef.readyState >= 2) {
+        drawAmbientFrame(undefined, true);
       }
     }
   });
@@ -971,22 +1055,20 @@ export default function Player() {
                   playerAmbientType() === "dynamic"
                     ? currentDominantColor()
                     : playerAmbientColor(),
-                filter: `blur(${playerAmbientBlur()}px) saturate(190%) brightness(1.25)`,
-                opacity: `${playerAmbientIntensity() / 100}`,
+                filter: `blur(${playerAmbientBlur()}px) saturate(180%) brightness(1.2)`,
+                opacity: `${(playerAmbientIntensity() / 100) * (playerAmbientType() === "dynamic" ? 0.65 : 1)}`,
               }}
               aria-hidden="true"
             />
 
             {/* Dynamic spatial canvas light bleed */}
-            <Show when={playerAmbientType() === "dynamic"}>
-              <canvas
-                ref={ambientCanvasRef}
-                class={`player-ambient-canvas ${!playerAmbientMode() || isFullscreen() ? "hidden" : ""}`}
-                width="160"
-                height="90"
-                aria-hidden="true"
-              />
-            </Show>
+            <canvas
+              ref={ambientCanvasRef}
+              class={`player-ambient-canvas ${!playerAmbientMode() || isFullscreen() || playerAmbientType() !== "dynamic" ? "hidden" : ""}`}
+              width="160"
+              height="90"
+              aria-hidden="true"
+            />
 
             <div
               class="player-video-wrapper"
@@ -1010,22 +1092,22 @@ export default function Player() {
                 if (isUnmounting) return;
                 invoke("update_playback_status", { playing: true });
                 setIsPlaying(true);
-                drawAmbientFrame();
+                drawAmbientFrame(undefined, true);
               }}
               onPause={() => {
                 if (isUnmounting || (videoRef && videoRef.seeking)) return;
                 invoke("update_playback_status", { playing: false });
                 setIsPlaying(false);
-                drawAmbientFrame();
+                drawAmbientFrame(undefined, true);
               }}
               onLoadedData={() => {
-                drawAmbientFrame();
+                drawAmbientFrame(undefined, true);
               }}
               onSeeked={() => {
                 if ((isPlaying() || untrack(isPlaying)) && videoRef && videoRef.paused) {
                   handlePlay();
                 }
-                drawAmbientFrame();
+                drawAmbientFrame(undefined, true);
               }}
               onLoadedMetadata={(e) => {
                 setDuration(e.currentTarget.duration);
@@ -1038,19 +1120,19 @@ export default function Player() {
                 if (isPlaying() || untrack(isPlaying)) {
                   handlePlay();
                 }
-                drawAmbientFrame();
+                drawAmbientFrame(undefined, true);
               }}
               onCanPlay={() => {
                 if (isPlaying() || untrack(isPlaying)) {
                   handlePlay();
                 }
-                drawAmbientFrame();
+                drawAmbientFrame(undefined, true);
               }}
               onTimeUpdate={(e) => {
                 if (!isSeeking() && !isUnmounting) {
                   setCurrentTime(e.currentTarget.currentTime);
                   if (!isPlaying()) {
-                    drawAmbientFrame();
+                    drawAmbientFrame(undefined, true);
                   }
                 }
               }}
@@ -1277,13 +1359,13 @@ export default function Player() {
                           </button>
                         </div>
 
-                        {/* Extracted Video Color Swatches */}
+                        {/* Preset Aura Color Swatches */}
                         <div class="player-ambient-palette-section">
                           <div class="player-ambient-palette-label">
-                            <span>Video Frame Colors</span>
+                            <span>Preset Aura Colors</span>
                           </div>
                           <div class="player-ambient-palette-swatches">
-                            {extractedVideoColors().map((col) => (
+                            {PRESET_AURA_COLORS.map((col) => (
                               <button
                                 type="button"
                                 class={`player-video-color-swatch ${playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase() ? "selected" : ""}`}
@@ -1299,7 +1381,42 @@ export default function Player() {
                                 </Show>
                               </button>
                             ))}
-                            {/* Native color picker */}
+                          </div>
+                        </div>
+
+                        {/* Extracted Video Color Swatches */}
+                        <Show when={extractedVideoColors().length > 0}>
+                          <div class="player-ambient-palette-section">
+                            <div class="player-ambient-palette-label">
+                              <span>Video Frame Colors</span>
+                            </div>
+                            <div class="player-ambient-palette-swatches">
+                              {extractedVideoColors().map((col) => (
+                                <button
+                                  type="button"
+                                  class={`player-video-color-swatch ${playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase() ? "selected" : ""}`}
+                                  style={{ background: col }}
+                                  onClick={() => {
+                                    updatePlayerAmbientColor(col);
+                                    togglePlayerAmbientType("static");
+                                  }}
+                                  title={`Set ambient color to ${col}`}
+                                >
+                                  <Show when={playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase()}>
+                                    <i class="ph-bold ph-check"></i>
+                                  </Show>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </Show>
+
+                        {/* Custom color picker */}
+                        <div class="player-ambient-palette-section">
+                          <div class="player-ambient-palette-label">
+                            <span>Custom Color</span>
+                          </div>
+                          <div class="player-ambient-palette-swatches">
                             <label class="player-video-color-picker-label" title="Custom color picker">
                               <input
                                 type="color"
