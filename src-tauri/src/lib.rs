@@ -180,7 +180,10 @@ pub fn run() {
             get_download_history,
             clear_download_history_db,
             delete_download_history_item,
-            sync_thumbnail_cache
+            sync_thumbnail_cache,
+            get_clipboard_text,
+            set_clipboard_text,
+            extract_video_dominant_colors
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
