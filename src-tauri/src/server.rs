@@ -85,6 +85,9 @@ pub async fn start_server(base_dir: PathBuf) {
             "Cache-Control",
             "public, max-age=31536000, immutable",
         ))
+        .with(warp::reply::with::header("Access-Control-Allow-Origin", "*"))
+        .with(warp::reply::with::header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS"))
+        .with(warp::reply::with::header("Access-Control-Allow-Headers", "*"))
         .with(warp::reply::with::header("Accept-Ranges", "bytes"));
 
     let routes = thumbnail_route.or(static_files).with(cors);
