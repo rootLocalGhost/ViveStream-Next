@@ -57,6 +57,12 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 - `update_media_metadata(title: String, artist: String)`: Updates the OS-level media banner (e.g., Windows 10/11 popup or Linux MPRIS).
 - `update_playback_status(playing: bool)`: Updates the system-level Play/Pause state.
 
+### System & Utilities
+
+- `get_clipboard_text()`: Reads text from the system clipboard asynchronously.
+- `set_clipboard_text(text: String)`: Writes text to the system clipboard asynchronously.
+- `extract_video_dominant_colors(video_id: String, timestamp: f64)`: Extracts a dominant color and palette from a specific video frame using FFmpeg for dynamic UI tinting.
+
 ---
 
 ## 2. Tauri Events (Backend to Frontend)
