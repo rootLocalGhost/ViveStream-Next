@@ -210,7 +210,7 @@ _This command runs cargo build, installs JS dependencies via Bun, and builds Vit
 
 ### Documentation
 
-For deep-dives into the codebase structure, architectural decisions, and Tauri APIs, see the [`docs/vivestream-next`](./docs/vivestream-next/) folder.
+For deep-dives into the codebase structure, architectural decisions, database schema, build setup, and Tauri APIs, see the [`docs/vivestream-next`](./docs/vivestream-next/) folder.
 
 ---
 

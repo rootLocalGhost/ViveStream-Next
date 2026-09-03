@@ -40,7 +40,8 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 - `get_playlist_videos(playlist_id: String)`: Retrieves ordered `VideoEntry` items for a specific playlist.
 - `update_playlist_title(id: String, new_title: String)`: Renames a playlist.
 - `update_playlist_order(playlist_id: String, video_ids: Vec<String>)`: Persists custom drag-and-drop sorting order.
-- `upload_playlist_cover(id: String, image_path: String)` & `upload_playlist_banner(id: String, image_path: String)`: Manages custom image associations for playlists.
+- `upload_playlist_cover(id: String, image_path: String)`: Manages custom cover image associations for playlists.
+- `upload_playlist_banner(id: String, image_path: String)`: Manages custom banner image associations for playlists.
 - `sync_thumbnail_cache(quality: Option<String>)`: Synchronizes the local thumbnail cache.
 
 ### Media Library: Artists & History
@@ -69,6 +70,7 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 
 The Rust backend uses `Emitter` to push real-time events to the frontend. SolidJS listens to these via `@tauri-apps/api/event` `listen()`.
 
+- `setup-progress`: Emitted during the initial download and setup of external dependencies (`yt-dlp`, `ffmpeg`). Payload is a `String` containing the setup status message.
 - `download-progress`: Emitted continuously during a download job. Payload includes `id`, `percentage`, `speed`, and `eta`.
 - `download-status`: Emitted when a download state changes (e.g., "Extracting", "Downloading", "Merging", "Completed", "Error").
 - `media-play`: Emitted when the user presses the system-level Play button (via keyboard hardware or OS menu).
