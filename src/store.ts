@@ -31,8 +31,7 @@ const initialTheme = getStr("appTheme", "dark");
 const initialPalette = getStr("appPalette", "sunset");
 const initialStyle =
   (getStr("designStyle", "neo-brutalism") as
-    | "neo-brutalism"
-    | "claymorphism") || "neo-brutalism";
+    "neo-brutalism" | "claymorphism") || "neo-brutalism";
 
 if (isBrowser) {
   document.documentElement.setAttribute("data-theme", initialTheme);
@@ -281,9 +280,10 @@ export const {
   const [showFpsCounter, setShowFpsCounter] = createSignal(
     getBool("showFpsCounter", false),
   );
-  const [thumbnailQuality, setThumbnailQuality] = createSignal<ThumbnailQuality>(
-    (getStr("thumbnailQuality", "medium") as ThumbnailQuality) || "medium",
-  );
+  const [thumbnailQuality, setThumbnailQuality] =
+    createSignal<ThumbnailQuality>(
+      (getStr("thumbnailQuality", "medium") as ThumbnailQuality) || "medium",
+    );
   const [isSearchOpen, setIsSearchOpen] = createSignal(false);
   const [isSortOpen, setIsSortOpen] = createSignal(false);
   const [globalSearchQuery, setGlobalSearchQuery] = createSignal("");
@@ -351,38 +351,44 @@ export const {
   const [homeRandomSeed, setHomeRandomSeed] = createSignal(Date.now());
 
   const [favSortBy, setFavSortBy] = createSignal<string>("date");
-  const [favSortDirection, setFavSortDirection] =
-    createSignal<"asc" | "desc">("desc");
+  const [favSortDirection, setFavSortDirection] = createSignal<"asc" | "desc">(
+    "desc",
+  );
   const [favRandomSeed, setFavRandomSeed] = createSignal(Date.now());
 
   const [playlistsSortBy, setPlaylistsSortBy] = createSignal<string>("date");
-  const [playlistsSortDirection, setPlaylistsSortDirection] =
-    createSignal<"asc" | "desc">("desc");
+  const [playlistsSortDirection, setPlaylistsSortDirection] = createSignal<
+    "asc" | "desc"
+  >("desc");
 
   const [playlistVideosSortBy, setPlaylistVideosSortBy] =
     createSignal<string>("custom");
   const [playlistVideosSortDirection, setPlaylistVideosSortDirection] =
     createSignal<"asc" | "desc">("asc");
-  const [playlistVideosRandomSeed, setPlaylistVideosRandomSeed] =
-    createSignal(Date.now());
+  const [playlistVideosRandomSeed, setPlaylistVideosRandomSeed] = createSignal(
+    Date.now(),
+  );
   const [activePlaylistDetail, setActivePlaylistDetail] = createSignal<
     any | null
   >(null);
 
   const [artistsSortBy, setArtistsSortBy] = createSignal<string>("name");
-  const [artistsSortDirection, setArtistsSortDirection] =
-    createSignal<"asc" | "desc">("asc");
+  const [artistsSortDirection, setArtistsSortDirection] = createSignal<
+    "asc" | "desc"
+  >("asc");
 
   const [artistVideosSortBy, setArtistVideosSortBy] =
     createSignal<string>("date");
   const [artistVideosSortDirection, setArtistVideosSortDirection] =
     createSignal<"asc" | "desc">("desc");
-  const [artistVideosRandomSeed, setArtistVideosRandomSeed] =
-    createSignal(Date.now());
+  const [artistVideosRandomSeed, setArtistVideosRandomSeed] = createSignal(
+    Date.now(),
+  );
 
   const [historySortBy, setHistorySortBy] = createSignal<string>("date");
-  const [historySortDirection, setHistorySortDirection] =
-    createSignal<"asc" | "desc">("desc");
+  const [historySortDirection, setHistorySortDirection] = createSignal<
+    "asc" | "desc"
+  >("desc");
 
   const [tasks, setTasks] = createSignal<DownloadTask[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = createSignal(false);
@@ -740,7 +746,9 @@ export const getSystemClipboardText = async (): Promise<string> => {
   return "";
 };
 
-export const setSystemClipboardText = async (text: string): Promise<boolean> => {
+export const setSystemClipboardText = async (
+  text: string,
+): Promise<boolean> => {
   try {
     await invoke("set_clipboard_text", { text });
     return true;
@@ -810,8 +818,7 @@ export const toggleAlwaysShowSortBar = (val: boolean) => {
 
 export const toggleShowFpsCounter = (val: boolean) => {
   setShowFpsCounter(val);
-  if (isBrowser)
-    window.localStorage.setItem("showFpsCounter", val.toString());
+  if (isBrowser) window.localStorage.setItem("showFpsCounter", val.toString());
 };
 
 export const updateThumbnailQuality = (val: ThumbnailQuality) => {

@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup, For } from "solid-js";
+import { createSignal, onMount, onCleanup, For, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import {
   appTheme,
@@ -53,6 +53,7 @@ import {
   toggleAlwaysShowSortBar,
 } from "../store";
 import BenchmarkModal from "../components/BenchmarkModal";
+import { APP_VERSION } from "../version";
 import "./Settings.css";
 
 export default function Settings() {
@@ -232,7 +233,11 @@ export default function Settings() {
   return (
     <div class="page-wrapper settings-page">
       {/* Sticky Quick-Jump Navigation Pill Bar */}
-      <div class="settings-nav-sticky" role="navigation" aria-label="Settings Categories">
+      <div
+        class="settings-nav-sticky"
+        role="navigation"
+        aria-label="Settings Categories"
+      >
         <button
           type="button"
           class={`settings-nav-pill ${activeSection() === "sec-appearance" ? "active" : ""}`}
@@ -330,10 +335,14 @@ export default function Settings() {
                     <i class="ph-fill ph-sun"></i>
                     <span class="theme-card-name">Light Theme</span>
                   </div>
-                  <span class="theme-card-desc">Warm & crisp daylight aesthetic</span>
+                  <span class="theme-card-desc">
+                    Warm & crisp daylight aesthetic
+                  </span>
                 </div>
                 <div class="theme-radio-indicator">
-                  <i class={appTheme() === "light" ? "ph-bold ph-check" : ""}></i>
+                  <i
+                    class={appTheme() === "light" ? "ph-bold ph-check" : ""}
+                  ></i>
                 </div>
               </div>
             </div>
@@ -374,10 +383,14 @@ export default function Settings() {
                     <i class="ph-fill ph-moon"></i>
                     <span class="theme-card-name">Dark Theme</span>
                   </div>
-                  <span class="theme-card-desc">Deep obsidian nighttime aesthetic</span>
+                  <span class="theme-card-desc">
+                    Deep obsidian nighttime aesthetic
+                  </span>
                 </div>
                 <div class="theme-radio-indicator">
-                  <i class={appTheme() === "dark" ? "ph-bold ph-check" : ""}></i>
+                  <i
+                    class={appTheme() === "dark" ? "ph-bold ph-check" : ""}
+                  ></i>
                 </div>
               </div>
             </div>
@@ -392,7 +405,8 @@ export default function Settings() {
             <div>
               <h3 class="settings-title">Design Style</h3>
               <p class="settings-desc">
-                Select your preferred interface style: Neo-Brutalism or Claymorphism.
+                Select your preferred interface style: Neo-Brutalism or
+                Claymorphism.
               </p>
             </div>
           </div>
@@ -434,12 +448,16 @@ export default function Settings() {
                     <i class="ph-bold ph-square-half"></i>
                     <span class="theme-card-name">Neo-Brutalism</span>
                   </div>
-                  <span class="theme-card-desc">High-contrast solid borders & crisp hard shadows</span>
+                  <span class="theme-card-desc">
+                    High-contrast solid borders & crisp hard shadows
+                  </span>
                 </div>
                 <div class="theme-radio-indicator">
                   <i
                     class={
-                      designStyle() === "neo-brutalism" ? "ph-bold ph-check" : ""
+                      designStyle() === "neo-brutalism"
+                        ? "ph-bold ph-check"
+                        : ""
                     }
                   ></i>
                 </div>
@@ -482,7 +500,9 @@ export default function Settings() {
                     <i class="ph-bold ph-circles-three-plus"></i>
                     <span class="theme-card-name">Claymorphism</span>
                   </div>
-                  <span class="theme-card-desc">Soft floating 3D volume, diffuse Gaussian blurs & glows</span>
+                  <span class="theme-card-desc">
+                    Soft floating 3D volume, diffuse Gaussian blurs & glows
+                  </span>
                 </div>
                 <div class="theme-radio-indicator">
                   <i
@@ -546,13 +566,13 @@ export default function Settings() {
                     <i class="ph-fill ph-sun-horizon"></i>
                     <span class="theme-card-name">Sunset</span>
                   </div>
-                  <span class="theme-card-desc">Warm Tangerine & Coral energized highlights</span>
+                  <span class="theme-card-desc">
+                    Warm Tangerine & Coral energized highlights
+                  </span>
                 </div>
                 <div class="theme-radio-indicator">
                   <i
-                    class={
-                      appPalette() === "sunset" ? "ph-bold ph-check" : ""
-                    }
+                    class={appPalette() === "sunset" ? "ph-bold ph-check" : ""}
                   ></i>
                 </div>
               </div>
@@ -594,13 +614,13 @@ export default function Settings() {
                     <i class="ph-fill ph-fire"></i>
                     <span class="theme-card-name">Crimson</span>
                   </div>
-                  <span class="theme-card-desc">Bold Scarlet & Ruby intense high-contrast tones</span>
+                  <span class="theme-card-desc">
+                    Bold Scarlet & Ruby intense high-contrast tones
+                  </span>
                 </div>
                 <div class="theme-radio-indicator">
                   <i
-                    class={
-                      appPalette() === "crimson" ? "ph-bold ph-check" : ""
-                    }
+                    class={appPalette() === "crimson" ? "ph-bold ph-check" : ""}
                   ></i>
                 </div>
               </div>
@@ -616,7 +636,8 @@ export default function Settings() {
             <div>
               <h3 class="settings-title">Ambient Lighting (Cinematic Glow)</h3>
               <p class="settings-desc">
-                Cast an immersive diffuse glow around the video player onto the background canvas.
+                Cast an immersive diffuse glow around the video player onto the
+                background canvas.
               </p>
             </div>
             <label class="switch">
@@ -644,12 +665,19 @@ export default function Settings() {
                     <div class="ambient-mode-title-col">
                       <span class="ambient-mode-name">Dynamic Mode</span>
                       <span class="ambient-mode-desc">
-                        Extracts dominant colors dynamically from active video playback in real time
+                        Extracts dominant colors dynamically from active video
+                        playback in real time
                       </span>
                     </div>
                   </div>
                   <div class="theme-radio-indicator">
-                    <i class={playerAmbientType() === "dynamic" ? "ph-bold ph-check" : ""}></i>
+                    <i
+                      class={
+                        playerAmbientType() === "dynamic"
+                          ? "ph-bold ph-check"
+                          : ""
+                      }
+                    ></i>
                   </div>
                 </div>
 
@@ -664,12 +692,19 @@ export default function Settings() {
                     <div class="ambient-mode-title-col">
                       <span class="ambient-mode-name">Static Mode</span>
                       <span class="ambient-mode-desc">
-                        Custom color aura with zero CPU overhead and fixed ambient radiance
+                        Custom color aura with zero CPU overhead and fixed
+                        ambient radiance
                       </span>
                     </div>
                   </div>
                   <div class="theme-radio-indicator">
-                    <i class={playerAmbientType() === "static" ? "ph-bold ph-check" : ""}></i>
+                    <i
+                      class={
+                        playerAmbientType() === "static"
+                          ? "ph-bold ph-check"
+                          : ""
+                      }
+                    ></i>
                   </div>
                 </div>
               </div>
@@ -704,9 +739,17 @@ export default function Settings() {
                         }}
                         title={preset.name}
                       >
-                        <span class="swatch-circle" style={{ background: preset.color }}></span>
+                        <span
+                          class="swatch-circle"
+                          style={{ background: preset.color }}
+                        ></span>
                         <span class="swatch-label">{preset.name}</span>
-                        <Show when={playerAmbientColor().toLowerCase() === preset.color.toLowerCase()}>
+                        <Show
+                          when={
+                            playerAmbientColor().toLowerCase() ===
+                            preset.color.toLowerCase()
+                          }
+                        >
                           <i class="ph-bold ph-check swatch-check"></i>
                         </Show>
                       </button>
@@ -729,7 +772,9 @@ export default function Settings() {
                         class="ambient-picker-preview"
                         style={{ background: playerAmbientColor() }}
                       ></span>
-                      <span class="ambient-picker-label">Custom Palette Color</span>
+                      <span class="ambient-picker-label">
+                        Custom Palette Color
+                      </span>
                     </div>
 
                     <div class="ambient-hex-input-group">
@@ -739,7 +784,9 @@ export default function Settings() {
                         class="setting-input ambient-hex-input"
                         value={playerAmbientColor().replace("#", "")}
                         onInput={(e) => {
-                          const val = e.currentTarget.value.trim().replace("#", "");
+                          const val = e.currentTarget.value
+                            .trim()
+                            .replace("#", "");
                           if (/^[0-9A-Fa-f]{6}$/.test(val)) {
                             updatePlayerAmbientColor("#" + val);
                             togglePlayerAmbientType("static");
@@ -760,7 +807,9 @@ export default function Settings() {
                     <span class="ambient-slider-label">
                       <i class="ph-bold ph-sun"></i> Glow Intensity
                     </span>
-                    <span class="ambient-slider-badge">{playerAmbientIntensity()}%</span>
+                    <span class="ambient-slider-badge">
+                      {playerAmbientIntensity()}%
+                    </span>
                   </div>
                   <input
                     type="range"
@@ -770,7 +819,9 @@ export default function Settings() {
                     step="5"
                     value={playerAmbientIntensity()}
                     onInput={(e) =>
-                      updatePlayerAmbientIntensity(parseInt(e.currentTarget.value, 10))
+                      updatePlayerAmbientIntensity(
+                        parseInt(e.currentTarget.value, 10),
+                      )
                     }
                     style={
                       {
@@ -785,7 +836,9 @@ export default function Settings() {
                     <span class="ambient-slider-label">
                       <i class="ph-bold ph-faders"></i> Diffusion Blur Radius
                     </span>
-                    <span class="ambient-slider-badge">{playerAmbientBlur()}px</span>
+                    <span class="ambient-slider-badge">
+                      {playerAmbientBlur()}px
+                    </span>
                   </div>
                   <input
                     type="range"
@@ -795,7 +848,9 @@ export default function Settings() {
                     step="2"
                     value={playerAmbientBlur()}
                     onInput={(e) =>
-                      updatePlayerAmbientBlur(parseInt(e.currentTarget.value, 10))
+                      updatePlayerAmbientBlur(
+                        parseInt(e.currentTarget.value, 10),
+                      )
                     }
                     style={
                       {
@@ -868,7 +923,8 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Always Show Search Bar</h3>
             <p class="settings-desc">
-              Keep the global search bar visible in the top header instead of auto-hiding.
+              Keep the global search bar visible in the top header instead of
+              auto-hiding.
             </p>
           </div>
           <label class="switch">
@@ -904,9 +960,12 @@ export default function Settings() {
 
         <div class="flex-row-between" id="setting-appearance-thumb-quality">
           <div>
-            <h3 class="settings-title">Thumbnail Quality (FPS & VRAM Optimization)</h3>
+            <h3 class="settings-title">
+              Thumbnail Quality (FPS & VRAM Optimization)
+            </h3>
             <p class="settings-desc">
-              Adjust thumbnail texture size. Lower settings deliver ultra-high frame rates (60–144 FPS) on dense fullscreen grids.
+              Adjust thumbnail texture size. Lower settings deliver ultra-high
+              frame rates (60–144 FPS) on dense fullscreen grids.
             </p>
           </div>
           <div class="quality-slider-wrapper">
@@ -950,14 +1009,16 @@ export default function Settings() {
               }}
               style={
                 {
-                  "--progress": `${((((thumbnailQuality() === "low"
+                  "--progress": `${
+                    (((thumbnailQuality() === "low"
                       ? 1
                       : thumbnailQuality() === "high"
                         ? 3
-                        : 2) - 1) /
+                        : 2) -
+                      1) /
                       2) *
-                      100)
-                    }%`,
+                    100
+                  }%`,
                 } as any
               }
             />
@@ -1029,7 +1090,8 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Default Sort Direction</h3>
             <p class="settings-desc">
-              Preferred ordering sequence for chronological and alphabetical lists.
+              Preferred ordering sequence for chronological and alphabetical
+              lists.
             </p>
           </div>
           <div class="toggle-group">
@@ -1054,7 +1116,8 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Randomize Library on Startup</h3>
             <p class="settings-desc">
-              Shuffle media order automatically on every launch to discover fresh content.
+              Shuffle media order automatically on every launch to discover
+              fresh content.
             </p>
           </div>
           <label class="switch">
@@ -1073,7 +1136,12 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Always Show Sort Bar</h3>
             <p class="settings-desc">
-              Keep the floating sort controls visible at the top of library pages instead of auto-hiding. (Shortcut: <kbd style="background: var(--primary-background); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.8rem;">Ctrl+S</kbd>)
+              Keep the floating sort controls visible at the top of library
+              pages instead of auto-hiding. (Shortcut:{" "}
+              <kbd style="background: var(--primary-background); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.8rem;">
+                Ctrl+S
+              </kbd>
+              )
             </p>
           </div>
           <label class="switch">
@@ -1112,8 +1180,9 @@ export default function Settings() {
               }
               style={
                 {
-                  "--progress": `${((concurrentDownloads() - 1) / (5 - 1)) * 100
-                    }%`,
+                  "--progress": `${
+                    ((concurrentDownloads() - 1) / (5 - 1)) * 100
+                  }%`,
                 } as any
               }
             />
@@ -1144,8 +1213,9 @@ export default function Settings() {
               }
               style={
                 {
-                  "--progress": `${((concurrentFragments() - 1) / (16 - 1)) * 100
-                    }%`,
+                  "--progress": `${
+                    ((concurrentFragments() - 1) / (16 - 1)) * 100
+                  }%`,
                 } as any
               }
             />
@@ -1159,7 +1229,8 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">Download Speed Limit</h3>
             <p class="settings-desc">
-              Throttle download bandwidth to preserve network balance (e.g., 500K, 2.5M, 10M).
+              Throttle download bandwidth to preserve network balance (e.g.,
+              500K, 2.5M, 10M).
             </p>
           </div>
           <div class="speed-limit-control-box">
@@ -1185,7 +1256,11 @@ export default function Settings() {
                 </button>
               </Show>
             </div>
-            <div class="speed-limit-presets" role="toolbar" aria-label="Speed limit presets">
+            <div
+              class="speed-limit-presets"
+              role="toolbar"
+              aria-label="Speed limit presets"
+            >
               <button
                 type="button"
                 class={`speed-preset-btn ${!speedLimit().trim() ? "active" : ""}`}
@@ -1240,7 +1315,7 @@ export default function Settings() {
                 {browserCookies() === "none"
                   ? "None"
                   : browserCookies().charAt(0).toUpperCase() +
-                  browserCookies().slice(1)}
+                    browserCookies().slice(1)}
               </span>
               <i class="ph ph-caret-down"></i>
             </div>
@@ -1248,11 +1323,12 @@ export default function Settings() {
               <For each={cookieOptions}>
                 {(opt) => (
                   <div
-                    class={`custom-select-item ${(browserCookies() === "none" && opt === "None") ||
-                        browserCookies().toLowerCase() === opt.toLowerCase()
+                    class={`custom-select-item ${
+                      (browserCookies() === "none" && opt === "None") ||
+                      browserCookies().toLowerCase() === opt.toLowerCase()
                         ? "selected"
                         : ""
-                      }`}
+                    }`}
                     onClick={() => {
                       updateBrowserCookies(opt.toLowerCase());
                       setCookiesDropdownOpen(false);
@@ -1345,8 +1421,6 @@ export default function Settings() {
           </label>
         </div>
 
-
-
         <div class="full-divider"></div>
 
         <div class="flex-row-between" id="setting-engine-reindex">
@@ -1380,8 +1454,8 @@ export default function Settings() {
           <div>
             <h3 class="settings-title">UI Rendering Benchmark</h3>
             <p class="settings-desc">
-              Run hardware-accelerated diagnostics to test frame pacing, 1% low FPS,
-              and 150-card DOM rendering throughput.
+              Run hardware-accelerated diagnostics to test frame pacing, 1% low
+              FPS, and 150-card DOM rendering throughput.
             </p>
           </div>
           <button
@@ -1399,7 +1473,10 @@ export default function Settings() {
         onClose={() => setShowBenchmark(false)}
       />
 
-      <h2 class="page-title page-title-spaced page-title-danger" id="sec-danger">
+      <h2
+        class="page-title page-title-spaced page-title-danger"
+        id="sec-danger"
+      >
         <i class="ph-fill ph-warning-circle"></i> Danger Zone
       </h2>
 
@@ -1571,10 +1648,11 @@ export default function Settings() {
           <div class="about-hero-text">
             <div class="about-title-row">
               <h3 class="about-app-name">ViveStream Next</h3>
-              <span class="about-version-badge">v1.9.9</span>
+              <span class="about-version-badge">v{APP_VERSION}</span>
             </div>
             <p class="about-tagline">
-              High-performance local video player, stream archiver & offline media suite.
+              High-performance local video player, stream archiver & offline
+              media suite.
             </p>
           </div>
         </div>
@@ -1584,28 +1662,38 @@ export default function Settings() {
             <i class="ph-fill ph-lightning"></i>
             <div>
               <h4>Zero-VDOM Engine</h4>
-              <p>Powered by SolidJS, Rust & Tauri v2 for 300+ FPS responsiveness.</p>
+              <p>
+                Powered by SolidJS, Rust & Tauri v2 for 300+ FPS responsiveness.
+              </p>
             </div>
           </div>
           <div class="about-feature-item">
             <i class="ph-fill ph-shield-check"></i>
             <div>
               <h4>100% Offline & Private</h4>
-              <p>Local SQLite database. Zero telemetry, tracking, or remote analytics.</p>
+              <p>
+                Local SQLite database. Zero telemetry, tracking, or remote
+                analytics.
+              </p>
             </div>
           </div>
           <div class="about-feature-item">
             <i class="ph-fill ph-paint-brush-broad"></i>
             <div>
               <h4>Tactile Neo-Brutalism</h4>
-              <p>Crisp mechanical drop-shadows and dark/light claymorphism palettes.</p>
+              <p>
+                Crisp mechanical drop-shadows and dark/light claymorphism
+                palettes.
+              </p>
             </div>
           </div>
           <div class="about-feature-item">
             <i class="ph-fill ph-cpu"></i>
             <div>
               <h4>Hardware Transcoding</h4>
-              <p>Automated integration with yt-dlp, FFmpeg (QSV/NVENC), and Deno.</p>
+              <p>
+                Automated integration with yt-dlp, FFmpeg (QSV/NVENC), and Deno.
+              </p>
             </div>
           </div>
         </div>
@@ -1618,7 +1706,10 @@ export default function Settings() {
             <div>
               <h4 class="about-dev-title">Support ViveStream Development</h4>
               <p class="about-dev-desc">
-                ViveStream is 100% free, privacy-first, and open source with no ads or subscriptions. If this app brings value to your daily media workflow, please consider supporting ongoing maintenance and new features with a small donation!
+                ViveStream is 100% free, privacy-first, and open source with no
+                ads or subscriptions. If this app brings value to your daily
+                media workflow, please consider supporting ongoing maintenance
+                and new features with a small donation!
               </p>
             </div>
           </div>
@@ -1628,11 +1719,17 @@ export default function Settings() {
             <span class="donation-banner-label">
               <i class="ph-fill ph-sparkle"></i> Fund The Project
             </span>
-            <div class="about-action-links donation-links" role="toolbar" aria-label="Financial Support options">
+            <div
+              class="about-action-links donation-links"
+              role="toolbar"
+              aria-label="Financial Support options"
+            >
               <button
                 type="button"
                 class="about-link-btn bmac-btn"
-                onClick={() => openExternalLink("https://buymeacoffee.com/Vivek_N_007")}
+                onClick={() =>
+                  openExternalLink("https://buymeacoffee.com/Vivek_N_007")
+                }
                 title="Buy Me a Coffee"
               >
                 <i class="ph-fill ph-coffee"></i>
@@ -1641,7 +1738,9 @@ export default function Settings() {
               <button
                 type="button"
                 class="about-link-btn sponsors-btn"
-                onClick={() => openExternalLink("https://github.com/sponsors/rootlocalghost")}
+                onClick={() =>
+                  openExternalLink("https://github.com/sponsors/rootlocalghost")
+                }
                 title="Sponsor on GitHub"
               >
                 <i class="ph-fill ph-heart"></i>
@@ -1650,7 +1749,9 @@ export default function Settings() {
               <button
                 type="button"
                 class="about-link-btn kofi-btn"
-                onClick={() => openExternalLink("https://ko-fi.com/Vivek_N_007")}
+                onClick={() =>
+                  openExternalLink("https://ko-fi.com/Vivek_N_007")
+                }
                 title="Donate via Ko-fi"
               >
                 <i class="ph-fill ph-hand-heart"></i>
@@ -1662,11 +1763,19 @@ export default function Settings() {
           <div class="full-divider"></div>
 
           {/* Open Source Community Actions */}
-          <div class="about-action-links" role="toolbar" aria-label="Community project links">
+          <div
+            class="about-action-links"
+            role="toolbar"
+            aria-label="Community project links"
+          >
             <button
               type="button"
               class="about-link-btn github-star-btn"
-              onClick={() => openExternalLink("https://github.com/rootlocalghost/ViveStream-Next")}
+              onClick={() =>
+                openExternalLink(
+                  "https://github.com/rootlocalghost/ViveStream-Next",
+                )
+              }
               title="Star on GitHub"
             >
               <i class="ph-fill ph-star"></i>
@@ -1675,7 +1784,11 @@ export default function Settings() {
             <button
               type="button"
               class="about-link-btn"
-              onClick={() => openExternalLink("https://github.com/rootlocalghost/ViveStream-Next/issues")}
+              onClick={() =>
+                openExternalLink(
+                  "https://github.com/rootlocalghost/ViveStream-Next/issues",
+                )
+              }
               title="Report an issue or feature request"
             >
               <i class="ph-fill ph-bug"></i>
@@ -1684,7 +1797,11 @@ export default function Settings() {
             <button
               type="button"
               class="about-link-btn"
-              onClick={() => openExternalLink("https://github.com/rootlocalghost/ViveStream-Next/pulls")}
+              onClick={() =>
+                openExternalLink(
+                  "https://github.com/rootlocalghost/ViveStream-Next/pulls",
+                )
+              }
               title="Contribute pull requests"
             >
               <i class="ph-fill ph-git-pull-request"></i>

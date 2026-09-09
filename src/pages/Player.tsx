@@ -34,7 +34,6 @@ import {
   setSubtitlesEnabled,
   playerQueue,
   setPlayerQueue,
-  miniplayerDismissed,
   setMiniplayerDismissed,
   theaterMode,
   setTheaterMode,
@@ -102,14 +101,11 @@ export default function Player() {
   const [isEditingMeta, setIsEditingMeta] = createSignal(false);
   const [editTitle, setEditTitle] = createSignal("");
   const [editChannel, setEditChannel] = createSignal("");
-  const [currentDominantColor, setCurrentDominantColor] = createSignal("#f25c54");
-  const [extractedVideoColors, setExtractedVideoColors] = createSignal<string[]>([
-    "#f25c54",
-    "#ef233c",
-    "#3b82f6",
-    "#10b981",
-    "#a855f7",
-  ]);
+  const [currentDominantColor, setCurrentDominantColor] =
+    createSignal("#f25c54");
+  const [extractedVideoColors, setExtractedVideoColors] = createSignal<
+    string[]
+  >(["#f25c54", "#ef233c", "#3b82f6", "#10b981", "#a855f7"]);
 
   let videoRef: HTMLVideoElement | undefined;
   let timelineContainerRef: HTMLDivElement | undefined;
@@ -275,18 +271,14 @@ export default function Player() {
           setExtractedVideoColors(res.palette);
         }
       }
-    } catch {} finally {
+    } catch {
+    } finally {
       isFetchingRustColors = false;
     }
   };
 
   const drawAmbientFrame = (now?: number, force = false) => {
-    if (
-      !videoRef ||
-      !playerAmbientMode() ||
-      isFullscreen() ||
-      isUnmounting
-    ) {
+    if (!videoRef || !playerAmbientMode() || isFullscreen() || isUnmounting) {
       return;
     }
     const time = now ?? performance.now();
@@ -322,16 +314,30 @@ export default function Player() {
           offscreenCanvas = document.createElement("canvas");
           offscreenCanvas.width = 32;
           offscreenCanvas.height = 18;
-          offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
+          offscreenCtx = offscreenCanvas.getContext("2d", {
+            willReadFrequently: true,
+          });
         }
 
         if (offscreenCtx) {
           try {
             offscreenCtx.drawImage(videoRef, 0, 0, 32, 18);
-            const { dominant, palette } = extractDominantVideoColors(offscreenCtx, 32, 18);
+            const { dominant, palette } = extractDominantVideoColors(
+              offscreenCtx,
+              32,
+              18,
+            );
             const targetRgb = hexToRgb(dominant);
-            currentSmoothedRgb = lerpColor(currentSmoothedRgb, targetRgb, force ? 1.0 : 0.25);
-            const smoothedHex = rgbToHex(currentSmoothedRgb.r, currentSmoothedRgb.g, currentSmoothedRgb.b);
+            currentSmoothedRgb = lerpColor(
+              currentSmoothedRgb,
+              targetRgb,
+              force ? 1.0 : 0.25,
+            );
+            const smoothedHex = rgbToHex(
+              currentSmoothedRgb.r,
+              currentSmoothedRgb.g,
+              currentSmoothedRgb.b,
+            );
 
             setCurrentDominantColor(smoothedHex);
             if (palette.length > 0) {
@@ -356,9 +362,9 @@ export default function Player() {
   createEffect(() => {
     const playing = isPlaying();
     const ambient = playerAmbientMode();
-    const type = playerAmbientType();
+    playerAmbientType();
     const full = isFullscreen();
-    const vid = video();
+    video();
 
     if (ambientRafId) {
       cancelAnimationFrame(ambientRafId);
@@ -394,9 +400,13 @@ export default function Player() {
     currentLoadingId = targetId;
     setMiniplayerDismissed(false);
     setPlayerContextParams({
-      context: searchParams.context,
-      id: searchParams.id,
-      name: searchParams.name,
+      context: Array.isArray(searchParams.context)
+        ? searchParams.context[0]
+        : searchParams.context,
+      id: Array.isArray(searchParams.id) ? searchParams.id[0] : searchParams.id,
+      name: Array.isArray(searchParams.name)
+        ? searchParams.name[0]
+        : searchParams.name,
     });
 
     // Instant sync if already in memory
@@ -1040,12 +1050,14 @@ export default function Player() {
         >
           <div
             class="player-video-outer"
-            style={{
-              "--ambient-blur": `${playerAmbientBlur()}px`,
-              "--ambient-opacity": `${playerAmbientIntensity() / 100}`,
-              "--ambient-dominant-color": currentDominantColor(),
-              "--ambient-static-color": playerAmbientColor(),
-            } as any}
+            style={
+              {
+                "--ambient-blur": `${playerAmbientBlur()}px`,
+                "--ambient-opacity": `${playerAmbientIntensity() / 100}`,
+                "--ambient-dominant-color": currentDominantColor(),
+                "--ambient-static-color": playerAmbientColor(),
+              } as any
+            }
           >
             {/* Real-time dominant color aura glow layer */}
             <div
@@ -1081,317 +1093,310 @@ export default function Player() {
                 setShowControls(false)
               }
             >
-            <video
-              class="player-video-element"
-              ref={videoRef}
-              preload="auto"
-              crossOrigin="anonymous"
-              autoplay
-              onEnded={handleVideoEnd}
-              onPlay={() => {
-                if (isUnmounting) return;
-                invoke("update_playback_status", { playing: true });
-                setIsPlaying(true);
-                drawAmbientFrame(undefined, true);
-              }}
-              onPause={() => {
-                if (isUnmounting || (videoRef && videoRef.seeking)) return;
-                invoke("update_playback_status", { playing: false });
-                setIsPlaying(false);
-                drawAmbientFrame(undefined, true);
-              }}
-              onLoadedData={() => {
-                drawAmbientFrame(undefined, true);
-              }}
-              onSeeked={() => {
-                if ((isPlaying() || untrack(isPlaying)) && videoRef && videoRef.paused) {
-                  handlePlay();
-                }
-                drawAmbientFrame(undefined, true);
-              }}
-              onLoadedMetadata={(e) => {
-                setDuration(e.currentTarget.duration);
-                if (activeVideo()?.id === params.id) {
-                  const savedTime = untrack(currentTime);
-                  if (savedTime > 0 && Math.abs(e.currentTarget.currentTime - savedTime) > 0.5) {
-                    e.currentTarget.currentTime = savedTime;
-                  }
-                }
-                if (isPlaying() || untrack(isPlaying)) {
-                  handlePlay();
-                }
-                drawAmbientFrame(undefined, true);
-              }}
-              onCanPlay={() => {
-                if (isPlaying() || untrack(isPlaying)) {
-                  handlePlay();
-                }
-                drawAmbientFrame(undefined, true);
-              }}
-              onTimeUpdate={(e) => {
-                if (!isSeeking() && !isUnmounting) {
-                  setCurrentTime(e.currentTarget.currentTime);
-                  if (!isPlaying()) {
-                    drawAmbientFrame(undefined, true);
-                  }
-                }
-              }}
-              onProgress={() => {
-                if (videoRef && videoRef.buffered.length > 0 && duration() > 0) {
-                  const end = videoRef.buffered.end(videoRef.buffered.length - 1);
-                  setBufferedPercent(Math.min(100, (end / duration()) * 100));
-                }
-              }}
-              onClick={() => {
-                setShowSettingsMenu(false);
-                setShowCCMenu(false);
-                togglePlay();
-              }}
-              src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
-            >
-              <track
-                kind="captions"
-                src={`http://127.0.0.1:1422/Videos/${video()!.id}.vtt`}
-                default={subtitlesEnabled()}
-              />
-            </video>
-
-            <Show when={osdMessage()}>
-              <div class="player-osd-badge">
-                <i class={`ph-fill ${osdMessage()!.icon}`} aria-hidden="true"></i>
-                <span>{osdMessage()!.text}</span>
-              </div>
-            </Show>
-
-            <div
-              class={
-                showControls() || !isPlaying()
-                  ? "player-controls-overlay visible"
-                  : "player-controls-overlay"
-              }
-            >
-              <div
-                class="timeline-scrubber-container"
-                ref={timelineContainerRef}
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-                  const pct = x / rect.width;
-                  setHoverX(x);
-                  setHoverTime(pct * (duration() || 0));
-                  setShowHoverTooltip(true);
+              <video
+                class="player-video-element"
+                ref={videoRef}
+                preload="auto"
+                crossOrigin="anonymous"
+                autoplay
+                onEnded={handleVideoEnd}
+                onPlay={() => {
+                  if (isUnmounting) return;
+                  invoke("update_playback_status", { playing: true });
+                  setIsPlaying(true);
+                  drawAmbientFrame(undefined, true);
                 }}
-                onMouseLeave={() => setShowHoverTooltip(false)}
+                onPause={() => {
+                  if (isUnmounting || (videoRef && videoRef.seeking)) return;
+                  invoke("update_playback_status", { playing: false });
+                  setIsPlaying(false);
+                  drawAmbientFrame(undefined, true);
+                }}
+                onLoadedData={() => {
+                  drawAmbientFrame(undefined, true);
+                }}
+                onSeeked={() => {
+                  if (
+                    (isPlaying() || untrack(isPlaying)) &&
+                    videoRef &&
+                    videoRef.paused
+                  ) {
+                    handlePlay();
+                  }
+                  drawAmbientFrame(undefined, true);
+                }}
+                onLoadedMetadata={(e) => {
+                  setDuration(e.currentTarget.duration);
+                  if (activeVideo()?.id === params.id) {
+                    const savedTime = untrack(currentTime);
+                    if (
+                      savedTime > 0 &&
+                      Math.abs(e.currentTarget.currentTime - savedTime) > 0.5
+                    ) {
+                      e.currentTarget.currentTime = savedTime;
+                    }
+                  }
+                  if (isPlaying() || untrack(isPlaying)) {
+                    handlePlay();
+                  }
+                  drawAmbientFrame(undefined, true);
+                }}
+                onCanPlay={() => {
+                  if (isPlaying() || untrack(isPlaying)) {
+                    handlePlay();
+                  }
+                  drawAmbientFrame(undefined, true);
+                }}
+                onTimeUpdate={(e) => {
+                  if (!isSeeking() && !isUnmounting) {
+                    setCurrentTime(e.currentTarget.currentTime);
+                    if (!isPlaying()) {
+                      drawAmbientFrame(undefined, true);
+                    }
+                  }
+                }}
+                onProgress={() => {
+                  if (
+                    videoRef &&
+                    videoRef.buffered.length > 0 &&
+                    duration() > 0
+                  ) {
+                    const end = videoRef.buffered.end(
+                      videoRef.buffered.length - 1,
+                    );
+                    setBufferedPercent(Math.min(100, (end / duration()) * 100));
+                  }
+                }}
+                onClick={() => {
+                  setShowSettingsMenu(false);
+                  setShowCCMenu(false);
+                  togglePlay();
+                }}
+                src={`http://127.0.0.1:1422/Videos/${video()!.id}.mp4`}
               >
-                {/* Buffered track layer */}
-                <div
-                  class="timeline-buffered-layer"
-                  style={{ width: `${bufferedPercent()}%` }}
-                ></div>
-
-                {/* Hover time tooltip */}
-                <Show when={showHoverTooltip() && duration() > 0}>
-                  <div
-                    class="timeline-hover-tooltip"
-                    style={{
-                      left: `${hoverX()}px`,
-                    }}
-                  >
-                    {formatTime(hoverTime())}
-                  </div>
-                </Show>
-
-                <input
-                  class="custom-slider"
-                  type="range"
-                  min="0"
-                  max={duration() || 0}
-                  value={currentTime()}
-                  step="0.1"
-                  onInput={handleSeek}
-                  onMouseDown={() => setIsSeeking(true)}
-                  onMouseUp={() => setIsSeeking(false)}
-                  aria-label="Seek Video Timeline"
-                  style={{ "--progress": `${seekProgress()}%` } as any}
+                <track
+                  kind="captions"
+                  src={`http://127.0.0.1:1422/Videos/${video()!.id}.vtt`}
+                  default={subtitlesEnabled()}
                 />
-              </div>
+              </video>
 
-              <div class="flex-row-between player-controls-bar">
-                <div class="flex-row-gap gap-4">
-                  <button
-                    class="control-btn"
-                    onClick={playPrev}
-                    title="Previous"
-                  >
-                    <i class="ph-fill ph-skip-back"></i>
-                  </button>
-                  <button
-                    class="control-btn"
-                    onClick={togglePlay}
-                    title={isPlaying() ? "Pause" : "Play"}
-                  >
-                    <i
-                      class={`ph-fill ph-${isPlaying() ? "pause" : "play"}`}
-                    ></i>
-                  </button>
-                  <button class="control-btn" onClick={playNext} title="Next">
-                    <i class="ph-fill ph-skip-forward"></i>
-                  </button>
+              <Show when={osdMessage()}>
+                <div class="player-osd-badge">
+                  <i
+                    class={`ph-fill ${osdMessage()!.icon}`}
+                    aria-hidden="true"
+                  ></i>
+                  <span>{osdMessage()!.text}</span>
+                </div>
+              </Show>
 
+              <div
+                class={
+                  showControls() || !isPlaying()
+                    ? "player-controls-overlay visible"
+                    : "player-controls-overlay"
+                }
+              >
+                <div
+                  class="timeline-scrubber-container"
+                  ref={timelineContainerRef}
+                  onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = Math.max(
+                      0,
+                      Math.min(rect.width, e.clientX - rect.left),
+                    );
+                    const pct = x / rect.width;
+                    setHoverX(x);
+                    setHoverTime(pct * (duration() || 0));
+                    setShowHoverTooltip(true);
+                  }}
+                  onMouseLeave={() => setShowHoverTooltip(false)}
+                >
+                  {/* Buffered track layer */}
                   <div
-                    class="volume-control-group"
-                    onMouseEnter={() => setIsVolumeHovered(true)}
-                    onMouseLeave={() => setIsVolumeHovered(false)}
-                  >
-                    <button
-                      class="control-btn"
-                      onClick={toggleMute}
-                      title={isMuted() ? "Unmute" : "Mute"}
-                    >
-                      <i
-                        class={`ph-fill ph-${isMuted() || volume() === 0 ? "speaker-slash" : volume() < 0.5 ? "speaker-low" : "speaker-high"}`}
-                      ></i>
-                    </button>
-                    <div
-                      class={
-                        isVolumeHovered()
-                          ? "volume-slider-wrapper hovered"
-                          : "volume-slider-wrapper"
-                      }
-                    >
-                      <input
-                        class="custom-slider"
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={isMuted() ? 0 : volume()}
-                        onInput={handleVolumeChange}
-                        style={{ "--progress": `${volProgress()}%` } as any}
-                      />
-                    </div>
-                  </div>
+                    class="timeline-buffered-layer"
+                    style={{ width: `${bufferedPercent()}%` }}
+                  ></div>
 
-                  <span class="player-timecode">
-                    {formatTime(currentTime())}{" "}
-                    <span class="player-timecode-separator">/</span>{" "}
-                    {formatTime(duration())}
-                  </span>
+                  {/* Hover time tooltip */}
+                  <Show when={showHoverTooltip() && duration() > 0}>
+                    <div
+                      class="timeline-hover-tooltip"
+                      style={{
+                        left: `${hoverX()}px`,
+                      }}
+                    >
+                      {formatTime(hoverTime())}
+                    </div>
+                  </Show>
+
+                  <input
+                    class="custom-slider"
+                    type="range"
+                    min="0"
+                    max={duration() || 0}
+                    value={currentTime()}
+                    step="0.1"
+                    onInput={handleSeek}
+                    onMouseDown={() => setIsSeeking(true)}
+                    onMouseUp={() => setIsSeeking(false)}
+                    aria-label="Seek Video Timeline"
+                    style={{ "--progress": `${seekProgress()}%` } as any}
+                  />
                 </div>
 
-                <div class="flex-row-gap gap-4 relative">
-                  <div
-                    class={`player-popup-menu ${showCCMenu() ? "visible" : ""}`}
-                    ref={ccMenuRef}
-                  >
-                    <div class="player-popup-header">
-                      <i class="ph-fill ph-closed-captioning"></i> Subtitles
+                <div class="flex-row-between player-controls-bar">
+                  <div class="flex-row-gap gap-4">
+                    <button
+                      class="control-btn"
+                      onClick={playPrev}
+                      title="Previous"
+                    >
+                      <i class="ph-fill ph-skip-back"></i>
+                    </button>
+                    <button
+                      class="control-btn"
+                      onClick={togglePlay}
+                      title={isPlaying() ? "Pause" : "Play"}
+                    >
+                      <i
+                        class={`ph-fill ph-${isPlaying() ? "pause" : "play"}`}
+                      ></i>
+                    </button>
+                    <button class="control-btn" onClick={playNext} title="Next">
+                      <i class="ph-fill ph-skip-forward"></i>
+                    </button>
+
+                    <div
+                      class="volume-control-group"
+                      onMouseEnter={() => setIsVolumeHovered(true)}
+                      onMouseLeave={() => setIsVolumeHovered(false)}
+                    >
+                      <button
+                        class="control-btn"
+                        onClick={toggleMute}
+                        title={isMuted() ? "Unmute" : "Mute"}
+                      >
+                        <i
+                          class={`ph-fill ph-${isMuted() || volume() === 0 ? "speaker-slash" : volume() < 0.5 ? "speaker-low" : "speaker-high"}`}
+                        ></i>
+                      </button>
+                      <div
+                        class={
+                          isVolumeHovered()
+                            ? "volume-slider-wrapper hovered"
+                            : "volume-slider-wrapper"
+                        }
+                      >
+                        <input
+                          class="custom-slider"
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={isMuted() ? 0 : volume()}
+                          onInput={handleVolumeChange}
+                          style={{ "--progress": `${volProgress()}%` } as any}
+                        />
+                      </div>
                     </div>
-                    <button
-                      class={`player-popup-item ${subtitlesEnabled() ? "selected" : ""}`}
-                      onClick={toggleCC}
-                    >
-                      <span>English (Auto)</span>
-                      <Show when={subtitlesEnabled()}>
-                        <i class="ph-fill ph-check-circle"></i>
-                      </Show>
-                    </button>
-                    <button
-                      class={`player-popup-item ${!subtitlesEnabled() ? "selected" : ""}`}
-                      onClick={toggleCC}
-                    >
-                      <span>Off</span>
-                      <Show when={!subtitlesEnabled()}>
-                        <i class="ph-fill ph-check-circle"></i>
-                      </Show>
-                    </button>
+
+                    <span class="player-timecode">
+                      {formatTime(currentTime())}{" "}
+                      <span class="player-timecode-separator">/</span>{" "}
+                      {formatTime(duration())}
+                    </span>
                   </div>
 
-                  <div
-                    class={`player-popup-menu ${showSettingsMenu() ? "visible" : ""}`}
-                    ref={settingsMenuRef}
-                  >
-                    <div class="player-popup-header">
-                      <i class="ph-fill ph-gauge"></i> Speed
-                    </div>
-                    {[0.5, 1.0, 1.5, 2.0].map((rate) => (
+                  <div class="flex-row-gap gap-4 relative">
+                    <div
+                      class={`player-popup-menu ${showCCMenu() ? "visible" : ""}`}
+                      ref={ccMenuRef}
+                    >
+                      <div class="player-popup-header">
+                        <i class="ph-fill ph-closed-captioning"></i> Subtitles
+                      </div>
                       <button
-                        class={`player-popup-item ${playbackRate() === rate ? "selected" : ""}`}
-                        onClick={() => changeSpeed(rate)}
+                        class={`player-popup-item ${subtitlesEnabled() ? "selected" : ""}`}
+                        onClick={toggleCC}
                       >
-                        <span>{rate === 1.0 ? "Normal" : `${rate}x`}</span>
-                        <Show when={playbackRate() === rate}>
+                        <span>English (Auto)</span>
+                        <Show when={subtitlesEnabled()}>
                           <i class="ph-fill ph-check-circle"></i>
                         </Show>
                       </button>
-                    ))}
-
-                    <div class="player-popup-header" style="margin-top: 8px;">
-                      <i class="ph-fill ph-nut"></i> Ambient Lighting
+                      <button
+                        class={`player-popup-item ${!subtitlesEnabled() ? "selected" : ""}`}
+                        onClick={toggleCC}
+                      >
+                        <span>Off</span>
+                        <Show when={!subtitlesEnabled()}>
+                          <i class="ph-fill ph-check-circle"></i>
+                        </Show>
+                      </button>
                     </div>
-                    <button
-                      class={`player-popup-item ${playerAmbientMode() ? "selected" : ""}`}
-                      onClick={() => {
-                        togglePlayerAmbientMode();
-                      }}
+
+                    <div
+                      class={`player-popup-menu ${showSettingsMenu() ? "visible" : ""}`}
+                      ref={settingsMenuRef}
                     >
-                      <span>Enable Glow</span>
-                      <i
-                        class={`ph-fill ph-toggle-${playerAmbientMode() ? "right" : "left"}`}
-                      ></i>
-                    </button>
-                    <Show when={playerAmbientMode()}>
-                      <div class="player-ambient-menu-group">
-                        <div class="player-ambient-mode-row">
-                          <button
-                            class={`player-ambient-mode-btn ${playerAmbientType() === "dynamic" ? "active" : ""}`}
-                            onClick={() => togglePlayerAmbientType("dynamic")}
-                          >
-                            <i class="ph-bold ph-video-camera"></i>
-                            <span>Auto Dynamic</span>
-                          </button>
-                          <button
-                            class={`player-ambient-mode-btn ${playerAmbientType() === "static" ? "active" : ""}`}
-                            onClick={() => togglePlayerAmbientType("static")}
-                          >
-                            <i class="ph-bold ph-palette"></i>
-                            <span>Static Aura</span>
-                          </button>
-                        </div>
+                      <div class="player-popup-header">
+                        <i class="ph-fill ph-gauge"></i> Speed
+                      </div>
+                      {[0.5, 1.0, 1.5, 2.0].map((rate) => (
+                        <button
+                          class={`player-popup-item ${playbackRate() === rate ? "selected" : ""}`}
+                          onClick={() => changeSpeed(rate)}
+                        >
+                          <span>{rate === 1.0 ? "Normal" : `${rate}x`}</span>
+                          <Show when={playbackRate() === rate}>
+                            <i class="ph-fill ph-check-circle"></i>
+                          </Show>
+                        </button>
+                      ))}
 
-                        {/* Preset Aura Color Swatches */}
-                        <div class="player-ambient-palette-section">
-                          <div class="player-ambient-palette-label">
-                            <span>Preset Aura Colors</span>
+                      <div class="player-popup-header" style="margin-top: 8px;">
+                        <i class="ph-fill ph-nut"></i> Ambient Lighting
+                      </div>
+                      <button
+                        class={`player-popup-item ${playerAmbientMode() ? "selected" : ""}`}
+                        onClick={() => {
+                          togglePlayerAmbientMode();
+                        }}
+                      >
+                        <span>Enable Glow</span>
+                        <i
+                          class={`ph-fill ph-toggle-${playerAmbientMode() ? "right" : "left"}`}
+                        ></i>
+                      </button>
+                      <Show when={playerAmbientMode()}>
+                        <div class="player-ambient-menu-group">
+                          <div class="player-ambient-mode-row">
+                            <button
+                              class={`player-ambient-mode-btn ${playerAmbientType() === "dynamic" ? "active" : ""}`}
+                              onClick={() => togglePlayerAmbientType("dynamic")}
+                            >
+                              <i class="ph-bold ph-video-camera"></i>
+                              <span>Auto Dynamic</span>
+                            </button>
+                            <button
+                              class={`player-ambient-mode-btn ${playerAmbientType() === "static" ? "active" : ""}`}
+                              onClick={() => togglePlayerAmbientType("static")}
+                            >
+                              <i class="ph-bold ph-palette"></i>
+                              <span>Static Aura</span>
+                            </button>
                           </div>
-                          <div class="player-ambient-palette-swatches">
-                            {PRESET_AURA_COLORS.map((col) => (
-                              <button
-                                type="button"
-                                class={`player-video-color-swatch ${playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase() ? "selected" : ""}`}
-                                style={{ background: col }}
-                                onClick={() => {
-                                  updatePlayerAmbientColor(col);
-                                  togglePlayerAmbientType("static");
-                                }}
-                                title={`Set ambient color to ${col}`}
-                              >
-                                <Show when={playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase()}>
-                                  <i class="ph-bold ph-check"></i>
-                                </Show>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
 
-                        {/* Extracted Video Color Swatches */}
-                        <Show when={extractedVideoColors().length > 0}>
+                          {/* Preset Aura Color Swatches */}
                           <div class="player-ambient-palette-section">
                             <div class="player-ambient-palette-label">
-                              <span>Video Frame Colors</span>
+                              <span>Preset Aura Colors</span>
                             </div>
                             <div class="player-ambient-palette-swatches">
-                              {extractedVideoColors().map((col) => (
+                              {PRESET_AURA_COLORS.map((col) => (
                                 <button
                                   type="button"
                                   class={`player-video-color-swatch ${playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase() ? "selected" : ""}`}
@@ -1402,128 +1407,171 @@ export default function Player() {
                                   }}
                                   title={`Set ambient color to ${col}`}
                                 >
-                                  <Show when={playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase()}>
+                                  <Show
+                                    when={
+                                      playerAmbientType() === "static" &&
+                                      playerAmbientColor().toLowerCase() ===
+                                        col.toLowerCase()
+                                    }
+                                  >
                                     <i class="ph-bold ph-check"></i>
                                   </Show>
                                 </button>
                               ))}
                             </div>
                           </div>
-                        </Show>
 
-                        {/* Custom color picker */}
-                        <div class="player-ambient-palette-section">
-                          <div class="player-ambient-palette-label">
-                            <span>Custom Color</span>
-                          </div>
-                          <div class="player-ambient-palette-swatches">
-                            <label class="player-video-color-picker-label" title="Custom color picker">
-                              <input
-                                type="color"
-                                value={playerAmbientColor()}
-                                onInput={(e) => {
-                                  updatePlayerAmbientColor(e.currentTarget.value);
-                                  togglePlayerAmbientType("static");
-                                }}
-                              />
-                              <i class="ph-bold ph-plus"></i>
-                            </label>
+                          {/* Extracted Video Color Swatches */}
+                          <Show when={extractedVideoColors().length > 0}>
+                            <div class="player-ambient-palette-section">
+                              <div class="player-ambient-palette-label">
+                                <span>Video Frame Colors</span>
+                              </div>
+                              <div class="player-ambient-palette-swatches">
+                                {extractedVideoColors().map((col) => (
+                                  <button
+                                    type="button"
+                                    class={`player-video-color-swatch ${playerAmbientType() === "static" && playerAmbientColor().toLowerCase() === col.toLowerCase() ? "selected" : ""}`}
+                                    style={{ background: col }}
+                                    onClick={() => {
+                                      updatePlayerAmbientColor(col);
+                                      togglePlayerAmbientType("static");
+                                    }}
+                                    title={`Set ambient color to ${col}`}
+                                  >
+                                    <Show
+                                      when={
+                                        playerAmbientType() === "static" &&
+                                        playerAmbientColor().toLowerCase() ===
+                                          col.toLowerCase()
+                                      }
+                                    >
+                                      <i class="ph-bold ph-check"></i>
+                                    </Show>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </Show>
+
+                          {/* Custom color picker */}
+                          <div class="player-ambient-palette-section">
+                            <div class="player-ambient-palette-label">
+                              <span>Custom Color</span>
+                            </div>
+                            <div class="player-ambient-palette-swatches">
+                              <label
+                                class="player-video-color-picker-label"
+                                title="Custom color picker"
+                              >
+                                <input
+                                  type="color"
+                                  value={playerAmbientColor()}
+                                  onInput={(e) => {
+                                    updatePlayerAmbientColor(
+                                      e.currentTarget.value,
+                                    );
+                                    togglePlayerAmbientType("static");
+                                  }}
+                                />
+                                <i class="ph-bold ph-plus"></i>
+                              </label>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Show>
+                      </Show>
+                      <button
+                        class={`player-popup-item ${isLooping() ? "selected" : ""}`}
+                        onClick={() => {
+                          setIsLooping(!isLooping());
+                          setShowSettingsMenu(false);
+                        }}
+                      >
+                        <span>Loop Video</span>
+                        <i
+                          class={`ph-fill ph-toggle-${isLooping() ? "right" : "left"}`}
+                        ></i>
+                      </button>
+                      <button
+                        class="player-popup-item"
+                        onClick={() => {
+                          togglePiP();
+                          setShowSettingsMenu(false);
+                        }}
+                      >
+                        <span>Picture in Picture</span>
+                        <i class="ph-fill ph-picture-in-picture"></i>
+                      </button>
+                    </div>
+
                     <button
-                      class={`player-popup-item ${isLooping() ? "selected" : ""}`}
+                      ref={ccBtnRef}
+                      class={`control-btn ${subtitlesEnabled() ? "active" : ""}`}
+                      title="Subtitles/CC (C)"
                       onClick={() => {
-                        setIsLooping(!isLooping());
+                        setShowCCMenu(!showCCMenu());
                         setShowSettingsMenu(false);
                       }}
                     >
-                      <span>Loop Video</span>
-                      <i
-                        class={`ph-fill ph-toggle-${isLooping() ? "right" : "left"}`}
-                      ></i>
+                      <i class="ph-fill ph-closed-captioning"></i>
                     </button>
+
                     <button
-                      class="player-popup-item"
+                      ref={settingsBtnRef}
+                      class="control-btn"
+                      title="Settings"
                       onClick={() => {
-                        togglePiP();
-                        setShowSettingsMenu(false);
+                        setShowSettingsMenu(!showSettingsMenu());
+                        setShowCCMenu(false);
                       }}
                     >
-                      <span>Picture in Picture</span>
+                      <i class="ph-fill ph-gear"></i>
+                    </button>
+
+                    <button
+                      class="control-btn"
+                      title="Miniplayer (I)"
+                      onClick={toggleMiniplayerMode}
+                    >
                       <i class="ph-fill ph-picture-in-picture"></i>
                     </button>
-                  </div>
 
-                  <button
-                    ref={ccBtnRef}
-                    class={`control-btn ${subtitlesEnabled() ? "active" : ""}`}
-                    title="Subtitles/CC (C)"
-                    onClick={() => {
-                      setShowCCMenu(!showCCMenu());
-                      setShowSettingsMenu(false);
-                    }}
-                  >
-                    <i class="ph-fill ph-closed-captioning"></i>
-                  </button>
-
-                  <button
-                    ref={settingsBtnRef}
-                    class="control-btn"
-                    title="Settings"
-                    onClick={() => {
-                      setShowSettingsMenu(!showSettingsMenu());
-                      setShowCCMenu(false);
-                    }}
-                  >
-                    <i class="ph-fill ph-gear"></i>
-                  </button>
-
-                  <button
-                    class="control-btn"
-                    title="Miniplayer (I)"
-                    onClick={toggleMiniplayerMode}
-                  >
-                    <i class="ph-fill ph-picture-in-picture"></i>
-                  </button>
-
-                  <button
-                    class="control-btn"
-                    onClick={() => setTheaterMode(!theaterMode())}
-                    title={
-                      theaterMode() ? "Default view (T)" : "Theater mode (T)"
-                    }
-                  >
-                    <i
-                      class={
-                        theaterMode() ? "ph-fill ph-monitor" : "ph ph-monitor"
+                    <button
+                      class="control-btn"
+                      onClick={() => setTheaterMode(!theaterMode())}
+                      title={
+                        theaterMode() ? "Default view (T)" : "Theater mode (T)"
                       }
-                    ></i>
-                  </button>
+                    >
+                      <i
+                        class={
+                          theaterMode() ? "ph-fill ph-monitor" : "ph ph-monitor"
+                        }
+                      ></i>
+                    </button>
 
-                  <button
-                    class="control-btn"
-                    onClick={() => setShowShortcutsModal(true)}
-                    title="Keyboard Shortcuts (?)"
-                  >
-                    <i class="ph ph-keyboard"></i>
-                  </button>
+                    <button
+                      class="control-btn"
+                      onClick={() => setShowShortcutsModal(true)}
+                      title="Keyboard Shortcuts (?)"
+                    >
+                      <i class="ph ph-keyboard"></i>
+                    </button>
 
-                  <button
-                    class="control-btn"
-                    onClick={toggleFullscreen}
-                    title="Fullscreen (F)"
-                  >
-                    <i
-                      class={`ph-fill ph-${isFullscreen() ? "corners-in" : "corners-out"}`}
-                    ></i>
-                  </button>
+                    <button
+                      class="control-btn"
+                      onClick={toggleFullscreen}
+                      title="Fullscreen (F)"
+                    >
+                      <i
+                        class={`ph-fill ph-${isFullscreen() ? "corners-in" : "corners-out"}`}
+                      ></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
           <div class="player-meta-block">
             <Show
@@ -1639,7 +1687,11 @@ export default function Player() {
                 <button
                   class={`clay-btn player-favorite-status ${isFavorite() ? "active" : ""}`}
                   onClick={toggleFavoriteStatus}
-                  title={isFavorite() ? "Remove from Favourites" : "Add to Favourites"}
+                  title={
+                    isFavorite()
+                      ? "Remove from Favourites"
+                      : "Add to Favourites"
+                  }
                 >
                   <i
                     class={isFavorite() ? "ph-fill ph-heart" : "ph ph-heart"}
@@ -1700,7 +1752,9 @@ export default function Player() {
                 />
               </div>
               <div class="queue-meta">
-                <span class="queue-title" title={qVideo.title}>{qVideo.title}</span>
+                <span class="queue-title" title={qVideo.title}>
+                  {qVideo.title}
+                </span>
                 <div class="queue-channel-group">
                   <img
                     src={
@@ -1716,7 +1770,9 @@ export default function Player() {
                     loading="lazy"
                     decoding="async"
                   />
-                  <span class="queue-channel" title={qVideo.channel}>{qVideo.channel}</span>
+                  <span class="queue-channel" title={qVideo.channel}>
+                    {qVideo.channel}
+                  </span>
                 </div>
               </div>
             </div>

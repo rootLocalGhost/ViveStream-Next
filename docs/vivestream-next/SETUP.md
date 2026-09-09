@@ -18,6 +18,7 @@ This document outlines the workflow for setting up ViveStream-Next for developme
 ## Running Locally
 
 1. **Install Frontend Dependencies:**
+
    ```bash
    bun install
    ```
@@ -32,6 +33,7 @@ This document outlines the workflow for setting up ViveStream-Next for developme
 
 - **Frontend Tests:**
   The frontend uses Vitest.
+
   ```bash
   bun run test
   ```
@@ -47,6 +49,7 @@ This document outlines the workflow for setting up ViveStream-Next for developme
 Use the provided package scripts to build production binaries.
 
 - **Linux:**
+
   ```bash
   bun run build:linux
   ```

@@ -41,15 +41,16 @@ export default function SortBar(props: SortBarProps) {
 
   return (
     <Show when={isVisible()}>
-      <div class={`sort-bar-container ${isSortOpen() && !alwaysShowSortBar() ? "temporary-floating" : ""}`}>
+      <div
+        class={`sort-bar-container ${isSortOpen() && !alwaysShowSortBar() ? "temporary-floating" : ""}`}
+      >
         <div class="sort-bar-left">
           {/* Item Counter Badge */}
           <Show when={props.itemCount !== undefined}>
             <div class="sort-item-count">
               <span class="count-number">{props.itemCount}</span>
               <span class="count-label">
-                {props.itemLabel ||
-                  (props.itemCount === 1 ? "item" : "items")}
+                {props.itemLabel || (props.itemCount === 1 ? "item" : "items")}
               </span>
             </div>
           </Show>
@@ -65,7 +66,9 @@ export default function SortBar(props: SortBarProps) {
               aria-haspopup="listbox"
               aria-expanded={dropdownOpen()}
             >
-              <i class={`ph-bold ${currentOption()?.icon || "ph-arrows-down-up"}`}></i>
+              <i
+                class={`ph-bold ${currentOption()?.icon || "ph-arrows-down-up"}`}
+              ></i>
               <span class="sort-label-text">
                 <span class="sort-prefix">Sort:</span>{" "}
                 {currentOption()?.label || "Sort"}

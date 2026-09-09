@@ -45,7 +45,7 @@ beforeAll(() => {
     .fn()
     .mockResolvedValue({} as any);
   document.exitPictureInPicture = vi.fn().mockResolvedValue({} as any);
-  global.fetch = vi.fn(() =>
+  globalThis.fetch = vi.fn(() =>
     Promise.resolve({
       ok: true,
       text: () => Promise.resolve("Mock fetched data"),
@@ -111,19 +111,20 @@ describe("Player Component", () => {
 
     // Fire Ctrl + F
     window.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "f", ctrlKey: true, bubbles: true })
+      new KeyboardEvent("keydown", { key: "f", ctrlKey: true, bubbles: true }),
     );
     expect(requestFullscreenMock).not.toHaveBeenCalled();
 
     // Fire Meta + F (Cmd + F)
     window.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "F", metaKey: true, bubbles: true })
+      new KeyboardEvent("keydown", { key: "F", metaKey: true, bubbles: true }),
     );
     expect(requestFullscreenMock).not.toHaveBeenCalled();
   });
 
   it("handles queue advance in-place for activeVideo and playerQueue", async () => {
-    const { setActiveVideo, setPlayerQueue, activeVideo, playerQueue } = await import("../store");
+    const { setActiveVideo, setPlayerQueue, activeVideo, playerQueue } =
+      await import("../store");
     const vid1 = {
       id: "vid1",
       title: "Video 1",
@@ -177,7 +178,11 @@ describe("Player Component", () => {
   });
 
   it("supports switching between dynamic and static ambient glow modes", async () => {
-    const { togglePlayerAmbientType, togglePlayerAmbientMode, updatePlayerAmbientColor } = await import("../store");
+    const {
+      togglePlayerAmbientType,
+      togglePlayerAmbientMode,
+      updatePlayerAmbientColor,
+    } = await import("../store");
     togglePlayerAmbientMode(true);
     togglePlayerAmbientType("dynamic");
 
@@ -208,7 +213,8 @@ describe("Player Component", () => {
 
   it("renders miniplayer with ambient glow and controls when not on player page", async () => {
     const { Miniplayer } = await import("../components/Miniplayer");
-    const { setActiveVideo, setMiniplayerDismissed, setIsPlaying } = await import("../store");
+    const { setActiveVideo, setMiniplayerDismissed, setIsPlaying } =
+      await import("../store");
 
     setActiveVideo({
       id: "vid_mini",

@@ -92,7 +92,8 @@ export default function BenchmarkModal(props: {
     for (let i = 0; i < children.length; i += 10) {
       children[i].getBoundingClientRect();
     }
-    const layoutCalcMs = Math.round((performance.now() - layoutStart) * 10) / 10;
+    const layoutCalcMs =
+      Math.round((performance.now() - layoutStart) * 10) / 10;
     document.body.removeChild(testContainer);
 
     setProgress(95);
@@ -100,16 +101,14 @@ export default function BenchmarkModal(props: {
     await new Promise((r) => setTimeout(r, 200));
 
     // Phase 3: Calculations
-    const fpsList = frameTimes
-      .filter((t) => t > 0)
-      .map((t) => 1000 / t);
+    const fpsList = frameTimes.filter((t) => t > 0).map((t) => 1000 / t);
     fpsList.sort((a, b) => a - b);
 
     const avgFps = Math.round(
       fpsList.reduce((a, b) => a + b, 0) / fpsList.length,
     );
     const minFps = Math.round(fpsList[0] || 60);
-    
+
     // 1% Low is average of worst 1% of frames
     const onePercentCount = Math.max(1, Math.floor(fpsList.length * 0.05));
     const onePercentLowFps = Math.round(
@@ -118,7 +117,8 @@ export default function BenchmarkModal(props: {
     );
 
     // Frame jitter (variance)
-    const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+    const avgFrameTime =
+      frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
     const variance =
       frameTimes.reduce((acc, t) => acc + Math.pow(t - avgFrameTime, 2), 0) /
       frameTimes.length;
@@ -181,7 +181,8 @@ export default function BenchmarkModal(props: {
               <div>
                 <h2 class="benchmark-title">UI Performance Benchmark</h2>
                 <p class="benchmark-subtitle">
-                  Measures realtime frame pacing, 1% low FPS, DOM layout speed, and compositor jitter.
+                  Measures realtime frame pacing, 1% low FPS, DOM layout speed,
+                  and compositor jitter.
                 </p>
               </div>
             </div>
@@ -202,8 +203,9 @@ export default function BenchmarkModal(props: {
                 </div>
                 <h3>Hardware-Accelerated UI Diagnostics</h3>
                 <p>
-                  This test stresses the WebView graphics compositor by sampling 120 animation frames,
-                  mounting 150 Claymorphism media cards, and measuring exact frame-time stability.
+                  This test stresses the WebView graphics compositor by sampling
+                  120 animation frames, mounting 150 Claymorphism media cards,
+                  and measuring exact frame-time stability.
                 </p>
                 <button
                   class="benchmark-action-btn primary"
@@ -243,7 +245,8 @@ export default function BenchmarkModal(props: {
                       <div class="score-meta">
                         <h3 class="score-verdict">{res.verdict}</h3>
                         <p class="score-desc">
-                          150 dynamic cards mounted in {res.domMountMs}ms with {res.frameJitterMs}ms frame jitter.
+                          150 dynamic cards mounted in {res.domMountMs}ms with{" "}
+                          {res.frameJitterMs}ms frame jitter.
                         </p>
                       </div>
                     </div>

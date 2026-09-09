@@ -39,9 +39,7 @@ import {
   historySortBy,
   historySortDirection,
 } from "../store";
-import {
-  sortDownloadHistory,
-} from "../utils/sortUtils";
+import { sortDownloadHistory } from "../utils/sortUtils";
 import "./Downloads.css";
 
 export default function Downloads() {
@@ -200,7 +198,11 @@ export default function Downloads() {
         </div>
 
         {/* Quick Format Presets */}
-        <div class="quick-presets-row" role="toolbar" aria-label="Format presets">
+        <div
+          class="quick-presets-row"
+          role="toolbar"
+          aria-label="Format presets"
+        >
           <span class="preset-label">Presets:</span>
           <button
             type="button"
@@ -248,7 +250,11 @@ export default function Downloads() {
         </div>
 
         <div class="clay-options-row">
-          <div class="segmented-control" role="radiogroup" aria-label="Download format type">
+          <div
+            class="segmented-control"
+            role="radiogroup"
+            aria-label="Download format type"
+          >
             <button
               type="button"
               class={`segmented-btn ${downloadType() === "Video" ? "active" : ""}`}

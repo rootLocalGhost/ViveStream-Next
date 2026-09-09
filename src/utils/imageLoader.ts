@@ -54,7 +54,12 @@ export function markImageFailed(src: string): void {
  * Pre-warms and decodes an image into browser GPU memory off the main thread.
  */
 export function preloadImage(src: string): Promise<boolean> {
-  if (!src || typeof window === "undefined" || isImageDecoded(src) || isImageFailed(src)) {
+  if (
+    !src ||
+    typeof window === "undefined" ||
+    isImageDecoded(src) ||
+    isImageFailed(src)
+  ) {
     return Promise.resolve(true);
   }
 

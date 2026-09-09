@@ -23,10 +23,16 @@ describe("Image Loader & Pre-caching System", () => {
   });
 
   it("correctly memoizes failed image loads to prevent retry storms", () => {
-    expect(isImageFailed("http://127.0.0.1:1422/Avatars/Unknown.jpg")).toBe(false);
+    expect(isImageFailed("http://127.0.0.1:1422/Avatars/Unknown.jpg")).toBe(
+      false,
+    );
     markImageFailed("http://127.0.0.1:1422/Avatars/Unknown.jpg");
-    expect(isImageFailed("http://127.0.0.1:1422/Avatars/Unknown.jpg")).toBe(true);
-    expect(isImageFailed("http://127.0.0.1:1422/Avatars/Known.jpg")).toBe(false);
+    expect(isImageFailed("http://127.0.0.1:1422/Avatars/Unknown.jpg")).toBe(
+      true,
+    );
+    expect(isImageFailed("http://127.0.0.1:1422/Avatars/Known.jpg")).toBe(
+      false,
+    );
   });
 
   it("clears all cached and failed status when clearImageCache is invoked", () => {

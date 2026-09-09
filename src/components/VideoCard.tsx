@@ -40,7 +40,9 @@ export default function VideoCard(props: VideoCardProps) {
   const [isDeleting, setIsDeleting] = createSignal(false);
 
   const thumbUrl = createMemo(() => getThumbnailUrl(props.video));
-  const [thumbLoaded, setThumbLoaded] = createSignal(isImageDecoded(thumbUrl()));
+  const [thumbLoaded, setThumbLoaded] = createSignal(
+    isImageDecoded(thumbUrl()),
+  );
 
   createEffect(() => {
     const url = thumbUrl();
@@ -53,7 +55,9 @@ export default function VideoCard(props: VideoCardProps) {
     }
     return `http://127.0.0.1:1422/Avatars/${encodeURIComponent(props.video.channel)}.jpg`;
   });
-  const [avatarHidden, setAvatarHidden] = createSignal(isImageFailed(avatarUrl()));
+  const [avatarHidden, setAvatarHidden] = createSignal(
+    isImageFailed(avatarUrl()),
+  );
 
   createEffect(() => {
     const url = avatarUrl();
@@ -165,7 +169,11 @@ export default function VideoCard(props: VideoCardProps) {
             </p>
           </div>
 
-          <div class="video-card-actions" role="toolbar" aria-label="Media card actions">
+          <div
+            class="video-card-actions"
+            role="toolbar"
+            aria-label="Media card actions"
+          >
             {/* Favorite Button */}
             <button
               type="button"

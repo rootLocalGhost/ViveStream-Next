@@ -58,7 +58,10 @@ export function naturalCompare(a: string, b: string): number {
 /**
  * Parses date string or returns fallback timestamp (e.g. from ID or epoch)
  */
-export function parseDateTimestamp(dateStr?: string, fallbackId?: string): number {
+export function parseDateTimestamp(
+  dateStr?: string,
+  fallbackId?: string,
+): number {
   if (dateStr) {
     const parsed = Date.parse(dateStr.replace(" ", "T"));
     if (!isNaN(parsed)) return parsed;

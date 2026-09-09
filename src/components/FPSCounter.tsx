@@ -7,7 +7,11 @@ export default function FPSCounter() {
 
   createEffect(() => {
     if (!showFpsCounter()) return;
-    if (typeof window === "undefined" || typeof requestAnimationFrame === "undefined") return;
+    if (
+      typeof window === "undefined" ||
+      typeof requestAnimationFrame === "undefined"
+    )
+      return;
 
     let frameCount = 0;
     let lastTime = performance.now();
@@ -43,7 +47,10 @@ export default function FPSCounter() {
 
   return (
     <Show when={showFpsCounter()}>
-      <div class={`fps-counter-pill ${fpsStatusClass()}`} title="In-App Realtime Frame Rate Monitor">
+      <div
+        class={`fps-counter-pill ${fpsStatusClass()}`}
+        title="In-App Realtime Frame Rate Monitor"
+      >
         <span class="fps-dot"></span>
         <span class="fps-value">{fps()}</span>
         <span class="fps-unit">FPS</span>

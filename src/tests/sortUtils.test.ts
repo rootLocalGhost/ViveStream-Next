@@ -107,7 +107,12 @@ describe("sortUtils unit tests", () => {
       const shuffled2 = sortVideos(sampleVideos, "random", "desc", 12345);
       expect(shuffled1.map((v) => v.id)).toEqual(shuffled2.map((v) => v.id));
 
-      const shuffledDifferent = sortVideos(sampleVideos, "random", "desc", 99999);
+      const shuffledDifferent = sortVideos(
+        sampleVideos,
+        "random",
+        "desc",
+        99999,
+      );
       expect(shuffled1.length).toBe(sampleVideos.length);
     });
 
@@ -145,7 +150,11 @@ describe("sortUtils unit tests", () => {
       { name: "Alan Walker", avatar_path: "" },
       { name: "Hans Zimmer", avatar_path: "" },
     ];
-    const videoCounts = { "Taylor Swift": 10, "Alan Walker": 25, "Hans Zimmer": 3 };
+    const videoCounts = {
+      "Taylor Swift": 10,
+      "Alan Walker": 25,
+      "Hans Zimmer": 3,
+    };
 
     it("should sort artists by name ascending", () => {
       const sorted = sortArtists(artists, videoCounts, "name", "asc");

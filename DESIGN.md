@@ -54,4 +54,3 @@ The app utilizes CSS variables to switch between themes, applying universal Neo-
 
 - **Transitions:** Snappy, instantaneous interactions (`0.1s - 0.2s cubic-bezier(0.16, 1, 0.3, 1)`).
 - **Micro-interactions:** Icons scale and depress on interaction. Zero blur drag ensures instant responsiveness.
-

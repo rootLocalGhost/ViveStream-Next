@@ -140,7 +140,9 @@ pub async fn get_or_extract_po_token(app: &AppHandle, video_id: &str) -> Result<
     {
         if let Ok(guard) = PO_TOKEN_CACHE.lock() {
             if let Some(ref cached) = *guard {
-                if cached.created_at.elapsed() < std::time::Duration::from_secs(3600) && !cached.token.is_empty() {
+                if cached.created_at.elapsed() < std::time::Duration::from_secs(3600)
+                    && !cached.token.is_empty()
+                {
                     return Ok(cached.token.clone());
                 }
             }
@@ -448,7 +450,10 @@ pub async fn get_video_metadata(
         Err(_) => String::new(),
     };
 
-    let mut client_args = format!("youtube:player_client={};formats=missing_pot", player_client);
+    let mut client_args = format!(
+        "youtube:player_client={};formats=missing_pot",
+        player_client
+    );
     if !po_token.is_empty() {
         client_args.push_str(&format!(";po_token=web.gvs+{0},web.player+{0}", po_token));
     }
@@ -672,10 +677,7 @@ async fn download_video_inner(
     let video_id_for_pot = extract_youtube_id(&url);
     let po_token = match get_or_extract_po_token(&app, &video_id_for_pot).await {
         Ok(t) => {
-            let _ = app.emit(
-                &progress_event,
-                "PO Token ready. Initializing stream...",
-            );
+            let _ = app.emit(&progress_event, "PO Token ready. Initializing stream...");
             t
         }
         Err(_) => {
@@ -687,7 +689,10 @@ async fn download_video_inner(
         }
     };
 
-    let mut client_args = format!("youtube:player_client={};formats=missing_pot", player_client);
+    let mut client_args = format!(
+        "youtube:player_client={};formats=missing_pot",
+        player_client
+    );
     if !po_token.is_empty() {
         client_args.push_str(&format!(";po_token=web.gvs+{0},web.player+{0}", po_token));
     }
@@ -828,7 +833,13 @@ async fn download_video_inner(
     // Immediately generate ultra-lightweight 480px low-quality thumbnail for smooth 60+ FPS grid rendering
     let lq_thumb_path = thumb_dir.join(format!("{}_lq.jpg", metadata.id));
     if Path::new(&metadata.thumbnail_path).exists() {
-        let _ = generate_lq_thumbnail(&ffmpeg_path, Path::new(&metadata.thumbnail_path), &lq_thumb_path, 480, 5);
+        let _ = generate_lq_thumbnail(
+            &ffmpeg_path,
+            Path::new(&metadata.thumbnail_path),
+            &lq_thumb_path,
+            480,
+            5,
+        );
     }
 
     let avatar_path = av_dir.join(format!("{}.jpg", metadata.channel));
@@ -1045,7 +1056,10 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
     }
 
     if !missing_metadata_ids.is_empty() && ytdlp_path.exists() {
-        let mut client_args = format!("youtube:player_client={};formats=missing_pot", player_client);
+        let mut client_args = format!(
+            "youtube:player_client={};formats=missing_pot",
+            player_client
+        );
         if !po_token.is_empty() {
             client_args.push_str(&format!(";po_token=web.gvs+{0},web.player+{0}", po_token));
         }
@@ -1182,7 +1196,13 @@ pub fn optimize_all_thumbnails(app: &AppHandle, quality_preset: Option<String>, 
                             let stem = path.file_stem().unwrap_or_default().to_string_lossy();
                             let lq_path = thumb_dir.join(format!("{}_lq.jpg", stem));
                             if force || !lq_path.exists() {
-                                let _ = generate_lq_thumbnail(&ffmpeg_path, &path, &lq_path, scale_width, q_val);
+                                let _ = generate_lq_thumbnail(
+                                    &ffmpeg_path,
+                                    &path,
+                                    &lq_path,
+                                    scale_width,
+                                    q_val,
+                                );
                             }
                         }
                     }
@@ -1197,4 +1217,3 @@ pub async fn sync_thumbnail_cache(app: AppHandle, quality: Option<String>) -> Re
     optimize_all_thumbnails(&app, quality, true);
     Ok(())
 }
-

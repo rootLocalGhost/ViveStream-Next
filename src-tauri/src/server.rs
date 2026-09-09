@@ -62,20 +62,18 @@ pub async fn start_server(base_dir: PathBuf) {
             };
 
             match file_to_read {
-                Some(path) => {
-                    match tokio::fs::read(&path).await {
-                        Ok(bytes) => {
-                            let response = warp::http::Response::builder()
-                                .header("Content-Type", "image/jpeg")
-                                .header("Cache-Control", "public, max-age=31536000, immutable")
-                                .header("Accept-Ranges", "bytes")
-                                .body(bytes)
-                                .unwrap();
-                            Ok::<_, warp::Rejection>(response)
-                        }
-                        Err(_) => Err(warp::reject::not_found()),
+                Some(path) => match tokio::fs::read(&path).await {
+                    Ok(bytes) => {
+                        let response = warp::http::Response::builder()
+                            .header("Content-Type", "image/jpeg")
+                            .header("Cache-Control", "public, max-age=31536000, immutable")
+                            .header("Accept-Ranges", "bytes")
+                            .body(bytes)
+                            .unwrap();
+                        Ok::<_, warp::Rejection>(response)
                     }
-                }
+                    Err(_) => Err(warp::reject::not_found()),
+                },
                 None => Err(warp::reject::not_found()),
             }
         });
@@ -85,9 +83,18 @@ pub async fn start_server(base_dir: PathBuf) {
             "Cache-Control",
             "public, max-age=31536000, immutable",
         ))
-        .with(warp::reply::with::header("Access-Control-Allow-Origin", "*"))
-        .with(warp::reply::with::header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS"))
-        .with(warp::reply::with::header("Access-Control-Allow-Headers", "*"))
+        .with(warp::reply::with::header(
+            "Access-Control-Allow-Origin",
+            "*",
+        ))
+        .with(warp::reply::with::header(
+            "Access-Control-Allow-Methods",
+            "GET, HEAD, OPTIONS",
+        ))
+        .with(warp::reply::with::header(
+            "Access-Control-Allow-Headers",
+            "*",
+        ))
         .with(warp::reply::with::header("Accept-Ranges", "bytes"));
 
     let routes = thumbnail_route.or(static_files).with(cors);

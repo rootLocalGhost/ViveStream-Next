@@ -76,7 +76,11 @@ const ImmersiveTitleBar = () => {
   return (
     <div class="immersive-titlebar-wrapper">
       <div data-tauri-drag-region class="drag-region"></div>
-      <div class="titlebar-controls" role="toolbar" aria-label="Window controls">
+      <div
+        class="titlebar-controls"
+        role="toolbar"
+        aria-label="Window controls"
+      >
         <button
           type="button"
           class="titlebar-btn"
@@ -242,14 +246,22 @@ const AppLayout: Component<{ children?: any }> = (props) => {
       }
 
       // Ctrl + S or Alt + S sorting hotkey
-      if (!isInput && ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S") || (e.altKey && (e.key === "s" || e.key === "S")))) {
+      if (
+        !isInput &&
+        (((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) ||
+          (e.altKey && (e.key === "s" || e.key === "S")))
+      ) {
         e.preventDefault();
         setIsSortOpen(!isSortOpen());
         return;
       }
 
       // Ctrl + F search hotkey
-      if (!isInput && (e.ctrlKey || e.metaKey) && (e.key === "f" || e.key === "F")) {
+      if (
+        !isInput &&
+        (e.ctrlKey || e.metaKey) &&
+        (e.key === "f" || e.key === "F")
+      ) {
         e.preventDefault();
         setIsSearchOpen(true);
         return;
@@ -418,9 +430,7 @@ const AppLayout: Component<{ children?: any }> = (props) => {
           />
         </div>
       </nav>
-      <main class="main-content">
-        {props.children}
-      </main>
+      <main class="main-content">{props.children}</main>
     </div>
   );
 };

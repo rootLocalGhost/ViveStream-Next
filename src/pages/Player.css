@@ -77,13 +77,15 @@
   left: 50%;
   width: 100%;
   height: 100%;
-  transform: translate(-50%, -50%) scale(1.10);
+  transform: translate(-50%, -50%) scale(1.1);
   filter: blur(var(--ambient-blur, 36px)) saturate(160%) brightness(1.2);
   opacity: var(--ambient-opacity, 0.85);
   pointer-events: none;
   z-index: 0;
   border-radius: calc(var(--neo-radius) * 1.5);
-  transition: opacity 0.35s ease, filter 0.3s ease;
+  transition:
+    opacity 0.35s ease,
+    filter 0.3s ease;
   will-change: transform, filter, opacity;
 }
 
@@ -1151,4 +1153,3 @@ video::cue {
     right: 0;
   }
 }
-

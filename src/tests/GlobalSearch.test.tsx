@@ -58,7 +58,9 @@ describe("GlobalSearch Component", () => {
   it("opens spotlight modal when search is active in auto-hide mode", () => {
     setIsSearchOpen(true);
     render(() => <GlobalSearch />);
-    expect(screen.getByPlaceholderText(/search all library/i)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/search all library/i),
+    ).toBeInTheDocument();
   });
 
   it("filters items when query is entered in spotlight input", async () => {
@@ -79,7 +81,9 @@ describe("GlobalSearch Component", () => {
     const { container } = render(() => <GlobalSearch />);
     expect(alwaysShowSearchBar()).toBe(true);
 
-    const floatingContainer = container.querySelector(".floating-search-container");
+    const floatingContainer = container.querySelector(
+      ".floating-search-container",
+    );
     expect(floatingContainer).toBeInTheDocument();
 
     const input = screen.getByPlaceholderText(/search all library/i);

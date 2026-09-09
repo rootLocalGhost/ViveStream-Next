@@ -75,8 +75,11 @@ export const Miniplayer: Component = () => {
   const [isHovered, setIsHovered] = createSignal(false);
   const [isSeeking, setIsSeeking] = createSignal(false);
   const [seekTime, setSeekTime] = createSignal(0);
-  const [currentDominantColor, setCurrentDominantColor] = createSignal("#f25c54");
-  const [extractedVideoColors, setExtractedVideoColors] = createSignal<string[]>([]);
+  const [currentDominantColor, setCurrentDominantColor] =
+    createSignal("#f25c54");
+  const [extractedVideoColors, setExtractedVideoColors] = createSignal<
+    string[]
+  >([]);
 
   let videoRef: HTMLVideoElement | undefined;
   let ambientCanvasRef: HTMLCanvasElement | undefined;
@@ -89,7 +92,9 @@ export const Miniplayer: Component = () => {
 
   const isPlayerPage = () => {
     try {
-      return location?.pathname ? location.pathname.startsWith("/player") : false;
+      return location?.pathname
+        ? location.pathname.startsWith("/player")
+        : false;
     } catch {
       return typeof window !== "undefined"
         ? window.location.pathname.startsWith("/player")
@@ -137,7 +142,10 @@ export const Miniplayer: Component = () => {
     try {
       const imgData = ctx.getImageData(0, 0, width, height);
       const data = imgData.data;
-      const buckets = new Map<string, { r: number; g: number; b: number; count: number }>();
+      const buckets = new Map<
+        string,
+        { r: number; g: number; b: number; count: number }
+      >();
 
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
@@ -169,7 +177,9 @@ export const Miniplayer: Component = () => {
         };
       }
 
-      const sorted = Array.from(buckets.values()).sort((a, b) => b.count - a.count);
+      const sorted = Array.from(buckets.values()).sort(
+        (a, b) => b.count - a.count,
+      );
       const top = sorted[0];
       const dominantHex = rgbToHex(top.r, top.g, top.b);
 
@@ -180,7 +190,9 @@ export const Miniplayer: Component = () => {
           const er = parseInt(existingHex.slice(1, 3), 16);
           const eg = parseInt(existingHex.slice(3, 5), 16);
           const eb = parseInt(existingHex.slice(5, 7), 16);
-          const dist = Math.sqrt((item.r - er) ** 2 + (item.g - eg) ** 2 + (item.b - eb) ** 2);
+          const dist = Math.sqrt(
+            (item.r - er) ** 2 + (item.g - eg) ** 2 + (item.b - eb) ** 2,
+          );
           return dist > 35;
         });
         if (isDistinct) {
@@ -222,7 +234,8 @@ export const Miniplayer: Component = () => {
           setExtractedVideoColors(res.palette);
         }
       }
-    } catch {} finally {
+    } catch {
+    } finally {
       isFetchingRustColors = false;
     }
   };
@@ -262,16 +275,30 @@ export const Miniplayer: Component = () => {
           offscreenCanvas = document.createElement("canvas");
           offscreenCanvas.width = 32;
           offscreenCanvas.height = 18;
-          offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
+          offscreenCtx = offscreenCanvas.getContext("2d", {
+            willReadFrequently: true,
+          });
         }
 
         if (offscreenCtx) {
           try {
             offscreenCtx.drawImage(videoRef, 0, 0, 32, 18);
-            const { dominant, palette } = extractDominantVideoColors(offscreenCtx, 32, 18);
+            const { dominant, palette } = extractDominantVideoColors(
+              offscreenCtx,
+              32,
+              18,
+            );
             const targetRgb = hexToRgb(dominant);
-            currentSmoothedRgb = lerpColor(currentSmoothedRgb, targetRgb, force ? 1.0 : 0.25);
-            const smoothedHex = rgbToHex(currentSmoothedRgb.r, currentSmoothedRgb.g, currentSmoothedRgb.b);
+            currentSmoothedRgb = lerpColor(
+              currentSmoothedRgb,
+              targetRgb,
+              force ? 1.0 : 0.25,
+            );
+            const smoothedHex = rgbToHex(
+              currentSmoothedRgb.r,
+              currentSmoothedRgb.g,
+              currentSmoothedRgb.b,
+            );
 
             setCurrentDominantColor(smoothedHex);
             if (palette.length > 0) {
@@ -482,11 +509,13 @@ export const Miniplayer: Component = () => {
         onClick={handleExpand}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        style={{
-          "--mini-ambient-color": effectiveAmbientColor(),
-          "--mini-ambient-blur": `${Math.min(50, playerAmbientBlur())}px`,
-          "--mini-ambient-opacity": `${playerAmbientIntensity() / 100}`,
-        } as any}
+        style={
+          {
+            "--mini-ambient-color": effectiveAmbientColor(),
+            "--mini-ambient-blur": `${Math.min(50, playerAmbientBlur())}px`,
+            "--mini-ambient-opacity": `${playerAmbientIntensity() / 100}`,
+          } as any
+        }
       >
         <Show when={playerAmbientMode()}>
           <div
@@ -519,7 +548,10 @@ export const Miniplayer: Component = () => {
               onCanPlay={() => {
                 if (videoRef) {
                   const savedTime = untrack(currentTime);
-                  if (savedTime > 0 && Math.abs(videoRef.currentTime - savedTime) > 0.5) {
+                  if (
+                    savedTime > 0 &&
+                    Math.abs(videoRef.currentTime - savedTime) > 0.5
+                  ) {
                     videoRef.currentTime = savedTime;
                   }
                   if (untrack(isPlaying) && videoRef.paused) {
@@ -556,17 +588,26 @@ export const Miniplayer: Component = () => {
               onPlay={() => {
                 if (!shouldShow()) return;
                 setIsPlaying(true);
-                invoke("update_playback_status", { playing: true }).catch(() => {});
+                invoke("update_playback_status", { playing: true }).catch(
+                  () => {},
+                );
               }}
               onPause={() => {
                 if (!shouldShow() || (videoRef && videoRef.seeking)) return;
                 setIsPlaying(false);
-                invoke("update_playback_status", { playing: false }).catch(() => {});
+                invoke("update_playback_status", { playing: false }).catch(
+                  () => {},
+                );
               }}
               onTimeUpdate={(e) => {
                 if (!isSeeking() && shouldShow()) {
                   setCurrentTime(e.currentTarget.currentTime);
-                  if (videoRef && videoRef.paused && isPlaying() && !videoRef.seeking) {
+                  if (
+                    videoRef &&
+                    videoRef.paused &&
+                    isPlaying() &&
+                    !videoRef.seeking
+                  ) {
                     setIsPlaying(false);
                   }
                 }
@@ -575,37 +616,85 @@ export const Miniplayer: Component = () => {
             />
 
             <div class="miniplayer-top-row">
-              <div class="miniplayer-badge" onClick={handleExpand} title="Expand to Full Player">
+              <div
+                class="miniplayer-badge"
+                onClick={handleExpand}
+                title="Expand to Full Player"
+              >
                 <i class="ph-fill ph-airplay"></i>
                 <span>Miniplayer</span>
               </div>
               <div class="miniplayer-top-actions">
-                <button type="button" class="miniplayer-icon-btn" onClick={handleExpand} title="Expand (I)">
+                <button
+                  type="button"
+                  class="miniplayer-icon-btn"
+                  onClick={handleExpand}
+                  title="Expand (I)"
+                >
                   <i class="ph-bold ph-corners-out"></i>
                 </button>
-                <button type="button" class="miniplayer-icon-btn" onClick={(e) => { e.stopPropagation(); toggleGlobalPiP(); }} title="Picture-in-Picture">
+                <button
+                  type="button"
+                  class="miniplayer-icon-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleGlobalPiP();
+                  }}
+                  title="Picture-in-Picture"
+                >
                   <i class="ph-bold ph-picture-in-picture"></i>
                 </button>
-                <button type="button" class="miniplayer-icon-btn close-btn" onClick={(e) => { e.stopPropagation(); closeGlobalMiniplayer(); }} title="Close Miniplayer">
+                <button
+                  type="button"
+                  class="miniplayer-icon-btn close-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeGlobalMiniplayer();
+                  }}
+                  title="Close Miniplayer"
+                >
                   <i class="ph-bold ph-x"></i>
                 </button>
               </div>
             </div>
 
-            <div class={`miniplayer-overlay ${isHovered() || isSeeking() ? "visible" : ""}`}>
+            <div
+              class={`miniplayer-overlay ${isHovered() || isSeeking() ? "visible" : ""}`}
+            >
               <div class="miniplayer-center-controls">
-                <button type="button" class="miniplayer-ctrl-btn" onClick={handlePlayPrev} title="Previous Video (P)">
+                <button
+                  type="button"
+                  class="miniplayer-ctrl-btn"
+                  onClick={handlePlayPrev}
+                  title="Previous Video (P)"
+                >
                   <i class="ph-fill ph-skip-back"></i>
                 </button>
-                <button type="button" class="miniplayer-ctrl-btn play-btn" onClick={(e) => { e.stopPropagation(); toggleGlobalPlay(); }} title={isPlaying() ? "Pause (Space)" : "Play (Space)"}>
+                <button
+                  type="button"
+                  class="miniplayer-ctrl-btn play-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleGlobalPlay();
+                  }}
+                  title={isPlaying() ? "Pause (Space)" : "Play (Space)"}
+                >
                   <i class={`ph-fill ph-${isPlaying() ? "pause" : "play"}`}></i>
                 </button>
-                <button type="button" class="miniplayer-ctrl-btn" onClick={handlePlayNext} title="Next Video (N)">
+                <button
+                  type="button"
+                  class="miniplayer-ctrl-btn"
+                  onClick={handlePlayNext}
+                  title="Next Video (N)"
+                >
                   <i class="ph-fill ph-skip-forward"></i>
                 </button>
               </div>
 
-              <div class="miniplayer-bottom-slider" onClick={(e) => e.stopPropagation()}>
+              <div
+                class="miniplayer-bottom-slider"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="range"
                   class="custom-slider mini-slider"

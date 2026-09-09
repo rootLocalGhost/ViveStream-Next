@@ -87,18 +87,15 @@ export default function Artists() {
                   decoding="async"
                   onError={(e) => {
                     e.currentTarget.src = "";
-                    e.currentTarget.className =
-                      "ph-fill ph-user avatar-large";
+                    e.currentTarget.className = "ph-fill ph-user avatar-large";
                   }}
                   class="avatar-large"
                 />
-                <h3 class="settings-title artist-card-title">
-                  {artist.name}
-                </h3>
+                <h3 class="settings-title artist-card-title">{artist.name}</h3>
                 <Show when={countsMap()[artist.name] !== undefined}>
                   <span class="artist-video-count">
-                    <i class="ph ph-film-strip"></i>{" "}
-                    {countsMap()[artist.name]} video
+                    <i class="ph ph-film-strip"></i> {countsMap()[artist.name]}{" "}
+                    video
                     {countsMap()[artist.name] !== 1 ? "s" : ""}
                   </span>
                 </Show>

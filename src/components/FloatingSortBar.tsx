@@ -1,4 +1,11 @@
-import { createSignal, onMount, onCleanup, For, Show, createMemo } from "solid-js";
+import {
+  createSignal,
+  onMount,
+  onCleanup,
+  For,
+  Show,
+  createMemo,
+} from "solid-js";
 import { useLocation } from "@solidjs/router";
 import {
   alwaysShowSortBar,
@@ -274,7 +281,9 @@ export default function FloatingSortBar() {
           </button>
 
           {/* Shuffle button if random option exists and active */}
-          <Show when={activeConfig()?.hasShuffle && activeConfig()?.onReshuffle}>
+          <Show
+            when={activeConfig()?.hasShuffle && activeConfig()?.onReshuffle}
+          >
             <button
               class={`floating-sort-shuffle-btn ${activeConfig()?.currentSort === "random" ? "active" : ""}`}
               onClick={() => activeConfig()?.onReshuffle?.()}

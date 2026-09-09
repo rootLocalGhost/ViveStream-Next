@@ -44,42 +44,92 @@ const SETTINGS_INDEX: SettingItem[] = [
     title: "Color Palette",
     description: "Choose a primary accent scheme (Sunset or Crimson).",
     category: "Appearance",
-    keywords: ["color", "palette", "accent", "sunset", "crimson", "red", "orange"],
+    keywords: [
+      "color",
+      "palette",
+      "accent",
+      "sunset",
+      "crimson",
+      "red",
+      "orange",
+    ],
   },
   {
     id: "setting-appearance-sidebar",
     title: "Auto-Expand Sidebar",
-    description: "Automatically open the side navigation menu when hovering over it.",
+    description:
+      "Automatically open the side navigation menu when hovering over it.",
     category: "Appearance",
-    keywords: ["sidebar", "hover", "expand", "navigation", "auto-expand", "menu"],
+    keywords: [
+      "sidebar",
+      "hover",
+      "expand",
+      "navigation",
+      "auto-expand",
+      "menu",
+    ],
   },
   {
     id: "setting-appearance-searchbar",
     title: "Always Show Search Bar",
-    description: "Keep the floating search bar visible in the top-middle instead of auto-hiding.",
+    description:
+      "Keep the floating search bar visible in the top-middle instead of auto-hiding.",
     category: "Appearance",
-    keywords: ["search", "searchbar", "hide", "always", "show", "visibility", "floating", "middle"],
+    keywords: [
+      "search",
+      "searchbar",
+      "hide",
+      "always",
+      "show",
+      "visibility",
+      "floating",
+      "middle",
+    ],
   },
   {
     id: "setting-appearance-fps",
     title: "Show FPS Counter",
-    description: "Display an in-app real-time frame rate monitor in the corner.",
+    description:
+      "Display an in-app real-time frame rate monitor in the corner.",
     category: "Appearance",
-    keywords: ["fps", "frame", "rate", "counter", "performance", "monitor", "lag"],
+    keywords: [
+      "fps",
+      "frame",
+      "rate",
+      "counter",
+      "performance",
+      "monitor",
+      "lag",
+    ],
   },
   {
     id: "setting-appearance-shortcuts",
     title: "Keyboard Shortcuts",
-    description: "View all playback, media seeking, and app navigation keybindings.",
+    description:
+      "View all playback, media seeking, and app navigation keybindings.",
     category: "Appearance",
-    keywords: ["keyboard", "shortcuts", "cheat sheet", "hotkeys", "keys", "bindings"],
+    keywords: [
+      "keyboard",
+      "shortcuts",
+      "cheat sheet",
+      "hotkeys",
+      "keys",
+      "bindings",
+    ],
   },
   {
     id: "setting-engine-concurrent-dl",
     title: "Concurrent Downloads",
     description: "Maximum number of videos to download at the same time.",
     category: "Engine Preferences",
-    keywords: ["concurrent", "parallel", "downloads", "queue", "simultaneous", "limit"],
+    keywords: [
+      "concurrent",
+      "parallel",
+      "downloads",
+      "queue",
+      "simultaneous",
+      "limit",
+    ],
   },
   {
     id: "setting-engine-concurrent-frag",
@@ -91,84 +141,146 @@ const SETTINGS_INDEX: SettingItem[] = [
   {
     id: "setting-engine-speed-limit",
     title: "Download Speed Limit",
-    description: "Limit download speed (e.g., 500K, 2.5M). Leave blank for no limit.",
+    description:
+      "Limit download speed (e.g., 500K, 2.5M). Leave blank for no limit.",
     category: "Engine Preferences",
     keywords: ["speed", "limit", "rate", "bandwidth", "throttle"],
   },
   {
     id: "setting-engine-browser-cookies",
     title: "Browser Cookies",
-    description: "Use cookies from a browser (Chrome, Firefox, etc.) to bypass login/age restrictions.",
+    description:
+      "Use cookies from a browser (Chrome, Firefox, etc.) to bypass login/age restrictions.",
     category: "Engine Preferences",
-    keywords: ["cookies", "browser", "chrome", "firefox", "edge", "safari", "login", "auth", "bypass"],
+    keywords: [
+      "cookies",
+      "browser",
+      "chrome",
+      "firefox",
+      "edge",
+      "safari",
+      "login",
+      "auth",
+      "bypass",
+    ],
   },
   {
     id: "setting-engine-youtube-client",
     title: "YouTube API Client Fallback",
-    description: "Hot-swap client masquerading to bypass blocks (tv_embedded, android_vr, mweb).",
+    description:
+      "Hot-swap client masquerading to bypass blocks (tv_embedded, android_vr, mweb).",
     category: "Engine Preferences",
-    keywords: ["youtube", "client", "fallback", "api", "masquerade", "block", "mweb", "tv"],
+    keywords: [
+      "youtube",
+      "client",
+      "fallback",
+      "api",
+      "masquerade",
+      "block",
+      "mweb",
+      "tv",
+    ],
   },
   {
     id: "setting-engine-auto-subs",
     title: "Download Automatic Subtitles",
-    description: "If official subtitles aren't found, download auto-generated ones.",
+    description:
+      "If official subtitles aren't found, download auto-generated ones.",
     category: "Engine Preferences",
-    keywords: ["subtitles", "captions", "auto", "automatic", "vtt", "languages"],
+    keywords: [
+      "subtitles",
+      "captions",
+      "auto",
+      "automatic",
+      "vtt",
+      "languages",
+    ],
   },
   {
     id: "setting-engine-sponsorblock",
     title: "Remove Sponsored Segments",
     description: "Automatically cut sponsored sections, intros, outros, etc.",
     category: "Engine Preferences",
-    keywords: ["sponsor", "sponsorblock", "skip", "ads", "intros", "outro", "promos"],
+    keywords: [
+      "sponsor",
+      "sponsorblock",
+      "skip",
+      "ads",
+      "intros",
+      "outro",
+      "promos",
+    ],
   },
   {
     id: "setting-engine-reindex",
     title: "Re-index Local Storage",
-    description: "Scans your video directory to re-align metadata profiles and clean orphan links.",
+    description:
+      "Scans your video directory to re-align metadata profiles and clean orphan links.",
     category: "Engine Preferences",
-    keywords: ["reindex", "re-index", "scan", "database", "library", "refresh", "fix"],
+    keywords: [
+      "reindex",
+      "re-index",
+      "scan",
+      "database",
+      "library",
+      "refresh",
+      "fix",
+    ],
   },
   {
     id: "setting-ui-benchmark",
     title: "UI Performance Benchmark",
-    description: "Run graphics and frame pacing diagnostics to measure FPS stability and DOM speed.",
+    description:
+      "Run graphics and frame pacing diagnostics to measure FPS stability and DOM speed.",
     category: "Performance & Diagnostics",
-    keywords: ["benchmark", "fps", "performance", "test", "speed", "diagnostics", "lag", "stutter"],
+    keywords: [
+      "benchmark",
+      "fps",
+      "performance",
+      "test",
+      "speed",
+      "diagnostics",
+      "lag",
+      "stutter",
+    ],
   },
   {
     id: "setting-danger-force-setup",
     title: "Force Setup Screen",
-    description: "Launch the deployment screen to test setup rendering without deleting existing files.",
+    description:
+      "Launch the deployment screen to test setup rendering without deleting existing files.",
     category: "Danger Zone",
     keywords: ["setup", "force", "deployment", "wizard", "reset"],
   },
   {
     id: "setting-danger-update-binaries",
     title: "Update Core Engines",
-    description: "Checks for, downloads, and overrides yt-dlp and ffmpeg with latest stable releases.",
+    description:
+      "Checks for, downloads, and overrides yt-dlp and ffmpeg with latest stable releases.",
     category: "Danger Zone",
     keywords: ["update", "yt-dlp", "ffmpeg", "binaries", "upgrade", "engines"],
   },
   {
     id: "setting-danger-wipe-dependencies",
     title: "Wipe Core Engines",
-    description: "Deletes yt-dlp and ffmpeg from hidden app data without deleting videos.",
+    description:
+      "Deletes yt-dlp and ffmpeg from hidden app data without deleting videos.",
     category: "Danger Zone",
     keywords: ["wipe", "delete", "yt-dlp", "ffmpeg", "dependencies", "engines"],
   },
   {
     id: "setting-danger-clean-database",
     title: "Clean Database & Media",
-    description: "Deletes all downloaded videos and clears the SQLite database.",
+    description:
+      "Deletes all downloaded videos and clears the SQLite database.",
     category: "Danger Zone",
     keywords: ["clean", "database", "media", "delete", "purge", "clear"],
   },
   {
     id: "setting-danger-nuclear-wipe",
     title: "Nuclear Wipe",
-    description: "Permanently destroys database, core engines, and ALL downloaded video/audio media.",
+    description:
+      "Permanently destroys database, core engines, and ALL downloaded video/audio media.",
     category: "Danger Zone",
     keywords: ["nuclear", "wipe", "destroy", "everything", "reset", "purge"],
   },
@@ -188,7 +300,9 @@ export default function GlobalSearch() {
     try {
       return useLocation().pathname;
     } catch {
-      return typeof window !== "undefined" ? window.location.pathname || "/" : "/";
+      return typeof window !== "undefined"
+        ? window.location.pathname || "/"
+        : "/";
     }
   };
 
@@ -294,7 +408,8 @@ export default function GlobalSearch() {
 
   const filteredResults = () => {
     const q = query();
-    if (!q) return { settings: [], videos: [], playlists: [], artists: [], total: 0 };
+    if (!q)
+      return { settings: [], videos: [], playlists: [], artists: [], total: 0 };
 
     const currentScope = scope().id;
 
@@ -309,32 +424,40 @@ export default function GlobalSearch() {
           s.title.toLowerCase().includes(q) ||
           s.description.toLowerCase().includes(q) ||
           s.category.toLowerCase().includes(q) ||
-          s.keywords.some((k) => k.includes(q))
+          s.keywords.some((k) => k.includes(q)),
       );
     } else if (currentScope === "artist") {
-      matchedArtists = artists().filter((a) => a.name.toLowerCase().includes(q));
+      matchedArtists = artists().filter((a) =>
+        a.name.toLowerCase().includes(q),
+      );
       matchedVideos = videos().filter(
         (v) =>
           v.title.toLowerCase().includes(q) ||
-          v.channel.toLowerCase().includes(q)
+          v.channel.toLowerCase().includes(q),
       );
     } else if (currentScope === "playlist") {
-      matchedPlaylists = playlists().filter((p) => p.name.toLowerCase().includes(q));
+      matchedPlaylists = playlists().filter((p) =>
+        p.name.toLowerCase().includes(q),
+      );
       matchedVideos = videos().filter((v) => v.title.toLowerCase().includes(q));
     } else if (currentScope === "favourites") {
       matchedVideos = videos().filter(
         (v) =>
           v.title.toLowerCase().includes(q) ||
-          v.channel.toLowerCase().includes(q)
+          v.channel.toLowerCase().includes(q),
       );
     } else {
       matchedVideos = videos().filter(
         (v) =>
           v.title.toLowerCase().includes(q) ||
-          v.channel.toLowerCase().includes(q)
+          v.channel.toLowerCase().includes(q),
       );
-      matchedPlaylists = playlists().filter((p) => p.name.toLowerCase().includes(q));
-      matchedArtists = artists().filter((a) => a.name.toLowerCase().includes(q));
+      matchedPlaylists = playlists().filter((p) =>
+        p.name.toLowerCase().includes(q),
+      );
+      matchedArtists = artists().filter((a) =>
+        a.name.toLowerCase().includes(q),
+      );
     }
 
     const total =
@@ -360,10 +483,16 @@ export default function GlobalSearch() {
       data: any;
     }> = [];
 
-    res.settings.forEach((s) => list.push({ id: s.id, type: "setting", data: s }));
+    res.settings.forEach((s) =>
+      list.push({ id: s.id, type: "setting", data: s }),
+    );
     res.videos.forEach((v) => list.push({ id: v.id, type: "video", data: v }));
-    res.playlists.forEach((p) => list.push({ id: p.id, type: "playlist", data: p }));
-    res.artists.forEach((a) => list.push({ id: a.name, type: "artist", data: a }));
+    res.playlists.forEach((p) =>
+      list.push({ id: p.id, type: "playlist", data: p }),
+    );
+    res.artists.forEach((a) =>
+      list.push({ id: a.name, type: "artist", data: a }),
+    );
 
     return list;
   };
@@ -451,7 +580,11 @@ export default function GlobalSearch() {
 
     if (e.key === "Enter") {
       e.preventDefault();
-      if (list.length > 0 && selectedIndex() >= 0 && selectedIndex() < list.length) {
+      if (
+        list.length > 0 &&
+        selectedIndex() >= 0 &&
+        selectedIndex() < list.length
+      ) {
         handleSelectResult(list[selectedIndex()]);
       }
       return;
@@ -492,7 +625,9 @@ export default function GlobalSearch() {
               <div class="search-no-results">
                 <i class="ph ph-sparkle no-results-icon"></i>
                 <p>No results found for &ldquo;{globalSearchQuery()}&rdquo;</p>
-                <span class="no-results-hint">Try adjusting keywords or clearing the filter</span>
+                <span class="no-results-hint">
+                  Try adjusting keywords or clearing the filter
+                </span>
               </div>
             </Show>
           }
@@ -513,7 +648,9 @@ export default function GlobalSearch() {
                       <div
                         id={`search-result-${itemIdx()}`}
                         class={`search-result-item ${isSelected() ? "selected" : ""}`}
-                        onClick={() => handleSelectResult({ type: "setting", data: setting })}
+                        onClick={() =>
+                          handleSelectResult({ type: "setting", data: setting })
+                        }
                         onMouseEnter={() => setSelectedIndex(itemIdx())}
                       >
                         <div class="result-icon-badge setting">
@@ -546,7 +683,9 @@ export default function GlobalSearch() {
                       <div
                         id={`search-result-${itemIdx()}`}
                         class={`search-result-item ${isSelected() ? "selected" : ""}`}
-                        onClick={() => handleSelectResult({ type: "video", data: video })}
+                        onClick={() =>
+                          handleSelectResult({ type: "video", data: video })
+                        }
                         onMouseEnter={() => setSelectedIndex(itemIdx())}
                       >
                         <div class="result-thumb-wrapper">
@@ -588,7 +727,12 @@ export default function GlobalSearch() {
                       <div
                         id={`search-result-${itemIdx()}`}
                         class={`search-result-item ${isSelected() ? "selected" : ""}`}
-                        onClick={() => handleSelectResult({ type: "playlist", data: playlist })}
+                        onClick={() =>
+                          handleSelectResult({
+                            type: "playlist",
+                            data: playlist,
+                          })
+                        }
                         onMouseEnter={() => setSelectedIndex(itemIdx())}
                       >
                         <div class="result-icon-badge playlist">
@@ -621,7 +765,9 @@ export default function GlobalSearch() {
                       <div
                         id={`search-result-${itemIdx()}`}
                         class={`search-result-item ${isSelected() ? "selected" : ""}`}
-                        onClick={() => handleSelectResult({ type: "artist", data: artist })}
+                        onClick={() =>
+                          handleSelectResult({ type: "artist", data: artist })
+                        }
                         onMouseEnter={() => setSelectedIndex(itemIdx())}
                       >
                         <div class="result-avatar-wrapper">
@@ -650,7 +796,9 @@ export default function GlobalSearch() {
 
         <div class="spotlight-footer">
           <span class="shortcut-tip">
-            <kbd>↑</kbd><kbd>↓</kbd> navigate &nbsp;•&nbsp; <kbd>↵</kbd> select &nbsp;•&nbsp; <kbd>Esc</kbd> close
+            <kbd>↑</kbd>
+            <kbd>↓</kbd> navigate &nbsp;•&nbsp; <kbd>↵</kbd> select
+            &nbsp;•&nbsp; <kbd>Esc</kbd> close
           </span>
         </div>
       </div>
@@ -665,8 +813,13 @@ export default function GlobalSearch() {
           <div class="floating-search-backdrop" onClick={closeSearch} />
         </Show>
 
-        <div class={`floating-search-container ${isSearchOpen() ? "is-expanded" : ""}`}>
-          <div class="floating-search-bar" onClick={() => !isSearchOpen() && setIsSearchOpen(true)}>
+        <div
+          class={`floating-search-container ${isSearchOpen() ? "is-expanded" : ""}`}
+        >
+          <div
+            class="floating-search-bar"
+            onClick={() => !isSearchOpen() && setIsSearchOpen(true)}
+          >
             <i class="ph ph-magnifying-glass floating-search-icon"></i>
 
             <span class={`search-scope-badge ${scope().class}`}>
@@ -719,7 +872,8 @@ export default function GlobalSearch() {
                 when={isSearchOpen()}
                 fallback={
                   <span class="kbd-combo">
-                    <kbd>Ctrl</kbd><kbd>F</kbd>
+                    <kbd>Ctrl</kbd>
+                    <kbd>F</kbd>
                   </span>
                 }
               >
@@ -777,7 +931,11 @@ export default function GlobalSearch() {
               </button>
             </Show>
 
-            <div class="spotlight-esc-tag" onClick={closeSearch} title="Close search">
+            <div
+              class="spotlight-esc-tag"
+              onClick={closeSearch}
+              title="Close search"
+            >
               <kbd>Esc</kbd>
             </div>
           </div>

@@ -27,7 +27,8 @@ fn suppress_ayatana_warnings() {
             _log_level: i32,
             _message: *const std::os::raw::c_char,
             _user_data: *mut std::ffi::c_void,
-        ) {}
+        ) {
+        }
 
         extern "C" {
             fn g_log_set_handler(

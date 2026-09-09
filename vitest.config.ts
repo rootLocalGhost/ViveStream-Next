@@ -7,6 +7,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    fsModuleCache: true,
     deps: {
       optimizer: {
         web: {

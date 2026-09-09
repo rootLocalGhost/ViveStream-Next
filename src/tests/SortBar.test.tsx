@@ -62,7 +62,9 @@ describe("SortBar Component", () => {
       />
     ));
 
-    const dirBtn = getByTitle("Ascending order (Click to switch to Descending)");
+    const dirBtn = getByTitle(
+      "Ascending order (Click to switch to Descending)",
+    );
     fireEvent.click(dirBtn);
 
     expect(handleDirectionToggle).toHaveBeenCalledTimes(1);

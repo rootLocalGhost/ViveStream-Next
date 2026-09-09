@@ -91,7 +91,9 @@ describe("Settings Component", () => {
 
   it("handles sorting preferences and randomize on launch toggle", async () => {
     render(() => <Settings />);
-    expect(screen.getByText("Library Sorting & Presentation")).toBeInTheDocument();
+    expect(
+      screen.getByText("Library Sorting & Presentation"),
+    ).toBeInTheDocument();
 
     const nameSortBtn = screen.getByText("Name");
     fireEvent.click(nameSortBtn);
@@ -119,28 +121,38 @@ describe("Settings Component", () => {
     const clayCard = screen.getByText("Claymorphism");
     expect(clayCard).toBeInTheDocument();
     fireEvent.click(clayCard);
-    expect(document.documentElement.getAttribute("data-style")).toBe("claymorphism");
+    expect(document.documentElement.getAttribute("data-style")).toBe(
+      "claymorphism",
+    );
 
     const neoCard = screen.getByText("Neo-Brutalism");
     expect(neoCard).toBeInTheDocument();
     fireEvent.click(neoCard);
-    expect(document.documentElement.getAttribute("data-style")).toBe("neo-brutalism");
+    expect(document.documentElement.getAttribute("data-style")).toBe(
+      "neo-brutalism",
+    );
 
     const sunsetCard = screen.getByText("Sunset");
     expect(sunsetCard).toBeInTheDocument();
     fireEvent.click(sunsetCard);
-    expect(document.documentElement.getAttribute("data-palette")).toBe("sunset");
+    expect(document.documentElement.getAttribute("data-palette")).toBe(
+      "sunset",
+    );
 
     const crimsonCard = screen.getByText("Crimson");
     expect(crimsonCard).toBeInTheDocument();
     fireEvent.click(crimsonCard);
-    expect(document.documentElement.getAttribute("data-palette")).toBe("crimson");
+    expect(document.documentElement.getAttribute("data-palette")).toBe(
+      "crimson",
+    );
   });
 
   it("handles ambient lighting studio controls (dynamic vs static mode, color swatches)", async () => {
     render(() => <Settings />);
 
-    expect(screen.getByText("Ambient Lighting (Cinematic Glow)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Ambient Lighting (Cinematic Glow)"),
+    ).toBeInTheDocument();
 
     const staticModeCard = screen.getByText("Static Mode");
     expect(staticModeCard).toBeInTheDocument();
@@ -155,4 +167,3 @@ describe("Settings Component", () => {
     fireEvent.click(dynamicModeCard);
   });
 });
-

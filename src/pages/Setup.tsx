@@ -2,6 +2,7 @@ import { createSignal, onMount, For, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { setForceSetup } from "../store";
+import { APP_VERSION } from "../version";
 import "./Setup.css";
 
 const AnimatedLogo = () => (
@@ -85,9 +86,11 @@ export default function Setup(props: { onComplete?: () => void }) {
         ffmpeg_exists: boolean;
         bin_folder: string;
       }>("check_binaries");
-      
-      addLog(`ViveStream v1.9.9 // Pre-flight Diagnostic`);
-      addLog(`[SYSTEM] Target Data Path: ${status.bin_folder || "~/.local/share/vivestream"}`);
+
+      addLog(`ViveStream v${APP_VERSION} // Pre-flight Diagnostic`);
+      addLog(
+        `[SYSTEM] Target Data Path: ${status.bin_folder || "~/.local/share/vivestream"}`,
+      );
       if (!status.ytdlp_exists) {
         addLog(`[ACTION REQUIRED] yt-dlp core stream engine needs setup.`);
       }
@@ -144,7 +147,9 @@ export default function Setup(props: { onComplete?: () => void }) {
     } catch (e) {
       setHasError(true);
       addLog(`[CRITICAL FAILURE] Deployment interrupted: ${e}`);
-      addLog(`> Please verify your internet connection and click "Retry Deployment".`);
+      addLog(
+        `> Please verify your internet connection and click "Retry Deployment".`,
+      );
     } finally {
       unlisten();
       setLoading(false);
@@ -155,13 +160,21 @@ export default function Setup(props: { onComplete?: () => void }) {
     <div class="immersive-setup-container">
       <div class="setup-content-card">
         {/* Onboarding Stepper Indicator */}
-        <div class="setup-stepper" role="progressbar" aria-label="Setup progress">
-          <div class={`step-node ${!loading() && !isCompleted() ? "active" : "completed"}`}>
+        <div
+          class="setup-stepper"
+          role="progressbar"
+          aria-label="Setup progress"
+        >
+          <div
+            class={`step-node ${!loading() && !isCompleted() ? "active" : "completed"}`}
+          >
             <span class="step-num">1</span>
             <span class="step-text">System Check</span>
           </div>
           <div class="step-line"></div>
-          <div class={`step-node ${loading() ? "active" : isCompleted() ? "completed" : ""}`}>
+          <div
+            class={`step-node ${loading() ? "active" : isCompleted() ? "completed" : ""}`}
+          >
             <span class="step-num">2</span>
             <span class="step-text">Deploy Engines</span>
           </div>
@@ -181,8 +194,8 @@ export default function Setup(props: { onComplete?: () => void }) {
                 <h1 class="setup-title">WELCOME TO VIVESTREAM</h1>
                 <p class="setup-description">
                   To enable high-speed 4K streaming, offline collection caching,
-                  and hardware-accelerated playback, let's configure your local core
-                  media engines.
+                  and hardware-accelerated playback, let's configure your local
+                  core media engines.
                 </p>
               </div>
               <div class="setup-terminal-wrapper">
@@ -211,7 +224,9 @@ export default function Setup(props: { onComplete?: () => void }) {
                     )}
                   </For>
                   {loading() && downloadProgress() === 0 && (
-                    <p class="setup-log-line processing">&gt; Initializing high-speed secure download...</p>
+                    <p class="setup-log-line processing">
+                      &gt; Initializing high-speed secure download...
+                    </p>
                   )}
                   {logs().length === 0 && (
                     <p class="setup-log-line muted">
@@ -243,11 +258,19 @@ export default function Setup(props: { onComplete?: () => void }) {
                   </>
                 ) : hasError() ? (
                   <>
-                    <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> RETRY DEPLOYMENT
+                    <i
+                      class="ph ph-arrow-counter-clockwise"
+                      aria-hidden="true"
+                    ></i>{" "}
+                    RETRY DEPLOYMENT
                   </>
                 ) : (
                   <>
-                    <i class="ph-fill ph-download-simple" aria-hidden="true"></i> INITIALIZE DEPLOYMENT
+                    <i
+                      class="ph-fill ph-download-simple"
+                      aria-hidden="true"
+                    ></i>{" "}
+                    INITIALIZE DEPLOYMENT
                   </>
                 )}
               </button>
