@@ -51,6 +51,13 @@ import {
   getThumbnailUrl,
 } from "../store";
 import AddToPlaylistModal from "../components/AddToPlaylistModal";
+import {
+  extractDominantVideoColors,
+  hexToRgb,
+  rgbToHex,
+  lerpColor,
+  logAmbient,
+} from "../utils/ambientLighting";
 import "./Player.css";
 
 const PRESET_AURA_COLORS = [
@@ -114,7 +121,6 @@ export default function Player() {
   let ambientCtx: CanvasRenderingContext2D | null = null;
   let offscreenCanvas: HTMLCanvasElement | null = null;
   let offscreenCtx: CanvasRenderingContext2D | null = null;
-  let ambientRafId: number | null = null;
   let lastAmbientDraw = 0;
   let currentSmoothedRgb = { r: 242, g: 92, b: 84 };
   let settingsMenuRef: HTMLDivElement | undefined;
@@ -129,126 +135,6 @@ export default function Player() {
   let currentLoadingId: string | null = null;
   let isUnmounting = false;
 
-  const rgbToHex = (r: number, g: number, b: number) => {
-    return (
-      "#" +
-      [r, g, b]
-        .map((x) => {
-          const hex = Math.min(255, Math.max(0, Math.round(x))).toString(16);
-          return hex.length === 1 ? "0" + hex : hex;
-        })
-        .join("")
-    );
-  };
-
-  const hexToRgb = (hex: string) => {
-    const clean = hex.replace("#", "");
-    if (clean.length === 3) {
-      return {
-        r: parseInt(clean[0] + clean[0], 16) || 0,
-        g: parseInt(clean[1] + clean[1], 16) || 0,
-        b: parseInt(clean[2] + clean[2], 16) || 0,
-      };
-    }
-    return {
-      r: parseInt(clean.slice(0, 2), 16) || 0,
-      g: parseInt(clean.slice(2, 4), 16) || 0,
-      b: parseInt(clean.slice(4, 6), 16) || 0,
-    };
-  };
-
-  const lerpColor = (
-    current: { r: number; g: number; b: number },
-    target: { r: number; g: number; b: number },
-    factor: number,
-  ) => {
-    return {
-      r: current.r + (target.r - current.r) * factor,
-      g: current.g + (target.g - current.g) * factor,
-      b: current.b + (target.b - current.b) * factor,
-    };
-  };
-
-  const extractDominantVideoColors = (
-    ctx: CanvasRenderingContext2D,
-    w: number,
-    h: number,
-  ): { dominant: string; palette: string[] } => {
-    try {
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const data = imgData.data;
-      const buckets = new Map<
-        string,
-        { r: number; g: number; b: number; count: number }
-      >();
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-
-        if (a < 128) continue;
-        // Ignore pure black letterbox / border pixels
-        if (r < 16 && g < 16 && b < 16) continue;
-
-        // Quantize into 16-step RGB buckets
-        const qr = Math.round(r / 16) * 16;
-        const qg = Math.round(g / 16) * 16;
-        const qb = Math.round(b / 16) * 16;
-
-        const key = `${qr},${qg},${qb}`;
-        const existing = buckets.get(key);
-
-        if (existing) {
-          existing.count += 1;
-        } else {
-          buckets.set(key, { r: qr, g: qg, b: qb, count: 1 });
-        }
-      }
-
-      if (buckets.size === 0) {
-        return {
-          dominant: "#f25c54",
-          palette: ["#f25c54", "#ef233c", "#3b82f6", "#10b981", "#a855f7"],
-        };
-      }
-
-      const sorted = Array.from(buckets.values()).sort(
-        (a, b) => b.count - a.count,
-      );
-      const top = sorted[0];
-      const dominantHex = rgbToHex(top.r, top.g, top.b);
-
-      const palette: string[] = [];
-      for (const item of sorted) {
-        const hex = rgbToHex(item.r, item.g, item.b);
-        const isDistinct = palette.every((existingHex) => {
-          const er = parseInt(existingHex.slice(1, 3), 16);
-          const eg = parseInt(existingHex.slice(3, 5), 16);
-          const eb = parseInt(existingHex.slice(5, 7), 16);
-          const dist = Math.sqrt(
-            (item.r - er) ** 2 + (item.g - eg) ** 2 + (item.b - eb) ** 2,
-          );
-          return dist > 35;
-        });
-        if (isDistinct) {
-          palette.push(hex);
-          if (palette.length >= 8) break;
-        }
-      }
-
-      if (palette.length === 0) palette.push(dominantHex);
-
-      return { dominant: dominantHex, palette };
-    } catch {
-      return {
-        dominant: "#f25c54",
-        palette: ["#f25c54", "#ef233c", "#3b82f6", "#10b981", "#a855f7"],
-      };
-    }
-  };
-
   let isFetchingRustColors = false;
   let lastRustFetchTime = -10;
 
@@ -258,6 +144,7 @@ export default function Player() {
     isFetchingRustColors = true;
     lastRustFetchTime = time;
     try {
+      logAmbient("RustFetchStart", { targetId, timestamp: time }, 0);
       const res = await invoke<{ dominant: string; palette: string[] }>(
         "extract_video_dominant_colors",
         {
@@ -266,14 +153,28 @@ export default function Player() {
         },
       );
       if (res && res.dominant) {
+        logAmbient("RustFetchSuccess", res, 0);
         setCurrentDominantColor(res.dominant);
         if (res.palette && res.palette.length > 0) {
           setExtractedVideoColors(res.palette);
         }
       }
-    } catch {
+    } catch (err) {
+      logAmbient("RustFetchError", err, 0);
     } finally {
       isFetchingRustColors = false;
+    }
+  };
+
+  let ambientLoopActive = false;
+  let ambientRafId: number | null = null;
+  let ambientSampleCount = 0;
+
+  const stopAmbientLoop = () => {
+    ambientLoopActive = false;
+    if (ambientRafId !== null) {
+      cancelAnimationFrame(ambientRafId);
+      ambientRafId = null;
     }
   };
 
@@ -292,9 +193,11 @@ export default function Player() {
         if (isDynamic && ambientCanvasRef) {
           if (!ambientCtx || ambientCtx.canvas !== ambientCanvasRef) {
             ambientCtx = ambientCanvasRef.getContext("2d", {
-              alpha: false,
-              desynchronized: true,
+              alpha: true,
             });
+            if (ambientCtx) {
+              ambientCtx.imageSmoothingEnabled = true;
+            }
           }
           if (ambientCtx) {
             try {
@@ -305,7 +208,9 @@ export default function Player() {
                 ambientCanvasRef.width,
                 ambientCanvasRef.height,
               );
-            } catch {}
+            } catch (canvasErr) {
+              logAmbient("CanvasDrawError", canvasErr);
+            }
           }
         }
 
@@ -317,16 +222,16 @@ export default function Player() {
           offscreenCtx = offscreenCanvas.getContext("2d", {
             willReadFrequently: true,
           });
+          if (offscreenCtx) {
+            offscreenCtx.imageSmoothingEnabled = true;
+          }
         }
 
         if (offscreenCtx) {
           try {
             offscreenCtx.drawImage(videoRef, 0, 0, 32, 18);
-            const { dominant, palette } = extractDominantVideoColors(
-              offscreenCtx,
-              32,
-              18,
-            );
+            const { dominant, palette, saturation, vibranceScore } =
+              extractDominantVideoColors(offscreenCtx, 32, 18);
             const targetRgb = hexToRgb(dominant);
             currentSmoothedRgb = lerpColor(
               currentSmoothedRgb,
@@ -343,40 +248,80 @@ export default function Player() {
             if (palette.length > 0) {
               setExtractedVideoColors(palette);
             }
-          } catch {
+
+            ambientSampleCount++;
+            logAmbient("DynamicSample", {
+              sample: ambientSampleCount,
+              dominant: smoothedHex,
+              rawDominant: dominant,
+              saturation: saturation ? saturation.toFixed(2) : undefined,
+              score: vibranceScore ? Math.round(vibranceScore) : undefined,
+              videoTime: `${videoRef.currentTime.toFixed(1)}s`,
+            });
+          } catch (extractErr) {
+            logAmbient("OffscreenExtractError", extractErr);
             if (video()?.id) {
               fetchRustDominantColors(video()!.id, videoRef.currentTime);
             }
           }
         }
       } else if (video()?.id) {
+        logAmbient("VideoNotReady", {
+          readyState: videoRef.readyState,
+          videoWidth: videoRef.videoWidth,
+          videoId: video()!.id,
+        });
         fetchRustDominantColors(video()!.id, videoRef?.currentTime ?? 0);
       }
     }
+  };
 
-    if (isPlaying() && !isUnmounting) {
-      ambientRafId = requestAnimationFrame((ts) => drawAmbientFrame(ts));
+  const scheduleNextAmbientFrame = () => {
+    if (!ambientLoopActive || isUnmounting) return;
+
+    const isActivelyPlaying =
+      (isPlaying() || (videoRef && !videoRef.paused && !videoRef.ended)) &&
+      playerAmbientMode() &&
+      !isFullscreen();
+
+    if (!isActivelyPlaying) {
+      ambientLoopActive = false;
+      return;
     }
+
+    ambientRafId = requestAnimationFrame((ts) => {
+      ambientRafId = null;
+      drawAmbientFrame(ts, false);
+      scheduleNextAmbientFrame();
+    });
+  };
+
+  const startAmbientLoop = () => {
+    if (ambientLoopActive) return;
+    ambientLoopActive = true;
+    scheduleNextAmbientFrame();
   };
 
   createEffect(() => {
     const playing = isPlaying();
     const ambient = playerAmbientMode();
-    playerAmbientType();
+    const isDynamic = playerAmbientType() === "dynamic";
     const full = isFullscreen();
     video();
 
-    if (ambientRafId) {
-      cancelAnimationFrame(ambientRafId);
-      ambientRafId = null;
-    }
-
     if (ambient && !full && !isUnmounting) {
-      if (playing) {
-        ambientRafId = requestAnimationFrame((ts) => drawAmbientFrame(ts));
+      logAmbient(
+        "EffectTrigger",
+        { playing, isDynamic, hasVideo: !!video() },
+        0,
+      );
+      if (playing || (videoRef && !videoRef.paused && !videoRef.ended)) {
+        startAmbientLoop();
       } else if (videoRef && videoRef.readyState >= 2) {
         drawAmbientFrame(undefined, true);
       }
+    } else {
+      stopAmbientLoop();
     }
   });
 
@@ -1067,8 +1012,8 @@ export default function Player() {
                   playerAmbientType() === "dynamic"
                     ? currentDominantColor()
                     : playerAmbientColor(),
-                filter: `blur(${playerAmbientBlur()}px) saturate(180%) brightness(1.2)`,
-                opacity: `${(playerAmbientIntensity() / 100) * (playerAmbientType() === "dynamic" ? 0.65 : 1)}`,
+                filter: `blur(${playerAmbientBlur()}px)`,
+                opacity: `${(playerAmbientIntensity() / 100) * (playerAmbientType() === "dynamic" ? 0.6 : 1)}`,
               }}
               aria-hidden="true"
             />
@@ -1104,16 +1049,20 @@ export default function Player() {
                   if (isUnmounting) return;
                   invoke("update_playback_status", { playing: true });
                   setIsPlaying(true);
-                  drawAmbientFrame(undefined, true);
+                  startAmbientLoop();
                 }}
                 onPause={() => {
                   if (isUnmounting || (videoRef && videoRef.seeking)) return;
                   invoke("update_playback_status", { playing: false });
                   setIsPlaying(false);
+                  stopAmbientLoop();
                   drawAmbientFrame(undefined, true);
                 }}
                 onLoadedData={() => {
                   drawAmbientFrame(undefined, true);
+                  if (videoRef && !videoRef.paused && !videoRef.ended) {
+                    startAmbientLoop();
+                  }
                 }}
                 onSeeked={() => {
                   if (
@@ -1124,6 +1073,9 @@ export default function Player() {
                     handlePlay();
                   }
                   drawAmbientFrame(undefined, true);
+                  if (videoRef && !videoRef.paused && !videoRef.ended) {
+                    startAmbientLoop();
+                  }
                 }}
                 onLoadedMetadata={(e) => {
                   setDuration(e.currentTarget.duration);
@@ -1150,7 +1102,9 @@ export default function Player() {
                 onTimeUpdate={(e) => {
                   if (!isSeeking() && !isUnmounting) {
                     setCurrentTime(e.currentTarget.currentTime);
-                    if (!isPlaying()) {
+                    if (!ambientLoopActive && !e.currentTarget.paused && !e.currentTarget.ended) {
+                      startAmbientLoop();
+                    } else if (e.currentTarget.paused) {
                       drawAmbientFrame(undefined, true);
                     }
                   }
