@@ -153,10 +153,13 @@ pub async fn extract_video_dominant_colors(
         }
 
         use std::collections::HashMap;
-        // (count, sum_r, sum_g, sum_b)
-        let mut buckets: HashMap<(u8, u8, u8), (usize, usize, usize, usize)> = HashMap::new();
+        // Key: (is_mono, hue_sector_or_mono_tier, light_band), Value: (count, sum_r, sum_g, sum_b)
+        let mut buckets: HashMap<(bool, u8, u8), (f32, f32, f32, f32)> = HashMap::new();
 
-        for chunk in bytes.chunks_exact(3) {
+        let w = 48;
+        let h = 27;
+
+        for (idx, chunk) in bytes.chunks_exact(3).enumerate() {
             let r = chunk[0];
             let g = chunk[1];
             let b = chunk[2];
@@ -166,15 +169,42 @@ pub async fn extract_video_dominant_colors(
                 continue;
             }
 
-            let qr = ((r as f32 / 32.0).floor() * 32.0 + 16.0).min(255.0) as u8;
-            let qg = ((g as f32 / 32.0).floor() * 32.0 + 16.0).min(255.0) as u8;
-            let qb = ((b as f32 / 32.0).floor() * 32.0 + 16.0).min(255.0) as u8;
+            let rn = r as f32 / 255.0;
+            let gn = g as f32 / 255.0;
+            let bn = b as f32 / 255.0;
+            let max = rn.max(gn).max(bn);
+            let min = rn.min(gn).min(bn);
+            let chroma = max - min;
+            let lightness = (max + min) / 2.0;
 
-            let entry = buckets.entry((qr, qg, qb)).or_insert((0, 0, 0, 0));
-            entry.0 += 1;
-            entry.1 += r as usize;
-            entry.2 += g as usize;
-            entry.3 += b as usize;
+            let px = idx % w;
+            let py = idx / w;
+            let is_edge = px < w / 4 || px >= w * 3 / 4 || py < h / 4 || py >= h * 3 / 4;
+            let weight = if is_edge { 1.5 } else { 1.0 };
+
+            let key = if chroma < 0.08 {
+                (true, ((lightness * 6.0).floor() as u8).min(5), 0)
+            } else {
+                let mut hue = if max == rn {
+                    ((gn - bn) / chroma).rem_euclid(6.0)
+                } else if max == gn {
+                    (bn - rn) / chroma + 2.0
+                } else {
+                    (rn - gn) / chroma + 4.0
+                } * 60.0;
+                if hue < 0.0 {
+                    hue += 360.0;
+                }
+                let hue_sector = (((hue + 15.0).rem_euclid(360.0) / 30.0).floor() as u8).min(11);
+                let light_band = ((lightness * 5.0).floor() as u8).min(4);
+                (false, hue_sector, light_band)
+            };
+
+            let entry = buckets.entry(key).or_insert((0.0, 0.0, 0.0, 0.0));
+            entry.0 += weight;
+            entry.1 += r as f32 * weight;
+            entry.2 += g as f32 * weight;
+            entry.3 += b as f32 * weight;
         }
 
         if buckets.is_empty() {
@@ -193,9 +223,9 @@ pub async fn extract_video_dominant_colors(
         let mut sorted: Vec<_> = buckets
             .into_values()
             .map(|(count, sum_r, sum_g, sum_b)| {
-                let r = (sum_r / count) as u8;
-                let g = (sum_g / count) as u8;
-                let b = (sum_b / count) as u8;
+                let r = (sum_r / count).round().min(255.0) as u8;
+                let g = (sum_g / count).round().min(255.0) as u8;
+                let b = (sum_b / count).round().min(255.0) as u8;
                 let rn = r as f32 / 255.0;
                 let gn = g as f32 / 255.0;
                 let bn = b as f32 / 255.0;
@@ -206,14 +236,14 @@ pub async fn extract_video_dominant_colors(
                 let value = max;
                 let hsv_saturation = if max == 0.0 { 0.0 } else { chroma / max };
 
-                let is_washed_out_white = value > 0.78 && hsv_saturation < 0.35;
-                let glare_penalty = if is_washed_out_white { 0.15 } else { 1.0 };
-                let is_mud = value < 0.10 && chroma < 0.06;
-                let mud_penalty = if is_mud { 0.20 } else { 1.0 };
+                let is_washed_out_white = value > 0.75 && hsv_saturation < 0.35;
+                let glare_penalty = if is_washed_out_white { 0.10 } else { 1.0 };
+                let is_mud = value < 0.08 && chroma < 0.05;
+                let mud_penalty = if is_mud { 0.15 } else { 1.0 };
 
-                let sat_weight = 0.25 + hsv_saturation.powf(1.4) * 2.8 + chroma * 1.5;
-                let light_weight = (1.0 - (lightness - 0.5).abs() * 0.8).max(0.5);
-                let score = (count as f32).powf(1.2) * sat_weight * light_weight * glare_penalty * mud_penalty;
+                let sat_weight = 0.3 + hsv_saturation.powf(1.3) * 2.5 + chroma * 1.5;
+                let light_weight = (1.0 - (lightness - 0.45).abs() * 0.9).max(0.4);
+                let score = count.powf(1.25) * sat_weight * light_weight * glare_penalty * mud_penalty;
                 (score, count, r, g, b)
             })
             .collect();
