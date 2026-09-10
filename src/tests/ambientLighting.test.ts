@@ -116,4 +116,41 @@ describe("ambientLighting utility", () => {
     expect(smoothed.r).toBeGreaterThan(150);
     expect(smoothed.g).toBeLessThan(100);
   });
+
+  it("prioritizes rich cinematic colors (#781910) over pale washed-out glare (#f7f9ce)", () => {
+    const w = 10;
+    const h = 10;
+    const pixelCount = w * h;
+    const data = new Uint8ClampedArray(pixelCount * 4);
+
+    for (let i = 0; i < pixelCount; i++) {
+      const idx = i * 4;
+      if (i < 50) {
+        // 50% Pale off-white / light glare (#f7f9ce: 247, 249, 206)
+        data[idx] = 247;
+        data[idx + 1] = 249;
+        data[idx + 2] = 206;
+        data[idx + 3] = 255;
+      } else {
+        // 50% Deep saturated crimson (#781910: 120, 25, 16)
+        data[idx] = 120;
+        data[idx + 1] = 25;
+        data[idx + 2] = 16;
+        data[idx + 3] = 255;
+      }
+    }
+
+    const mockCtx = {
+      getImageData: () => ({ data, width: w, height: h }),
+    } as unknown as CanvasRenderingContext2D;
+
+    const result = extractDominantVideoColors(mockCtx, w, h);
+    const rgb = hexToRgb(result.dominant);
+
+    // Deep crimson should easily win due to high HSV saturation and anti-glare weighting
+    expect(rgb.r).toBeGreaterThan(rgb.g);
+    expect(rgb.r).toBeGreaterThan(rgb.b);
+    expect(rgb.r).toBeGreaterThan(100);
+    expect(rgb.g).toBeLessThan(50);
+  });
 });
