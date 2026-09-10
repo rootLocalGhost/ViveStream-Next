@@ -153,7 +153,8 @@ pub async fn extract_video_dominant_colors(
         }
 
         use std::collections::HashMap;
-        let mut buckets: HashMap<(u8, u8, u8), (usize, u8, u8, u8)> = HashMap::new();
+        // (count, sum_r, sum_g, sum_b)
+        let mut buckets: HashMap<(u8, u8, u8), (usize, usize, usize, usize)> = HashMap::new();
 
         for chunk in bytes.chunks_exact(3) {
             let r = chunk[0];
@@ -165,12 +166,15 @@ pub async fn extract_video_dominant_colors(
                 continue;
             }
 
-            let qr = ((r as f32 / 16.0).round() * 16.0).min(255.0) as u8;
-            let qg = ((g as f32 / 16.0).round() * 16.0).min(255.0) as u8;
-            let qb = ((b as f32 / 16.0).round() * 16.0).min(255.0) as u8;
+            let qr = ((r as f32 / 32.0).floor() * 32.0 + 16.0).min(255.0) as u8;
+            let qg = ((g as f32 / 32.0).floor() * 32.0 + 16.0).min(255.0) as u8;
+            let qb = ((b as f32 / 32.0).floor() * 32.0 + 16.0).min(255.0) as u8;
 
-            let entry = buckets.entry((qr, qg, qb)).or_insert((0, qr, qg, qb));
+            let entry = buckets.entry((qr, qg, qb)).or_insert((0, 0, 0, 0));
             entry.0 += 1;
+            entry.1 += r as usize;
+            entry.2 += g as usize;
+            entry.3 += b as usize;
         }
 
         if buckets.is_empty() {
@@ -188,23 +192,28 @@ pub async fn extract_video_dominant_colors(
 
         let mut sorted: Vec<_> = buckets
             .into_values()
-            .map(|(count, r, g, b)| {
+            .map(|(count, sum_r, sum_g, sum_b)| {
+                let r = (sum_r / count) as u8;
+                let g = (sum_g / count) as u8;
+                let b = (sum_b / count) as u8;
                 let rn = r as f32 / 255.0;
                 let gn = g as f32 / 255.0;
                 let bn = b as f32 / 255.0;
                 let max = rn.max(gn).max(bn);
                 let min = rn.min(gn).min(bn);
+                let chroma = max - min;
                 let lightness = (max + min) / 2.0;
-                let saturation = if max == min {
-                    0.0
-                } else if lightness > 0.5 {
-                    (max - min) / (2.0 - max - min)
-                } else {
-                    (max - min) / (max + min)
-                };
-                let sat_weight = 1.0 + saturation * 3.2;
-                let light_weight = (1.0 - (lightness - 0.5).abs() * 1.6).max(0.2);
-                let score = count as f32 * sat_weight * light_weight;
+                let value = max;
+                let hsv_saturation = if max == 0.0 { 0.0 } else { chroma / max };
+
+                let is_washed_out_white = value > 0.78 && hsv_saturation < 0.35;
+                let glare_penalty = if is_washed_out_white { 0.15 } else { 1.0 };
+                let is_mud = value < 0.10 && chroma < 0.06;
+                let mud_penalty = if is_mud { 0.20 } else { 1.0 };
+
+                let sat_weight = 0.25 + hsv_saturation.powf(1.4) * 2.8 + chroma * 1.5;
+                let light_weight = (1.0 - (lightness - 0.5).abs() * 0.8).max(0.5);
+                let score = (count as f32).powf(1.2) * sat_weight * light_weight * glare_penalty * mud_penalty;
                 (score, count, r, g, b)
             })
             .collect();
@@ -221,10 +230,10 @@ pub async fn extract_video_dominant_colors(
                     u8::from_str_radix(&existing[3..5], 16),
                     u8::from_str_radix(&existing[5..7], 16),
                 ) {
-                    let dr = (item.1 as f32 - er as f32).powi(2);
-                    let dg = (item.2 as f32 - eg as f32).powi(2);
-                    let db = (item.3 as f32 - eb as f32).powi(2);
-                    (dr + dg + db).sqrt() > 35.0
+                    let dr = (item.2 as f32 - er as f32).powi(2);
+                    let dg = (item.3 as f32 - eg as f32).powi(2);
+                    let db = (item.4 as f32 - eb as f32).powi(2);
+                    (dr + dg + db).sqrt() > 32.0
                 } else {
                     true
                 }
