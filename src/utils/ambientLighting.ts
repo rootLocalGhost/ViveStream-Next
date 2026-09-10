@@ -98,9 +98,31 @@ export const getHslMetrics = (
 };
 
 /**
+ * Calculates Hue angle (0..360) from 0-255 RGB and pre-calculated Chroma.
+ */
+export const getHue = (r: number, g: number, b: number, chroma: number): number => {
+  if (chroma < 0.0001) return 0;
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  let h = 0;
+  if (max === rn) {
+    h = ((gn - bn) / chroma) % 6;
+  } else if (max === gn) {
+    h = (bn - rn) / chroma + 2;
+  } else {
+    h = (rn - gn) / chroma + 4;
+  }
+  h = Math.round(h * 60);
+  if (h < 0) h += 360;
+  return h;
+};
+
+/**
  * Extracts dominant and palette colors from an offscreen canvas sampling context.
- * Uses saturation and luminance weighting to prevent washed-out white/grey backgrounds
- * from drowning out the cinematic video lighting.
+ * Clusters by Hue color-families with spatial edge weighting to capture genuine background lighting
+ * while rejecting small center artifacts/visualizers.
  */
 export const extractDominantVideoColors = (
   ctx: CanvasRenderingContext2D,
@@ -142,28 +164,48 @@ export const extractDominantVideoColors = (
       // Skip pure letterbox black borders
       if (r < 16 && g < 16 && b < 16) continue;
 
-      // 32-step quantization for stable color clustering
-      const qr = Math.min(255, Math.floor(r / 32) * 32 + 16);
-      const qg = Math.min(255, Math.floor(g / 32) * 32 + 16);
-      const qb = Math.min(255, Math.floor(b / 32) * 32 + 16);
+      const rn = r / 255;
+      const gn = g / 255;
+      const bn = b / 255;
+      const max = Math.max(rn, gn, bn);
+      const min = Math.min(rn, gn, bn);
+      const chroma = max - min;
+      const lightness = (max + min) / 2;
 
-      const key = `${qr},${qg},${qb}`;
+      // Spatial edge weighting: Edge pixels radiate outward as ambient bleed
+      const pixelIdx = i / 4;
+      const px = pixelIdx % w;
+      const py = Math.floor(pixelIdx / w);
+      const isEdge = px < w * 0.25 || px >= w * 0.75 || py < h * 0.25 || py >= h * 0.75;
+      const weight = isEdge ? 1.5 : 1.0;
+
+      let key: string;
+      if (chroma < 0.08) {
+        // Monochrome / grayscale cluster (6 lightness tiers)
+        key = `mono-${Math.floor(lightness * 6)}`;
+      } else {
+        // Chromatic Hue sector (12 sectors of 30 deg) + Lightness band (5 bands)
+        const hue = getHue(r, g, b, chroma);
+        const hueSector = Math.floor(((hue + 15) % 360) / 30);
+        const lightBand = Math.floor(lightness * 5);
+        key = `color-${hueSector}-${lightBand}`;
+      }
+
       const existing = buckets.get(key);
-
-      validPixels++;
+      validPixels += weight;
 
       if (existing) {
-        existing.count += 1;
-        existing.sumR += r;
-        existing.sumG += g;
-        existing.sumB += b;
+        existing.count += weight;
+        existing.sumR += r * weight;
+        existing.sumG += g * weight;
+        existing.sumB += b * weight;
       } else {
-        const bucketMetrics = getHslMetrics(qr, qg, qb);
+        const bucketMetrics = getHslMetrics(r, g, b);
         buckets.set(key, {
-          sumR: r,
-          sumG: g,
-          sumB: b,
-          count: 1,
+          sumR: r * weight,
+          sumG: g * weight,
+          sumB: b * weight,
+          count: weight,
           saturation: bucketMetrics.saturation,
           lightness: bucketMetrics.lightness,
           score: 0,
@@ -178,8 +220,8 @@ export const extractDominantVideoColors = (
       };
     }
 
-    // Filter out isolated compression noise / tiny artifacts (< 2% of valid frame pixels)
-    const minPixelThreshold = Math.max(3, Math.floor(validPixels * 0.02));
+    // Filter out tiny isolated noise (< 1.5% of frame weight)
+    const minPixelThreshold = Math.max(3, Math.floor(validPixels * 0.015));
     const candidateBuckets = Array.from(buckets.values()).filter(
       (b) => b.count >= minPixelThreshold || buckets.size <= 3,
     );
@@ -199,18 +241,18 @@ export const extractDominantVideoColors = (
       b.lightness = lightness;
 
       // Washed out white / light glare check (high value, low chroma)
-      const isWashedOutWhite = value > 0.78 && saturation < 0.35;
-      const glarePenalty = isWashedOutWhite ? 0.15 : 1.0;
+      const isWashedOutWhite = value > 0.75 && saturation < 0.35;
+      const glarePenalty = isWashedOutWhite ? 0.10 : 1.0;
 
       // Dark mud check
-      const isMud = value < 0.10 && chroma < 0.06;
-      const mudPenalty = isMud ? 0.20 : 1.0;
+      const isMud = value < 0.08 && chroma < 0.05;
+      const mudPenalty = isMud ? 0.15 : 1.0;
 
-      const satWeight = 0.25 + Math.pow(saturation, 1.4) * 2.8 + chroma * 1.5;
-      const lightDiff = Math.abs(lightness - 0.5);
-      const lightWeight = Math.max(0.5, 1.0 - lightDiff * 0.8);
+      const satWeight = 0.3 + Math.pow(saturation, 1.3) * 2.5 + chroma * 1.5;
+      const lightDiff = Math.abs(lightness - 0.45);
+      const lightWeight = Math.max(0.4, 1.0 - lightDiff * 0.9);
 
-      b.score = Math.pow(b.count, 1.2) * satWeight * lightWeight * glarePenalty * mudPenalty;
+      b.score = Math.pow(b.count, 1.25) * satWeight * lightWeight * glarePenalty * mudPenalty;
     }
 
     const sorted = activeBuckets.sort((a, b) => b.score - a.score);
