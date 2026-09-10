@@ -29,6 +29,10 @@ In `src-tauri/src/main.rs`, runtime environment flags force dedicated GPU compos
 ```rust
 #[cfg(target_os = "linux")]
 {
+    // Fix spurious WebKitWebProcess seccomp crash traps (often seen on Arch/Wayland/Hyprland)
+    if std::env::var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS").is_err() {
+        std::env::set_var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
+    }
     // Force hardware-accelerated GPU compositing in WebKitGTK
     if std::env::var("WEBKIT_FORCE_COMPOSITING_MODE").is_err() {
         std::env::set_var("WEBKIT_FORCE_COMPOSITING_MODE", "1");
@@ -37,9 +41,16 @@ In `src-tauri/src/main.rs`, runtime environment flags force dedicated GPU compos
     if std::env::var("WEBKIT_GPU_POLICY").is_err() {
         std::env::set_var("WEBKIT_GPU_POLICY", "force");
     }
+    // Uncap GTK frame clock to match high refresh rate monitor (100Hz, 120Hz, 144Hz+)
+    if std::env::var("GDK_FRAME_CLOCK_FPS").is_err() {
+        std::env::set_var("GDK_FRAME_CLOCK_FPS", "0");
+    }
     // Mitigate WebKitGTK 2.40+ DMA-BUF EGL surface allocation crashes
-    if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    // If running in a virtual machine or troubled environment, user can set VIVESTREAM_SAFE_GRAPHICS=1
+    if let Ok(safe) = std::env::var("VIVESTREAM_SAFE_GRAPHICS") {
+        if safe == "1" {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
     }
 }
 ```
