@@ -156,7 +156,9 @@ export default function Player() {
         logAmbient("RustFetchSuccess", res, 0);
         setCurrentDominantColor(res.dominant);
         if (res.palette && res.palette.length > 0) {
-          setExtractedVideoColors(res.palette);
+          if (!arePalettesEqual(extractedVideoColors(), res.palette)) {
+            setExtractedVideoColors(res.palette);
+          }
         }
       }
     } catch (err) {
@@ -169,6 +171,15 @@ export default function Player() {
   let ambientLoopActive = false;
   let ambientRafId: number | null = null;
   let ambientSampleCount = 0;
+
+  let lastPaletteUpdateTime = 0;
+  const arePalettesEqual = (a: string[], b: string[]) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i].toLowerCase() !== b[i].toLowerCase()) return false;
+    }
+    return true;
+  };
 
   const stopAmbientLoop = () => {
     ambientLoopActive = false;
@@ -245,8 +256,17 @@ export default function Player() {
             );
 
             setCurrentDominantColor(smoothedHex);
-            if (palette.length > 0) {
-              setExtractedVideoColors(palette);
+
+            // Throttle palette updates to avoid thrashing settings swatches and breaking clicks during playback
+            const nowTs = performance.now();
+            if (
+              palette.length > 0 &&
+              (force || nowTs - lastPaletteUpdateTime >= 2000)
+            ) {
+              if (!arePalettesEqual(extractedVideoColors(), palette)) {
+                setExtractedVideoColors(palette);
+                lastPaletteUpdateTime = nowTs;
+              }
             }
 
             ambientSampleCount++;
@@ -282,6 +302,7 @@ export default function Player() {
     const isActivelyPlaying =
       (isPlaying() || (videoRef && !videoRef.paused && !videoRef.ended)) &&
       playerAmbientMode() &&
+      playerAmbientType() === "dynamic" &&
       !isFullscreen();
 
     if (!isActivelyPlaying) {
@@ -305,20 +326,24 @@ export default function Player() {
   createEffect(() => {
     const playing = isPlaying();
     const ambient = playerAmbientMode();
-    const isDynamic = playerAmbientType() === "dynamic";
+    const type = playerAmbientType();
     const full = isFullscreen();
     video();
 
     if (ambient && !full && !isUnmounting) {
       logAmbient(
         "EffectTrigger",
-        { playing, isDynamic, hasVideo: !!video() },
+        { playing, type, hasVideo: !!video() },
         0,
       );
-      if (playing || (videoRef && !videoRef.paused && !videoRef.ended)) {
-        startAmbientLoop();
-      } else if (videoRef && videoRef.readyState >= 2) {
-        drawAmbientFrame(undefined, true);
+      if (type === "dynamic") {
+        if (playing || (videoRef && !videoRef.paused && !videoRef.ended)) {
+          startAmbientLoop();
+        } else if (videoRef && videoRef.readyState >= 2) {
+          drawAmbientFrame(undefined, true);
+        }
+      } else {
+        stopAmbientLoop();
       }
     } else {
       stopAmbientLoop();
@@ -1004,16 +1029,13 @@ export default function Player() {
               } as any
             }
           >
-            {/* Real-time dominant color aura glow layer */}
+            {/* Static aura color glow layer */}
             <div
-              class={`player-ambient-glow ${!playerAmbientMode() || isFullscreen() ? "hidden" : ""}`}
+              class={`player-ambient-glow ${!playerAmbientMode() || isFullscreen() || playerAmbientType() !== "static" ? "hidden" : ""}`}
               style={{
-                background:
-                  playerAmbientType() === "dynamic"
-                    ? currentDominantColor()
-                    : playerAmbientColor(),
+                background: playerAmbientColor(),
                 filter: `blur(${playerAmbientBlur()}px)`,
-                opacity: `${(playerAmbientIntensity() / 100) * (playerAmbientType() === "dynamic" ? 0.6 : 1)}`,
+                opacity: `${playerAmbientIntensity() / 100}`,
               }}
               aria-hidden="true"
             />
