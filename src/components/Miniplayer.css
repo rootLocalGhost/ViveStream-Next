@@ -51,6 +51,7 @@
   will-change: transform, filter, opacity;
 }
 
+.miniplayer-ambient-glow.hidden,
 .miniplayer-ambient-canvas.hidden {
   opacity: 0 !important;
   visibility: hidden;
