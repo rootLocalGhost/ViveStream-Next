@@ -153,4 +153,45 @@ describe("ambientLighting utility", () => {
     expect(rgb.r).toBeGreaterThan(100);
     expect(rgb.g).toBeLessThan(50);
   });
+
+  it("extracts dark crimson background (#71190e) in audio visualizer videos over center neon elements (#f78ff8)", () => {
+    const w = 16;
+    const h = 10;
+    const pixelCount = w * h;
+    const data = new Uint8ClampedArray(pixelCount * 4);
+
+    for (let i = 0; i < pixelCount; i++) {
+      const idx = i * 4;
+      const x = i % w;
+      const y = Math.floor(i / w);
+
+      // Center 3x3 has neon magenta visualizer element (#f78ff8: 247, 143, 248)
+      if (x >= 7 && x <= 9 && y >= 4 && y <= 6) {
+        data[idx] = 247;
+        data[idx + 1] = 143;
+        data[idx + 2] = 248;
+        data[idx + 3] = 255;
+      } else {
+        // Gradient dark crimson background (#71190e: R ~ 90..125, G ~ 20..30, B ~ 10..18)
+        data[idx] = 113;
+        data[idx + 1] = 25;
+        data[idx + 2] = 14;
+        data[idx + 3] = 255;
+      }
+    }
+
+    const mockCtx = {
+      getImageData: () => ({ data, width: w, height: h }),
+    } as unknown as CanvasRenderingContext2D;
+
+    const result = extractDominantVideoColors(mockCtx, w, h);
+    const rgb = hexToRgb(result.dominant);
+
+    // Deep crimson background must dominate over small center visualizer
+    expect(rgb.r).toBeGreaterThan(rgb.g);
+    expect(rgb.r).toBeGreaterThan(rgb.b);
+    expect(rgb.r).toBeGreaterThan(90);
+    expect(rgb.g).toBeLessThan(40);
+    expect(rgb.b).toBeLessThan(30);
+  });
 });
