@@ -17,6 +17,11 @@ pub async fn start_server(base_dir: PathBuf) {
             "Sec-Fetch-Site",
             "User-Agent",
             "Referer",
+        ])
+        .expose_headers(vec![
+            "Content-Range",
+            "Accept-Ranges",
+            "Content-Length",
         ]);
 
     let base_dir_clone = base_dir.clone();
@@ -82,18 +87,6 @@ pub async fn start_server(base_dir: PathBuf) {
         .with(warp::reply::with::header(
             "Cache-Control",
             "public, max-age=31536000, immutable",
-        ))
-        .with(warp::reply::with::header(
-            "Access-Control-Allow-Origin",
-            "*",
-        ))
-        .with(warp::reply::with::header(
-            "Access-Control-Allow-Methods",
-            "GET, HEAD, OPTIONS",
-        ))
-        .with(warp::reply::with::header(
-            "Access-Control-Allow-Headers",
-            "*",
         ))
         .with(warp::reply::with::header("Accept-Ranges", "bytes"));
 
