@@ -186,14 +186,35 @@ pub async fn extract_video_dominant_colors(
             });
         }
 
-        let mut sorted: Vec<_> = buckets.into_values().collect();
-        sorted.sort_by(|a, b| b.0.cmp(&a.0));
+        let mut sorted: Vec<_> = buckets
+            .into_values()
+            .map(|(count, r, g, b)| {
+                let rn = r as f32 / 255.0;
+                let gn = g as f32 / 255.0;
+                let bn = b as f32 / 255.0;
+                let max = rn.max(gn).max(bn);
+                let min = rn.min(gn).min(bn);
+                let lightness = (max + min) / 2.0;
+                let saturation = if max == min {
+                    0.0
+                } else if lightness > 0.5 {
+                    (max - min) / (2.0 - max - min)
+                } else {
+                    (max - min) / (max + min)
+                };
+                let sat_weight = 1.0 + saturation * 3.2;
+                let light_weight = (1.0 - (lightness - 0.5).abs() * 1.6).max(0.2);
+                let score = count as f32 * sat_weight * light_weight;
+                (score, count, r, g, b)
+            })
+            .collect();
+        sorted.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
-        let dominant = format!("#{:02x}{:02x}{:02x}", sorted[0].1, sorted[0].2, sorted[0].3);
+        let dominant = format!("#{:02x}{:02x}{:02x}", sorted[0].2, sorted[0].3, sorted[0].4);
         let mut palette = Vec::new();
 
         for item in sorted {
-            let hex = format!("#{:02x}{:02x}{:02x}", item.1, item.2, item.3);
+            let hex = format!("#{:02x}{:02x}{:02x}", item.2, item.3, item.4);
             let is_distinct = palette.iter().all(|existing: &String| {
                 if let (Ok(er), Ok(eg), Ok(eb)) = (
                     u8::from_str_radix(&existing[1..3], 16),
