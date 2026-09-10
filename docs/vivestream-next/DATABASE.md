@@ -10,7 +10,7 @@ Stores metadata for all downloaded or added media.
 
 - `id` (TEXT, PRIMARY KEY): The unique identifier (usually YouTube ID).
 - `title` (TEXT): The media title.
-- `channel` (TEXT): The channel or artist name.
+- `channel_name` (TEXT): The channel or artist name.
 - `video_path` (TEXT): Local file path to the media.
 - `thumbnail_path` (TEXT): Local file path to the cached thumbnail.
 - `duration` (INTEGER): Media duration in seconds.
@@ -33,7 +33,7 @@ Maps videos to playlists, maintaining order.
 
 - `playlist_id` (TEXT): Foreign key to `Playlists.id`.
 - `video_id` (TEXT): Foreign key to `Videos.id`.
-- `order_index` (INTEGER): Index for custom drag-and-drop sorting.
+- `sort_order` (INTEGER): Index for custom drag-and-drop sorting.
 
 ### `DownloadHistory` Table
 
@@ -42,10 +42,12 @@ Maintains a log of past downloads.
 - `id` (TEXT, PRIMARY KEY): UUID.
 - `video_id` (TEXT): The extracted ID.
 - `title` (TEXT): Title.
-- `channel` (TEXT): Channel.
+- `channel_name` (TEXT): Channel.
 - `url` (TEXT): Source URL.
-- `downloaded_at` (DATETIME): Attempt timestamp.
 - `status` (TEXT): e.g., 'Completed', 'Error'.
+- `dl_type` (TEXT): Download type, defaults to 'Video'.
+- `error_msg` (TEXT, Nullable): Error message if failed.
+- `created_at` (DATETIME): Attempt timestamp.
 
 ### `Artists` Table (Virtual/Derived)
 

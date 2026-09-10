@@ -52,9 +52,15 @@ Use the provided package scripts to build production binaries.
 
   ```bash
   bun run build:linux
+  bun run build:deb
+  bun run build:appimage
+  bun run build:arch
+  bun run build:rpm
   ```
 
 - **Windows:**
   ```bash
   bun run build:win
+  bun run build:exe
+  bun run build:msi
   ```
