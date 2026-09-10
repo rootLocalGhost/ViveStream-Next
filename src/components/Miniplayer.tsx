@@ -92,6 +92,15 @@ export const Miniplayer: Component = () => {
   let isFetchingRustColors = false;
   let lastRustFetchTime = -10;
 
+  let lastPaletteUpdateTime = 0;
+  const arePalettesEqual = (a: string[], b: string[]) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i].toLowerCase() !== b[i].toLowerCase()) return false;
+    }
+    return true;
+  };
+
   const fetchRustDominantColors = async (targetId: string, time: number) => {
     if (isFetchingRustColors || !playerAmbientMode()) return;
     if (Math.abs(time - lastRustFetchTime) < 1.0) return;
@@ -110,7 +119,9 @@ export const Miniplayer: Component = () => {
         logAmbient("Mini:RustFetchSuccess", res, 0);
         setCurrentDominantColor(res.dominant);
         if (res.palette && res.palette.length > 0) {
-          setExtractedVideoColors(res.palette);
+          if (!arePalettesEqual(extractedVideoColors(), res.palette)) {
+            setExtractedVideoColors(res.palette);
+          }
         }
       }
     } catch (err) {
@@ -197,8 +208,16 @@ export const Miniplayer: Component = () => {
             );
 
             setCurrentDominantColor(smoothedHex);
-            if (palette.length > 0) {
-              setExtractedVideoColors(palette);
+
+            const nowTs = performance.now();
+            if (
+              palette.length > 0 &&
+              (force || nowTs - lastPaletteUpdateTime >= 2000)
+            ) {
+              if (!arePalettesEqual(extractedVideoColors(), palette)) {
+                setExtractedVideoColors(palette);
+                lastPaletteUpdateTime = nowTs;
+              }
             }
 
             ambientSampleCount++;
@@ -234,6 +253,7 @@ export const Miniplayer: Component = () => {
     const isActivelyPlaying =
       (isPlaying() || (videoRef && !videoRef.paused && !videoRef.ended)) &&
       playerAmbientMode() &&
+      playerAmbientType() === "dynamic" &&
       shouldShow();
 
     if (!isActivelyPlaying) {
@@ -257,19 +277,23 @@ export const Miniplayer: Component = () => {
   createEffect(() => {
     const playing = isPlaying();
     const ambient = playerAmbientMode();
-    const isDynamic = playerAmbientType() === "dynamic";
+    const type = playerAmbientType();
     const show = shouldShow();
 
     if (ambient && show) {
       logAmbient(
         "Mini:EffectTrigger",
-        { playing, isDynamic, hasVideo: !!activeVideo() },
+        { playing, type, hasVideo: !!activeVideo() },
         0,
       );
-      if (playing || (videoRef && !videoRef.paused && !videoRef.ended)) {
-        startAmbientLoop();
-      } else if (videoRef && videoRef.readyState >= 2) {
-        drawAmbientFrame(undefined, true);
+      if (type === "dynamic") {
+        if (playing || (videoRef && !videoRef.paused && !videoRef.ended)) {
+          startAmbientLoop();
+        } else if (videoRef && videoRef.readyState >= 2) {
+          drawAmbientFrame(undefined, true);
+        }
+      } else {
+        stopAmbientLoop();
       }
     } else {
       stopAmbientLoop();
@@ -456,11 +480,11 @@ export const Miniplayer: Component = () => {
       >
         <Show when={playerAmbientMode()}>
           <div
-            class="miniplayer-ambient-glow"
+            class={`miniplayer-ambient-glow ${playerAmbientType() !== "static" ? "hidden" : ""}`}
             style={{
-              background: effectiveAmbientColor(),
+              background: playerAmbientColor(),
               filter: `blur(${Math.min(50, playerAmbientBlur())}px)`,
-              opacity: `${(playerAmbientIntensity() / 100) * (playerAmbientType() === "dynamic" ? 0.35 : 1)}`,
+              opacity: `${playerAmbientIntensity() / 100}`,
             }}
             aria-hidden="true"
           />
