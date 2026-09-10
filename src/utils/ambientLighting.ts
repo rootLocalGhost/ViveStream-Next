@@ -68,29 +68,33 @@ export const lerpColor = (current: RGB, target: RGB, factor: number): RGB => {
 };
 
 /**
- * Calculates saturation (0..1) and lightness (0..1) from 0-255 RGB.
+ * Calculates HSV saturation (0..1), Chroma (0..1), Value (0..1), and HSL Lightness (0..1) from 0-255 RGB.
  */
 export const getHslMetrics = (
   r: number,
   g: number,
   b: number,
-): { saturation: number; lightness: number } => {
+): { saturation: number; lightness: number; value: number; chroma: number; hsvSaturation: number } => {
   const rn = r / 255;
   const gn = g / 255;
   const bn = b / 255;
   const max = Math.max(rn, gn, bn);
   const min = Math.min(rn, gn, bn);
+  const chroma = max - min;
   const lightness = (max + min) / 2;
+  const value = max;
+  const hsvSaturation = max === 0 ? 0 : chroma / max;
+  const hslSaturation =
+    max === min ? 0 : lightness > 0.5 ? chroma / (2 - max - min) : chroma / (max + min);
 
-  if (max === min) {
-    return { saturation: 0, lightness };
-  }
-
-  const d = max - min;
-  const saturation =
-    lightness > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-  return { saturation, lightness };
+  // Return hsvSaturation as saturation for accurate colorfulness estimation
+  return {
+    saturation: hsvSaturation,
+    lightness,
+    value,
+    chroma,
+    hsvSaturation,
+  };
 };
 
 /**
@@ -115,9 +119,9 @@ export const extractDominantVideoColors = (
     }
 
     interface ColorBucket {
-      r: number;
-      g: number;
-      b: number;
+      sumR: number;
+      sumG: number;
+      sumB: number;
       count: number;
       saturation: number;
       lightness: number;
@@ -135,19 +139,13 @@ export const extractDominantVideoColors = (
 
       if (a < 128) continue;
 
-      const { saturation, lightness } = getHslMetrics(r, g, b);
-
       // Skip pure letterbox black borders
-      if (r < 18 && g < 18 && b < 18) continue;
+      if (r < 16 && g < 16 && b < 16) continue;
 
-      // Filter out blinding washed-out whites/light greys unless there are no other colors
-      const isBlindingWhite = lightness > 0.88 && saturation < 0.15;
-      const isMuddyDark = lightness < 0.08 && saturation < 0.20;
-
-      // Quantize into 16-step RGB buckets
-      const qr = Math.min(255, Math.floor(r / 16) * 16 + 8);
-      const qg = Math.min(255, Math.floor(g / 16) * 16 + 8);
-      const qb = Math.min(255, Math.floor(b / 16) * 16 + 8);
+      // 32-step quantization for stable color clustering
+      const qr = Math.min(255, Math.floor(r / 32) * 32 + 16);
+      const qg = Math.min(255, Math.floor(g / 32) * 32 + 16);
+      const qb = Math.min(255, Math.floor(b / 32) * 32 + 16);
 
       const key = `${qr},${qg},${qb}`;
       const existing = buckets.get(key);
@@ -156,23 +154,20 @@ export const extractDominantVideoColors = (
 
       if (existing) {
         existing.count += 1;
+        existing.sumR += r;
+        existing.sumG += g;
+        existing.sumB += b;
       } else {
         const bucketMetrics = getHslMetrics(qr, qg, qb);
         buckets.set(key, {
-          r: qr,
-          g: qg,
-          b: qb,
+          sumR: r,
+          sumG: g,
+          sumB: b,
           count: 1,
           saturation: bucketMetrics.saturation,
           lightness: bucketMetrics.lightness,
           score: 0,
         });
-      }
-
-      // If extreme white/dark, slightly reduce candidate frequency impact
-      if (isBlindingWhite || isMuddyDark) {
-        const b = buckets.get(key);
-        if (b) b.count = Math.max(1, b.count - 0.5);
       }
     }
 
@@ -183,37 +178,60 @@ export const extractDominantVideoColors = (
       };
     }
 
-    // Filter out isolated compression noise / tiny artifacts (< 1.5% of valid frame pixels)
-    const minPixelThreshold = Math.max(2, Math.floor(validPixels * 0.015));
+    // Filter out isolated compression noise / tiny artifacts (< 2% of valid frame pixels)
+    const minPixelThreshold = Math.max(3, Math.floor(validPixels * 0.02));
     const candidateBuckets = Array.from(buckets.values()).filter(
       (b) => b.count >= minPixelThreshold || buckets.size <= 3,
     );
-    const activeBuckets = candidateBuckets.length > 0 ? candidateBuckets : Array.from(buckets.values());
+    const activeBuckets =
+      candidateBuckets.length > 0
+        ? candidateBuckets
+        : Array.from(buckets.values());
 
     // Calculate score for each bucket:
-    // Balance true prominent video color volume with moderate saturation boost
+    // Volume count with HSV saturation and chroma weighting, strongly penalizing pale washed-out whites
     for (const b of activeBuckets) {
-      const satWeight = 1.0 + Math.pow(b.saturation, 1.1) * 1.8;
-      const lightDiff = Math.abs(b.lightness - 0.5);
-      const lightWeight = Math.max(0.35, 1.0 - lightDiff * 1.3);
-      b.score = b.count * satWeight * lightWeight;
+      const avgR = Math.round(b.sumR / b.count);
+      const avgG = Math.round(b.sumG / b.count);
+      const avgB = Math.round(b.sumB / b.count);
+      const { saturation, lightness, value, chroma } = getHslMetrics(avgR, avgG, avgB);
+      b.saturation = saturation;
+      b.lightness = lightness;
+
+      // Washed out white / light glare check (high value, low chroma)
+      const isWashedOutWhite = value > 0.78 && saturation < 0.35;
+      const glarePenalty = isWashedOutWhite ? 0.15 : 1.0;
+
+      // Dark mud check
+      const isMud = value < 0.10 && chroma < 0.06;
+      const mudPenalty = isMud ? 0.20 : 1.0;
+
+      const satWeight = 0.25 + Math.pow(saturation, 1.4) * 2.8 + chroma * 1.5;
+      const lightDiff = Math.abs(lightness - 0.5);
+      const lightWeight = Math.max(0.5, 1.0 - lightDiff * 0.8);
+
+      b.score = Math.pow(b.count, 1.2) * satWeight * lightWeight * glarePenalty * mudPenalty;
     }
 
-    const sorted = activeBuckets.sort(
-      (a, b) => b.score - a.score,
-    );
+    const sorted = activeBuckets.sort((a, b) => b.score - a.score);
     const top = sorted[0];
-    const dominantHex = rgbToHex(top.r, top.g, top.b);
+    const topR = Math.round(top.sumR / top.count);
+    const topG = Math.round(top.sumG / top.count);
+    const topB = Math.round(top.sumB / top.count);
+    const dominantHex = rgbToHex(topR, topG, topB);
 
     const palette: string[] = [];
     for (const item of sorted) {
-      const hex = rgbToHex(item.r, item.g, item.b);
+      const avgR = Math.round(item.sumR / item.count);
+      const avgG = Math.round(item.sumG / item.count);
+      const avgB = Math.round(item.sumB / item.count);
+      const hex = rgbToHex(avgR, avgG, avgB);
       const isDistinct = palette.every((existingHex) => {
         const er = parseInt(existingHex.slice(1, 3), 16);
         const eg = parseInt(existingHex.slice(3, 5), 16);
         const eb = parseInt(existingHex.slice(5, 7), 16);
         const dist = Math.sqrt(
-          (item.r - er) ** 2 + (item.g - eg) ** 2 + (item.b - eb) ** 2,
+          (avgR - er) ** 2 + (avgG - eg) ** 2 + (avgB - eb) ** 2,
         );
         return dist > 32;
       });
