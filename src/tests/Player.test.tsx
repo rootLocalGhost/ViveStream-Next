@@ -243,4 +243,23 @@ describe("Player Component", () => {
     const ambientCanvas = container.querySelector(".miniplayer-ambient-canvas");
     expect(ambientCanvas).toBeInTheDocument();
   });
+
+  it("supports toggling audio-reactive glow mode and adjusting sensitivity", async () => {
+    const {
+      togglePlayerAmbientAudioReactive,
+      playerAmbientAudioReactive,
+      updatePlayerAmbientAudioSensitivity,
+      playerAmbientAudioSensitivity,
+    } = await import("../store");
+
+    togglePlayerAmbientAudioReactive(true);
+    expect(playerAmbientAudioReactive()).toBe(true);
+
+    updatePlayerAmbientAudioSensitivity(140);
+    expect(playerAmbientAudioSensitivity()).toBe(140);
+
+    togglePlayerAmbientAudioReactive(false);
+    expect(playerAmbientAudioReactive()).toBe(false);
+  });
 });
+
