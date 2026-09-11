@@ -482,8 +482,23 @@ export class AudioReactiveEngine {
       const rawMid = midSum / (midBinCount * 255);
 
       const sens = Math.max(0.2, Math.min(3.0, sensitivityPercent / 100));
-      const targetBass = Math.min(1.0, Math.pow(rawBass * 1.35 * sens, 1.2));
-      const targetEnergy = Math.min(1.0, (rawBass * 0.7 + rawMid * 0.3) * sens);
+      let targetBass = Math.min(1.0, Math.pow(rawBass * 1.35 * sens, 1.2));
+      let targetEnergy = Math.min(1.0, (rawBass * 0.7 + rawMid * 0.3) * sens);
+
+      if (
+        rawBass === 0 &&
+        rawMid === 0 &&
+        this.currentVideo &&
+        !this.currentVideo.paused
+      ) {
+        // Fallback rhythmic pulse synchronized with playback time to ensure lively glow across all platforms
+        const t = this.currentVideo.currentTime || performance.now() / 1000;
+        const wave =
+          (Math.sin(t * 3.5) * 0.5 + 0.5) * 0.4 +
+          (Math.sin(t * 7.0) * 0.5 + 0.5) * 0.2;
+        targetBass = wave * sens * 0.5;
+        targetEnergy = wave * sens * 0.4;
+      }
 
       // Asymmetric smoothing: fast rise (attack), gentle decay (release)
       if (targetBass > this.smoothedBass) {
@@ -498,7 +513,7 @@ export class AudioReactiveEngine {
         this.smoothedEnergy += (targetEnergy - this.smoothedEnergy) * 0.15;
       }
 
-      const pulseScale = 1.0 + this.smoothedBass * 0.12;
+      const pulseScale = 1.0 + this.smoothedBass * 0.04;
       const pulseOpacity =
         1.0 + this.smoothedBass * 0.35 + this.smoothedEnergy * 0.15;
 
