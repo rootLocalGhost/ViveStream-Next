@@ -160,7 +160,14 @@ export default function Player() {
       );
       if (res && res.dominant) {
         logAmbient("RustFetchSuccess", res, 0);
-        setCurrentDominantColor(res.dominant);
+        const targetRgb = hexToRgb(res.dominant);
+        currentSmoothedRgb = lerpColor(currentSmoothedRgb, targetRgb, 0.4);
+        const smoothed = rgbToHex(
+          currentSmoothedRgb.r,
+          currentSmoothedRgb.g,
+          currentSmoothedRgb.b,
+        );
+        setCurrentDominantColor(smoothed);
         if (res.palette && res.palette.length > 0) {
           if (!arePalettesEqual(extractedVideoColors(), res.palette)) {
             setExtractedVideoColors(res.palette);
@@ -298,6 +305,16 @@ export default function Player() {
           videoId: video()!.id,
         });
         fetchRustDominantColors(video()!.id, videoRef?.currentTime ?? 0);
+      }
+
+      // Continuous background sync with Rust backend (every 1.5s) to guarantee accurate colors on all platforms
+      if (
+        video()?.id &&
+        videoRef &&
+        !videoRef.paused &&
+        time - lastRustFetchTime >= 1500
+      ) {
+        fetchRustDominantColors(video()!.id, videoRef.currentTime);
       }
 
       // 3. Audio-Reactive Dynamic Glow Modulation
@@ -1085,14 +1102,17 @@ export default function Player() {
               } as any
             }
           >
-            {/* Static aura color glow layer */}
+            {/* Ambient aura color glow layer */}
             <div
               ref={ambientGlowRef}
-              class={`player-ambient-glow ${!playerAmbientMode() || isFullscreen() || playerAmbientType() !== "static" ? "hidden" : ""}`}
+              class={`player-ambient-glow ${!playerAmbientMode() || isFullscreen() ? "hidden" : ""}`}
               style={{
-                background: playerAmbientColor(),
-                filter: `blur(${playerAmbientBlur()}px)`,
-                opacity: `${playerAmbientIntensity() / 100}`,
+                background:
+                  playerAmbientType() === "dynamic"
+                    ? currentDominantColor()
+                    : playerAmbientColor(),
+                filter: `blur(${Math.min(36, playerAmbientBlur() * 0.5)}px)`,
+                opacity: `${(playerAmbientIntensity() / 100) * 0.85}`,
               }}
               aria-hidden="true"
             />
@@ -1128,6 +1148,10 @@ export default function Player() {
                   if (isUnmounting) return;
                   invoke("update_playback_status", { playing: true });
                   setIsPlaying(true);
+                  if (videoRef) {
+                    getSharedAudioReactiveEngine().connect(videoRef);
+                    getSharedAudioReactiveEngine().resume();
+                  }
                   startAmbientLoop();
                 }}
                 onPause={() => {
