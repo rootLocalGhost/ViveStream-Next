@@ -34,6 +34,8 @@ import {
   playerAmbientType,
   playerAmbientIntensity,
   playerAmbientBlur,
+  playerAmbientAudioReactive,
+  playerAmbientAudioSensitivity,
 } from "../store";
 import {
   extractDominantVideoColors,
@@ -41,6 +43,7 @@ import {
   rgbToHex,
   lerpColor,
   logAmbient,
+  getSharedAudioReactiveEngine,
 } from "../utils/ambientLighting";
 import "./Miniplayer.css";
 
@@ -67,9 +70,10 @@ export const Miniplayer: Component = () => {
 
   let videoRef: HTMLVideoElement | undefined;
   let ambientCanvasRef: HTMLCanvasElement | undefined;
+  let ambientGlowRef: HTMLDivElement | undefined;
+  let ambientCtx: CanvasRenderingContext2D | null = null;
   let offscreenCanvas: HTMLCanvasElement | null = null;
   let offscreenCtx: CanvasRenderingContext2D | null = null;
-  let ambientCtx: CanvasRenderingContext2D | null = null;
   let lastAmbientDraw = 0;
   let currentSmoothedRgb = { r: 242, g: 92, b: 84 };
 
@@ -244,6 +248,56 @@ export const Miniplayer: Component = () => {
         });
         fetchRustDominantColors(activeVideo()!.id, videoRef?.currentTime ?? 0);
       }
+
+      // Audio-Reactive Dynamic Glow Modulation for Miniplayer
+      if (
+        playerAmbientAudioReactive() &&
+        videoRef &&
+        !videoRef.paused &&
+        !videoRef.ended
+      ) {
+        try {
+          const audioEngine = getSharedAudioReactiveEngine();
+          audioEngine.connect(videoRef);
+          audioEngine.resume();
+          const pulse = audioEngine.getPulseMetrics(
+            playerAmbientAudioSensitivity(),
+          );
+          const scaleVal = pulse.scale;
+          const opacityVal = pulse.opacityMultiplier;
+          if (ambientCanvasRef) {
+            ambientCanvasRef.style.setProperty(
+              "--ambient-audio-scale",
+              String(scaleVal),
+            );
+            ambientCanvasRef.style.setProperty(
+              "--ambient-audio-opacity",
+              String(opacityVal),
+            );
+          }
+          if (ambientGlowRef) {
+            ambientGlowRef.style.setProperty(
+              "--ambient-audio-scale",
+              String(scaleVal),
+            );
+            ambientGlowRef.style.setProperty(
+              "--ambient-audio-opacity",
+              String(opacityVal),
+            );
+          }
+        } catch (audioErr) {
+          logAmbient("Mini:AudioPulseError", audioErr, 3000);
+        }
+      } else {
+        if (ambientCanvasRef) {
+          ambientCanvasRef.style.removeProperty("--ambient-audio-scale");
+          ambientCanvasRef.style.removeProperty("--ambient-audio-opacity");
+        }
+        if (ambientGlowRef) {
+          ambientGlowRef.style.removeProperty("--ambient-audio-scale");
+          ambientGlowRef.style.removeProperty("--ambient-audio-opacity");
+        }
+      }
     }
   };
 
@@ -253,7 +307,7 @@ export const Miniplayer: Component = () => {
     const isActivelyPlaying =
       (isPlaying() || (videoRef && !videoRef.paused && !videoRef.ended)) &&
       playerAmbientMode() &&
-      playerAmbientType() === "dynamic" &&
+      (playerAmbientType() === "dynamic" || playerAmbientAudioReactive()) &&
       shouldShow();
 
     if (!isActivelyPlaying) {
@@ -286,7 +340,7 @@ export const Miniplayer: Component = () => {
         { playing, type, hasVideo: !!activeVideo() },
         0,
       );
-      if (type === "dynamic") {
+      if (type === "dynamic" || playerAmbientAudioReactive()) {
         if (playing || (videoRef && !videoRef.paused && !videoRef.ended)) {
           startAmbientLoop();
         } else if (videoRef && videoRef.readyState >= 2) {
@@ -480,6 +534,7 @@ export const Miniplayer: Component = () => {
       >
         <Show when={playerAmbientMode()}>
           <div
+            ref={ambientGlowRef}
             class={`miniplayer-ambient-glow ${playerAmbientType() !== "static" ? "hidden" : ""}`}
             style={{
               background: playerAmbientColor(),
