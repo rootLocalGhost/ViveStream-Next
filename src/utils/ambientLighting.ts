@@ -263,7 +263,39 @@ export const extractDominantVideoColors = (
     const dominantHex = rgbToHex(topR, topG, topB);
 
     const palette: string[] = [];
-    for (const item of sorted) {
+    if (dominantHex) {
+      palette.push(dominantHex);
+    }
+
+    // Filter and rank candidate palette colors prioritizing rich chromatic aesthetics
+    const paletteCandidates = activeBuckets
+      .filter((b) => {
+        const avgR = Math.round(b.sumR / b.count);
+        const avgG = Math.round(b.sumG / b.count);
+        const avgB = Math.round(b.sumB / b.count);
+        const { saturation, value, chroma } = getHslMetrics(avgR, avgG, avgB);
+        // Exclude near-black mud and washed-out white/glare
+        if (value < 0.12 && chroma < 0.08) return false;
+        if (value > 0.82 && saturation < 0.28) return false;
+        return chroma >= 0.10 || saturation >= 0.25;
+      })
+      .sort((a, b) => {
+        const avgRa = Math.round(a.sumR / a.count);
+        const avgGa = Math.round(a.sumG / a.count);
+        const avgBa = Math.round(a.sumB / a.count);
+        const ma = getHslMetrics(avgRa, avgGa, avgBa);
+
+        const avgRb = Math.round(b.sumR / b.count);
+        const avgGb = Math.round(b.sumG / b.count);
+        const avgBb = Math.round(b.sumB / b.count);
+        const mb = getHslMetrics(avgRb, avgGb, avgBb);
+
+        const scoreA = Math.pow(a.count, 0.85) * (0.5 + ma.saturation * 1.5 + ma.chroma);
+        const scoreB = Math.pow(b.count, 0.85) * (0.5 + mb.saturation * 1.5 + mb.chroma);
+        return scoreB - scoreA;
+      });
+
+    for (const item of paletteCandidates) {
       const avgR = Math.round(item.sumR / item.count);
       const avgG = Math.round(item.sumG / item.count);
       const avgB = Math.round(item.sumB / item.count);
@@ -275,11 +307,11 @@ export const extractDominantVideoColors = (
         const dist = Math.sqrt(
           (avgR - er) ** 2 + (avgG - eg) ** 2 + (avgB - eb) ** 2,
         );
-        return dist > 32;
+        return dist > 36;
       });
       if (isDistinct) {
         palette.push(hex);
-        if (palette.length >= 8) break;
+        if (palette.length >= 6) break;
       }
     }
 
