@@ -17,6 +17,10 @@ import {
   updatePlayerAmbientIntensity,
   playerAmbientBlur,
   updatePlayerAmbientBlur,
+  playerAmbientAudioReactive,
+  togglePlayerAmbientAudioReactive,
+  playerAmbientAudioSensitivity,
+  updatePlayerAmbientAudioSensitivity,
   sidebarHoverMode,
   toggleSidebarHoverMode,
   alwaysShowSearchBar,
@@ -858,6 +862,58 @@ export default function Settings() {
                       } as any
                     }
                   />
+                </div>
+
+                {/* Audio-Reactive Dynamic Glow */}
+                <div class="ambient-slider-card">
+                  <div class="flex-row-between">
+                    <span class="ambient-slider-label">
+                      <i class="ph-bold ph-waveform"></i> Audio-Reactive Pulse
+                    </span>
+                    <label class="switch">
+                      <input
+                        type="checkbox"
+                        checked={playerAmbientAudioReactive()}
+                        onChange={(e) =>
+                          togglePlayerAmbientAudioReactive(e.target.checked)
+                        }
+                      />
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <Show when={playerAmbientAudioReactive()}>
+                    <div style="margin-top: 10px;">
+                      <div class="flex-row-between" style="margin-bottom: 4px;">
+                        <span
+                          class="ambient-slider-label"
+                          style="font-size: 11px; text-transform: uppercase;"
+                        >
+                          Bass Reactivity
+                        </span>
+                        <span class="ambient-slider-badge">
+                          {playerAmbientAudioSensitivity()}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        class="setting-slider ambient-full-slider"
+                        min="30"
+                        max="200"
+                        step="5"
+                        value={playerAmbientAudioSensitivity()}
+                        onInput={(e) =>
+                          updatePlayerAmbientAudioSensitivity(
+                            parseInt(e.currentTarget.value, 10),
+                          )
+                        }
+                        style={
+                          {
+                            "--progress": `${((playerAmbientAudioSensitivity() - 30) / (200 - 30)) * 100}%`,
+                          } as any
+                        }
+                      />
+                    </div>
+                  </Show>
                 </div>
               </div>
 
