@@ -45,6 +45,10 @@ import {
   updatePlayerAmbientColor,
   playerAmbientIntensity,
   playerAmbientBlur,
+  playerAmbientAudioReactive,
+  togglePlayerAmbientAudioReactive,
+  playerAmbientAudioSensitivity,
+  updatePlayerAmbientAudioSensitivity,
   setPlayerContextParams,
   setGlobalVideoRef,
   isSearchOpen,
@@ -57,6 +61,7 @@ import {
   rgbToHex,
   lerpColor,
   logAmbient,
+  getSharedAudioReactiveEngine,
 } from "../utils/ambientLighting";
 import "./Player.css";
 
@@ -118,6 +123,7 @@ export default function Player() {
   let timelineContainerRef: HTMLDivElement | undefined;
   let playerContainerRef: HTMLDivElement | undefined;
   let ambientCanvasRef: HTMLCanvasElement | undefined;
+  let ambientGlowRef: HTMLDivElement | undefined;
   let ambientCtx: CanvasRenderingContext2D | null = null;
   let offscreenCanvas: HTMLCanvasElement | null = null;
   let offscreenCtx: CanvasRenderingContext2D | null = null;
@@ -293,6 +299,56 @@ export default function Player() {
         });
         fetchRustDominantColors(video()!.id, videoRef?.currentTime ?? 0);
       }
+
+      // 3. Audio-Reactive Dynamic Glow Modulation
+      if (
+        playerAmbientAudioReactive() &&
+        videoRef &&
+        !videoRef.paused &&
+        !videoRef.ended
+      ) {
+        try {
+          const audioEngine = getSharedAudioReactiveEngine();
+          audioEngine.connect(videoRef);
+          audioEngine.resume();
+          const pulse = audioEngine.getPulseMetrics(
+            playerAmbientAudioSensitivity(),
+          );
+          const scaleVal = pulse.scale;
+          const opacityVal = pulse.opacityMultiplier;
+          if (ambientCanvasRef) {
+            ambientCanvasRef.style.setProperty(
+              "--ambient-audio-scale",
+              String(scaleVal),
+            );
+            ambientCanvasRef.style.setProperty(
+              "--ambient-audio-opacity",
+              String(opacityVal),
+            );
+          }
+          if (ambientGlowRef) {
+            ambientGlowRef.style.setProperty(
+              "--ambient-audio-scale",
+              String(scaleVal),
+            );
+            ambientGlowRef.style.setProperty(
+              "--ambient-audio-opacity",
+              String(opacityVal),
+            );
+          }
+        } catch (audioErr) {
+          logAmbient("AudioPulseError", audioErr, 3000);
+        }
+      } else {
+        if (ambientCanvasRef) {
+          ambientCanvasRef.style.removeProperty("--ambient-audio-scale");
+          ambientCanvasRef.style.removeProperty("--ambient-audio-opacity");
+        }
+        if (ambientGlowRef) {
+          ambientGlowRef.style.removeProperty("--ambient-audio-scale");
+          ambientGlowRef.style.removeProperty("--ambient-audio-opacity");
+        }
+      }
     }
   };
 
@@ -302,7 +358,7 @@ export default function Player() {
     const isActivelyPlaying =
       (isPlaying() || (videoRef && !videoRef.paused && !videoRef.ended)) &&
       playerAmbientMode() &&
-      playerAmbientType() === "dynamic" &&
+      (playerAmbientType() === "dynamic" || playerAmbientAudioReactive()) &&
       !isFullscreen();
 
     if (!isActivelyPlaying) {
@@ -336,7 +392,7 @@ export default function Player() {
         { playing, type, hasVideo: !!video() },
         0,
       );
-      if (type === "dynamic") {
+      if (type === "dynamic" || playerAmbientAudioReactive()) {
         if (playing || (videoRef && !videoRef.paused && !videoRef.ended)) {
           startAmbientLoop();
         } else if (videoRef && videoRef.readyState >= 2) {
@@ -1031,6 +1087,7 @@ export default function Player() {
           >
             {/* Static aura color glow layer */}
             <div
+              ref={ambientGlowRef}
               class={`player-ambient-glow ${!playerAmbientMode() || isFullscreen() || playerAmbientType() !== "static" ? "hidden" : ""}`}
               style={{
                 background: playerAmbientColor(),
@@ -1453,6 +1510,42 @@ export default function Player() {
                                 <i class="ph-bold ph-plus"></i>
                               </label>
                             </div>
+                          </div>
+
+                          {/* Audio-Reactive Dynamic Glow Section */}
+                          <div class="player-ambient-palette-section">
+                            <div class="player-ambient-audio-row">
+                              <button
+                                type="button"
+                                class={`player-ambient-mode-btn ${playerAmbientAudioReactive() ? "active" : ""}`}
+                                onClick={() => togglePlayerAmbientAudioReactive()}
+                                title="Pulse ambient glow in real-time with music bass and audio beats"
+                              >
+                                <i class="ph-bold ph-waveform"></i>
+                                <span>Audio Reactive</span>
+                              </button>
+                            </div>
+                            <Show when={playerAmbientAudioReactive()}>
+                              <div class="player-ambient-slider-section">
+                                <div class="player-ambient-slider-label">
+                                  <span>Bass Reactivity</span>
+                                  <span>{playerAmbientAudioSensitivity()}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="30"
+                                  max="200"
+                                  step="5"
+                                  value={playerAmbientAudioSensitivity()}
+                                  onInput={(e) =>
+                                    updatePlayerAmbientAudioSensitivity(
+                                      Number(e.currentTarget.value),
+                                    )
+                                  }
+                                  class="player-ambient-range-slider"
+                                />
+                              </div>
+                            </Show>
                           </div>
                         </div>
                       </Show>
