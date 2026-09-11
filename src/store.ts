@@ -250,6 +250,10 @@ export const {
   setPlayerAmbientIntensity,
   playerAmbientBlur,
   setPlayerAmbientBlur,
+  playerAmbientAudioReactive,
+  setPlayerAmbientAudioReactive,
+  playerAmbientAudioSensitivity,
+  setPlayerAmbientAudioSensitivity,
   playerContextParams,
   setPlayerContextParams,
   favoritesSet,
@@ -424,6 +428,10 @@ export const {
   const [playerAmbientBlur, setPlayerAmbientBlur] = createSignal(
     getNum("playerAmbientBlur", 60),
   );
+  const [playerAmbientAudioReactive, setPlayerAmbientAudioReactive] =
+    createSignal(getBool("playerAmbientAudioReactive", false));
+  const [playerAmbientAudioSensitivity, setPlayerAmbientAudioSensitivity] =
+    createSignal(getNum("playerAmbientAudioSensitivity", 100));
   const [playerContextParams, setPlayerContextParams] = createSignal<{
     context?: string;
     id?: string;
@@ -579,6 +587,10 @@ export const {
     setPlayerAmbientIntensity,
     playerAmbientBlur,
     setPlayerAmbientBlur,
+    playerAmbientAudioReactive,
+    setPlayerAmbientAudioReactive,
+    playerAmbientAudioSensitivity,
+    setPlayerAmbientAudioSensitivity,
     playerContextParams,
     setPlayerContextParams,
     favoritesSet,
@@ -888,6 +900,25 @@ export const updatePlayerAmbientBlur = (val: number) => {
   setPlayerAmbientBlur(val);
   if (isBrowser) {
     window.localStorage.setItem("playerAmbientBlur", val.toString());
+  }
+};
+
+export const togglePlayerAmbientAudioReactive = (val?: boolean) => {
+  const next =
+    val !== undefined ? val : !playerAmbientAudioReactive();
+  setPlayerAmbientAudioReactive(next);
+  if (isBrowser) {
+    window.localStorage.setItem("playerAmbientAudioReactive", String(next));
+  }
+};
+
+export const updatePlayerAmbientAudioSensitivity = (val: number) => {
+  setPlayerAmbientAudioSensitivity(val);
+  if (isBrowser) {
+    window.localStorage.setItem(
+      "playerAmbientAudioSensitivity",
+      val.toString(),
+    );
   }
 };
 
