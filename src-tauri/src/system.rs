@@ -220,9 +220,11 @@ pub async fn extract_video_dominant_colors(
             });
         }
 
-        let mut sorted: Vec<_> = buckets
-            .into_values()
-            .map(|(count, sum_r, sum_g, sum_b)| {
+        let bucket_list: Vec<(f32, f32, f32, f32)> = buckets.into_values().collect();
+
+        let mut sorted: Vec<_> = bucket_list
+            .iter()
+            .map(|&(count, sum_r, sum_g, sum_b)| {
                 let r = (sum_r / count).round().min(255.0) as u8;
                 let g = (sum_g / count).round().min(255.0) as u8;
                 let b = (sum_b / count).round().min(255.0) as u8;
@@ -252,9 +254,9 @@ pub async fn extract_video_dominant_colors(
         let dominant = format!("#{:02x}{:02x}{:02x}", sorted[0].2, sorted[0].3, sorted[0].4);
         let mut palette = vec![dominant.clone()];
 
-        let mut palette_candidates: Vec<_> = buckets
-            .into_values()
-            .filter_map(|(count, sum_r, sum_g, sum_b)| {
+        let mut palette_candidates: Vec<_> = bucket_list
+            .iter()
+            .filter_map(|&(count, sum_r, sum_g, sum_b)| {
                 let r = (sum_r / count).round().min(255.0) as u8;
                 let g = (sum_g / count).round().min(255.0) as u8;
                 let b = (sum_b / count).round().min(255.0) as u8;
