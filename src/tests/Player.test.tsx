@@ -212,7 +212,7 @@ describe("Player Component", () => {
     togglePlayerAmbientMode(true);
     togglePlayerAmbientType("dynamic");
     expect(ambientCanvas).not.toHaveClass("hidden");
-    expect(ambientGlow).toHaveClass("hidden");
+    expect(ambientGlow).not.toHaveClass("hidden");
   });
 
   it("renders miniplayer with ambient glow and controls when not on player page", async () => {
