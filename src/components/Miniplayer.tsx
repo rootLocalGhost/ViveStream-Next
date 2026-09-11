@@ -121,7 +121,14 @@ export const Miniplayer: Component = () => {
       );
       if (res && res.dominant) {
         logAmbient("Mini:RustFetchSuccess", res, 0);
-        setCurrentDominantColor(res.dominant);
+        const targetRgb = hexToRgb(res.dominant);
+        currentSmoothedRgb = lerpColor(currentSmoothedRgb, targetRgb, 0.4);
+        const smoothed = rgbToHex(
+          currentSmoothedRgb.r,
+          currentSmoothedRgb.g,
+          currentSmoothedRgb.b,
+        );
+        setCurrentDominantColor(smoothed);
         if (res.palette && res.palette.length > 0) {
           if (!arePalettesEqual(extractedVideoColors(), res.palette)) {
             setExtractedVideoColors(res.palette);
@@ -247,6 +254,16 @@ export const Miniplayer: Component = () => {
           videoId: activeVideo()!.id,
         });
         fetchRustDominantColors(activeVideo()!.id, videoRef?.currentTime ?? 0);
+      }
+
+      // Continuous background sync with Rust backend (every 1.5s) to guarantee accurate colors on all platforms
+      if (
+        activeVideo()?.id &&
+        videoRef &&
+        !videoRef.paused &&
+        time - lastRustFetchTime >= 1500
+      ) {
+        fetchRustDominantColors(activeVideo()!.id, videoRef.currentTime);
       }
 
       // Audio-Reactive Dynamic Glow Modulation for Miniplayer
@@ -535,9 +552,12 @@ export const Miniplayer: Component = () => {
         <Show when={playerAmbientMode()}>
           <div
             ref={ambientGlowRef}
-            class={`miniplayer-ambient-glow ${playerAmbientType() !== "static" ? "hidden" : ""}`}
+            class="miniplayer-ambient-glow"
             style={{
-              background: playerAmbientColor(),
+              background:
+                playerAmbientType() === "dynamic"
+                  ? currentDominantColor()
+                  : playerAmbientColor(),
               filter: `blur(${Math.min(50, playerAmbientBlur())}px)`,
               opacity: `${playerAmbientIntensity() / 100}`,
             }}
