@@ -250,27 +250,59 @@ pub async fn extract_video_dominant_colors(
         sorted.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
         let dominant = format!("#{:02x}{:02x}{:02x}", sorted[0].2, sorted[0].3, sorted[0].4);
-        let mut palette = Vec::new();
+        let mut palette = vec![dominant.clone()];
 
-        for item in sorted {
-            let hex = format!("#{:02x}{:02x}{:02x}", item.2, item.3, item.4);
+        let mut palette_candidates: Vec<_> = buckets
+            .into_values()
+            .filter_map(|(count, sum_r, sum_g, sum_b)| {
+                let r = (sum_r / count).round().min(255.0) as u8;
+                let g = (sum_g / count).round().min(255.0) as u8;
+                let b = (sum_b / count).round().min(255.0) as u8;
+                let rn = r as f32 / 255.0;
+                let gn = g as f32 / 255.0;
+                let bn = b as f32 / 255.0;
+                let max = rn.max(gn).max(bn);
+                let min = rn.min(gn).min(bn);
+                let chroma = max - min;
+                let value = max;
+                let hsv_saturation = if max == 0.0 { 0.0 } else { chroma / max };
+
+                // Exclude near-black mud and washed-out white/glare
+                if value < 0.12 && chroma < 0.08 {
+                    return None;
+                }
+                if value > 0.82 && hsv_saturation < 0.28 {
+                    return None;
+                }
+                if chroma < 0.10 && hsv_saturation < 0.25 {
+                    return None;
+                }
+
+                let score = count.powf(0.85) * (0.5 + hsv_saturation * 1.5 + chroma);
+                Some((score, r, g, b))
+            })
+            .collect();
+        palette_candidates.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+
+        for item in palette_candidates {
+            let hex = format!("#{:02x}{:02x}{:02x}", item.1, item.2, item.3);
             let is_distinct = palette.iter().all(|existing: &String| {
                 if let (Ok(er), Ok(eg), Ok(eb)) = (
                     u8::from_str_radix(&existing[1..3], 16),
                     u8::from_str_radix(&existing[3..5], 16),
                     u8::from_str_radix(&existing[5..7], 16),
                 ) {
-                    let dr = (item.2 as f32 - er as f32).powi(2);
-                    let dg = (item.3 as f32 - eg as f32).powi(2);
-                    let db = (item.4 as f32 - eb as f32).powi(2);
-                    (dr + dg + db).sqrt() > 32.0
+                    let dr = (item.1 as f32 - er as f32).powi(2);
+                    let dg = (item.2 as f32 - eg as f32).powi(2);
+                    let db = (item.3 as f32 - eb as f32).powi(2);
+                    (dr + dg + db).sqrt() > 36.0
                 } else {
                     true
                 }
             });
             if is_distinct {
                 palette.push(hex);
-                if palette.len() >= 8 {
+                if palette.len() >= 6 {
                     break;
                 }
             }
