@@ -61,14 +61,15 @@
   left: 50%;
   width: 100%;
   height: 100%;
-  transform: translate(-50%, -50%) scale(1.12);
+  transform: translate(-50%, -50%)
+    scale(calc(1.12 * var(--ambient-audio-scale, 1)));
   border-radius: calc(var(--neo-radius) * 1.5);
   pointer-events: none;
   z-index: 0;
   mix-blend-mode: screen;
   transition:
     background 0.35s ease,
-    opacity 0.35s ease,
+    opacity 0.15s ease,
     filter 0.3s ease;
   will-change: transform, filter, opacity;
 }
@@ -79,15 +80,16 @@
   left: 50%;
   width: 100%;
   height: 100%;
-  transform: translate(-50%, -50%) scale(1.12);
+  transform: translate(-50%, -50%)
+    scale(calc(1.12 * var(--ambient-audio-scale, 1)));
   filter: blur(var(--ambient-blur, 36px)) saturate(120%) brightness(1.05);
-  opacity: var(--ambient-opacity, 0.85);
+  opacity: calc(var(--ambient-opacity, 0.85) * var(--ambient-audio-opacity, 1));
   pointer-events: none;
   z-index: 0;
   mix-blend-mode: screen;
   border-radius: calc(var(--neo-radius) * 1.5);
   transition:
-    opacity 0.35s ease,
+    opacity 0.15s ease,
     filter 0.3s ease;
   will-change: transform, filter, opacity;
 }
@@ -891,6 +893,60 @@ video::cue {
   font-family: monospace;
   color: var(--secondary-text);
   margin-left: 4px;
+}
+
+.player-ambient-audio-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.player-ambient-slider-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 2px 2px 2px;
+}
+
+.player-ambient-slider-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--secondary-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.player-ambient-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--secondary-background);
+  border-radius: 4px;
+  border: 1.5px solid var(--border-color);
+  outline: none;
+  cursor: pointer;
+}
+
+.player-ambient-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary-accent);
+  border: 1.5px solid #000000;
+  box-shadow: 1px 1px 0px #000000;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.player-ambient-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
 }
 
 .subtitle-customization-row {
