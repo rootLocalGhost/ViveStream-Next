@@ -5,6 +5,7 @@ import {
   lerpColor,
   getHslMetrics,
   extractDominantVideoColors,
+  AudioReactiveEngine,
 } from "../utils/ambientLighting";
 
 describe("ambientLighting utility", () => {
@@ -194,4 +195,45 @@ describe("ambientLighting utility", () => {
     expect(rgb.g).toBeLessThan(40);
     expect(rgb.b).toBeLessThan(30);
   });
+
+  it("AudioReactiveEngine handles uninitialized state and missing audio safely", () => {
+    const engine = new AudioReactiveEngine();
+    expect(engine.isConnected()).toBe(false);
+
+    const metrics = engine.getPulseMetrics(100);
+    expect(metrics.scale).toBe(1.0);
+    expect(metrics.opacityMultiplier).toBe(1.0);
+    expect(metrics.bassIntensity).toBe(0);
+  });
+
+  it("AudioReactiveEngine calculates bass-driven pulse metrics from frequency data", () => {
+    const engine = new AudioReactiveEngine();
+
+    // Mock internal analyser and frequency data buffer
+    const mockData = new Uint8Array(128);
+    // Fill bass bins with strong kick energy (values 200..255)
+    for (let i = 0; i < 6; i++) {
+      mockData[i] = 230;
+    }
+
+    (engine as any).analyser = {
+      frequencyBinCount: 128,
+      getByteFrequencyData: (arr: Uint8Array) => {
+        arr.set(mockData);
+      },
+    };
+    (engine as any).dataArray = mockData;
+
+    expect(engine.isConnected()).toBe(true);
+
+    const metrics = engine.getPulseMetrics(100);
+    expect(metrics.bassIntensity).toBeGreaterThan(0.2);
+    expect(metrics.scale).toBeGreaterThan(1.0);
+    expect(metrics.opacityMultiplier).toBeGreaterThan(1.0);
+
+    // Higher sensitivity yields higher pulse scale and opacity
+    const highSensMetrics = engine.getPulseMetrics(180);
+    expect(highSensMetrics.scale).toBeGreaterThanOrEqual(metrics.scale);
+  });
 });
+
