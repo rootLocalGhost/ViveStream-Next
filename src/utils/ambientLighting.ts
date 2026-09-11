@@ -355,3 +355,179 @@ export const logAmbient = (
     }
   }
 };
+
+export interface AudioPulseMetrics {
+  scale: number;
+  opacityMultiplier: number;
+  bassIntensity: number;
+  rawEnergy: number;
+}
+
+/**
+ * Web Audio API engine for real-time bass frequency analysis and dynamic glow modulation.
+ */
+export class AudioReactiveEngine {
+  private audioCtx: AudioContext | null = null;
+  private analyser: AnalyserNode | null = null;
+  private sourceNode: MediaElementAudioSourceNode | null = null;
+  private dataArray: Uint8Array | null = null;
+  private currentVideo: HTMLMediaElement | null = null;
+  private smoothedBass = 0;
+  private smoothedEnergy = 0;
+
+  private static mediaSourceMap = new WeakMap<
+    HTMLMediaElement,
+    {
+      ctx: AudioContext;
+      source: MediaElementAudioSourceNode;
+      analyser: AnalyserNode;
+    }
+  >();
+
+  public connect(mediaElement: HTMLMediaElement): boolean {
+    if (!mediaElement) return false;
+    if (typeof window === "undefined") return false;
+
+    const AudioContextClass =
+      window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return false;
+
+    try {
+      this.currentVideo = mediaElement;
+
+      const existing = AudioReactiveEngine.mediaSourceMap.get(mediaElement);
+      if (existing) {
+        this.audioCtx = existing.ctx;
+        this.sourceNode = existing.source;
+        this.analyser = existing.analyser;
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+        if (this.audioCtx.state === "suspended") {
+          this.audioCtx.resume().catch(() => {});
+        }
+        return true;
+      }
+
+      this.audioCtx = new AudioContextClass();
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 256;
+      this.analyser.smoothingTimeConstant = 0.75;
+
+      this.sourceNode = this.audioCtx.createMediaElementSource(mediaElement);
+      this.sourceNode.connect(this.analyser);
+      this.analyser.connect(this.audioCtx.destination);
+
+      this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+      AudioReactiveEngine.mediaSourceMap.set(mediaElement, {
+        ctx: this.audioCtx,
+        source: this.sourceNode,
+        analyser: this.analyser,
+      });
+
+      if (this.audioCtx.state === "suspended") {
+        this.audioCtx.resume().catch(() => {});
+      }
+      return true;
+    } catch (err) {
+      logAmbient("AudioReactiveConnectError", err, 3000);
+      return false;
+    }
+  }
+
+  public resume(): void {
+    if (this.audioCtx && this.audioCtx.state === "suspended") {
+      this.audioCtx.resume().catch(() => {});
+    }
+  }
+
+  public isConnected(): boolean {
+    return !!this.analyser && !!this.dataArray;
+  }
+
+  public getPulseMetrics(sensitivityPercent = 100): AudioPulseMetrics {
+    if (!this.analyser || !this.dataArray) {
+      return {
+        scale: 1.0,
+        opacityMultiplier: 1.0,
+        bassIntensity: 0,
+        rawEnergy: 0,
+      };
+    }
+
+    try {
+      this.analyser.getByteFrequencyData(this.dataArray);
+      const binCount = this.dataArray.length;
+      if (binCount === 0) {
+        return {
+          scale: 1.0,
+          opacityMultiplier: 1.0,
+          bassIntensity: 0,
+          rawEnergy: 0,
+        };
+      }
+
+      // Focus on Sub/Mid-Bass bins (20Hz - ~250Hz)
+      const bassBinCount = Math.min(6, binCount);
+      let bassSum = 0;
+      for (let i = 0; i < bassBinCount; i++) {
+        bassSum += this.dataArray[i];
+      }
+      const rawBass = bassSum / (bassBinCount * 255);
+
+      const midBinCount = Math.min(24, binCount);
+      let midSum = 0;
+      for (let i = 0; i < midBinCount; i++) {
+        midSum += this.dataArray[i];
+      }
+      const rawMid = midSum / (midBinCount * 255);
+
+      const sens = Math.max(0.2, Math.min(3.0, sensitivityPercent / 100));
+      const targetBass = Math.min(1.0, Math.pow(rawBass * 1.35 * sens, 1.2));
+      const targetEnergy = Math.min(1.0, (rawBass * 0.7 + rawMid * 0.3) * sens);
+
+      // Asymmetric smoothing: fast rise (attack), gentle decay (release)
+      if (targetBass > this.smoothedBass) {
+        this.smoothedBass += (targetBass - this.smoothedBass) * 0.55;
+      } else {
+        this.smoothedBass += (targetBass - this.smoothedBass) * 0.12;
+      }
+
+      if (targetEnergy > this.smoothedEnergy) {
+        this.smoothedEnergy += (targetEnergy - this.smoothedEnergy) * 0.5;
+      } else {
+        this.smoothedEnergy += (targetEnergy - this.smoothedEnergy) * 0.15;
+      }
+
+      const pulseScale = 1.0 + this.smoothedBass * 0.12;
+      const pulseOpacity =
+        1.0 + this.smoothedBass * 0.35 + this.smoothedEnergy * 0.15;
+
+      return {
+        scale: Number(pulseScale.toFixed(4)),
+        opacityMultiplier: Number(pulseOpacity.toFixed(4)),
+        bassIntensity: Number(this.smoothedBass.toFixed(4)),
+        rawEnergy: Number(targetEnergy.toFixed(4)),
+      };
+    } catch {
+      return {
+        scale: 1.0,
+        opacityMultiplier: 1.0,
+        bassIntensity: 0,
+        rawEnergy: 0,
+      };
+    }
+  }
+
+  public disconnect(): void {
+    this.smoothedBass = 0;
+    this.smoothedEnergy = 0;
+  }
+}
+
+let sharedAudioReactiveEngine: AudioReactiveEngine | null = null;
+export const getSharedAudioReactiveEngine = (): AudioReactiveEngine => {
+  if (!sharedAudioReactiveEngine) {
+    sharedAudioReactiveEngine = new AudioReactiveEngine();
+  }
+  return sharedAudioReactiveEngine;
+};
