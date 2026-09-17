@@ -18,6 +18,7 @@ The frontend is built purely with **SolidJS** to completely avoid Virtual DOM ov
   - `Settings.tsx`: Configuration for themes, API client strings, library management, and dangerous actions (wipes).
   - `Playlists.tsx` & `Artists.tsx` & `Favourites.tsx`: Media library views reading directly from the local Rust database.
 - **`src/components/`**: Reusable UI elements (e.g., `VideoCard.tsx`, `Miniplayer.tsx`, `NotificationSystem.tsx`, Modal dialogs).
+- **`src/utils/`**: Shared frontend utility functions for image preloading, sorting logic, and ambient lighting extraction. (See [`UTILS.md`](./UTILS.md) for details).
 - **`src/assets/`**: Static assets, banners, and default avatars.
 - **Design Language**: All CSS uses a strict **Claymorphism** design pattern, relying on soft elevations, rounded pills, and dynamic shadows (detailed in `DESIGN.md`).
 
