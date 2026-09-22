@@ -22,6 +22,7 @@
     "cleanup": "cd src-tauri && cargo clean && rm -rf target gen && cd .. && rm -rf node_modules dist pkg PKGBUILD.1",
     "init": "cd src-tauri && cargo build && cd .. && bun install && vite build",
     "test": "vitest run",
+    "test:pot": "cargo run --manifest-path src-tauri/Cargo.toml -- --test-pot",
     "version:verify": "bun ./scripts/verify-versions.js",
     "bump": "bun ./scripts/bump.js",
     "bump:patch": "bun ./scripts/bump.js patch",
