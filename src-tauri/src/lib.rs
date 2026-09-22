@@ -184,8 +184,62 @@ pub fn run() {
             sync_thumbnail_cache,
             get_clipboard_text,
             set_clipboard_text,
-            extract_video_dominant_colors
+            extract_video_dominant_colors,
+            test_fetch_po_token
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+pub fn run_pot_test(video_id: Option<String>) {
+    #[cfg(target_os = "linux")]
+    suppress_ayatana_warnings();
+
+    let target_id = video_id.unwrap_or_else(|| "dQw4w9WgXcQ".to_string());
+
+    println!("\n============================================================");
+    println!("  ViveStream-Next: PO Token Extraction Live Test");
+    println!(
+        "  Target Video: https://www.youtube.com/watch?v={}",
+        target_id
+    );
+    println!("============================================================\n");
+
+    tauri::Builder::default()
+        .setup(move |app| {
+            let handle = app.handle().clone();
+            let vid = target_id.clone();
+
+            if let Some(main_win) = app.get_webview_window("main") {
+                let _ = main_win.hide();
+            }
+
+            tauri::async_runtime::spawn(async move {
+                println!("[TEST] Initializing native OS WebView and BotGuard interceptor...");
+                let start = std::time::Instant::now();
+                match crate::downloader::extract_po_token(&handle, &vid).await {
+                    Ok(token) => {
+                        println!("\n============================================================");
+                        println!(
+                            "  [SUCCESS] PO TOKEN ACQUIRED in {:.2}s!",
+                            start.elapsed().as_secs_f64()
+                        );
+                        println!("  Token length: {} chars", token.len());
+                        println!("  Token value: {}", token);
+                        println!("============================================================\n");
+                        std::process::exit(0);
+                    }
+                    Err(e) => {
+                        println!("\n============================================================");
+                        println!("  [TEST RESULT] PO TOKEN EXTRACTION: {}", e);
+                        println!("  Elapsed time: {:.2}s", start.elapsed().as_secs_f64());
+                        println!("============================================================\n");
+                        std::process::exit(1);
+                    }
+                }
+            });
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running PO token test");
 }
