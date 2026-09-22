@@ -18,11 +18,7 @@ pub async fn start_server(base_dir: PathBuf) {
             "User-Agent",
             "Referer",
         ])
-        .expose_headers(vec![
-            "Content-Range",
-            "Accept-Ranges",
-            "Content-Length",
-        ]);
+        .expose_headers(vec!["Content-Range", "Accept-Ranges", "Content-Length"]);
 
     let base_dir_clone = base_dir.clone();
     let base_dir_filter = warp::any().map(move || base_dir_clone.clone());
