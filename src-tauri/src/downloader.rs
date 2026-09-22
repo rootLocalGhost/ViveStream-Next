@@ -70,13 +70,21 @@ pub fn extract_youtube_id(url: &str) -> String {
 }
 
 // Spawns a hidden native WebView, forces YouTube to calculate a BotGuard token via autoplay, and intercepts it
-async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, String> {
+pub async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
     let tx = std::sync::Arc::new(std::sync::Mutex::new(Some(tx)));
     let tx_clone = tx.clone();
 
-    // Using autoplay=1 ensures the iframe actually attempts playback, forcing BotGuard generation instantly
-    let embed_url = format!("https://www.youtube.com/embed/{}?autoplay=1", video_id);
+    println!(
+        "[PO_TOKEN] Spawning hidden native WebView for video ID: {}",
+        video_id
+    );
+
+    // Using autoplay=1&mute=1 ensures modern browsers allow autoplay without user gesture
+    let embed_url = format!(
+        "https://www.youtube.com/embed/{}?autoplay=1&mute=1&playsinline=1&enablejsapi=1",
+        video_id
+    );
     let window_label = format!(
         "pot_{}",
         std::time::SystemTime::now()
@@ -90,29 +98,102 @@ async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, Str
         &window_label,
         tauri::WebviewUrl::External(embed_url.parse().unwrap()),
     )
+    .inner_size(1280.0, 720.0)
     .visible(false)
     .initialization_script(
         r#"
-        const origFetch = window.fetch;
-        window.fetch = async function(res, init) {
-            if (typeof res === 'string' && res.includes('/youtubei/v1/player')) {
+        (function() {
+            try {
+                Object.defineProperty(document, 'hidden', { get: () => false });
+                Object.defineProperty(document, 'visibilityState', { get: () => 'visible' });
+                Object.defineProperty(document, 'webkitVisibilityState', { get: () => 'visible' });
+            } catch(e) {}
+
+            function checkAndNotify(bodyData) {
+                if (!bodyData) return;
                 try {
-                    if (init && init.body) {
-                        const body = JSON.parse(init.body);
-                        const token = body?.serviceIntegrityDimensions?.poToken;
-                        if (token) {
-                            window.location.replace("https://vstoken.local/" + token);
+                    const str = typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData);
+                    const match = str.match(/"po_?token"\s*:\s*"([^"]+)"/i);
+                    if (match && match[1]) {
+                        window.location.replace("https://vstoken.local/" + match[1]);
+                        return true;
+                    }
+                    const body = typeof bodyData === 'string' ? JSON.parse(bodyData) : bodyData;
+                    const token = body?.context?.serviceIntegrityDimensions?.poToken
+                        || body?.serviceIntegrityDimensions?.poToken 
+                        || body?.attestationRequest?.poToken;
+                    if (token) {
+                        window.location.replace("https://vstoken.local/" + token);
+                        return true;
+                    }
+                } catch(e) {}
+                return false;
+            }
+
+            const origFetch = window.fetch;
+            window.fetch = async function(res, init) {
+                if (init && init.body) {
+                    checkAndNotify(init.body);
+                } else if (res && typeof res.clone === 'function') {
+                    try {
+                        res.clone().text().then(function(t) { checkAndNotify(t); });
+                    } catch(e) {}
+                }
+                return origFetch.apply(this, arguments);
+            };
+
+            const origOpen = XMLHttpRequest.prototype.open;
+            const origSend = XMLHttpRequest.prototype.send;
+            XMLHttpRequest.prototype.open = function(method, url) {
+                this._vs_url = url;
+                return origOpen.apply(this, arguments);
+            };
+            XMLHttpRequest.prototype.send = function(body) {
+                if (body) {
+                    checkAndNotify(body);
+                }
+                return origSend.apply(this, arguments);
+            };
+
+            if (navigator.sendBeacon) {
+                const origBeacon = navigator.sendBeacon;
+                navigator.sendBeacon = function(url, data) {
+                    if (data) checkAndNotify(data);
+                    return origBeacon.apply(this, arguments);
+                };
+            }
+
+            function attemptPlay() {
+                try {
+                    const playBtn = document.querySelector('.ytp-large-play-button') || document.querySelector('.ytp-play-button');
+                    if (playBtn) playBtn.click();
+                    const video = document.querySelector('video');
+                    if (video) {
+                        video.muted = true;
+                        video.play().catch(function() {});
+                    }
+                    const buttons = document.querySelectorAll('button');
+                    for (let i = 0; i < buttons.length; i++) {
+                        const txt = (buttons[i].innerText || '').toLowerCase();
+                        if (txt.includes('accept') || txt.includes('agree') || txt.includes('i agree')) {
+                            buttons[i].click();
                         }
                     }
                 } catch(e) {}
             }
-            return origFetch.apply(this, arguments);
-        };
+            setInterval(attemptPlay, 500);
+        })();
     "#,
     )
     .on_navigation(move |url| {
+        println!("[PO_TOKEN Navigation] Target: {}", url.as_str());
+        if url.host_str() == Some("vsdebug.local") {
+            println!("[PO_TOKEN Debug] {}", url.path().trim_start_matches('/'));
+            return false;
+        }
         if url.host_str() == Some("vstoken.local") {
             let token = url.path().trim_start_matches('/').to_string();
+            println!("[PO_TOKEN] Intercepted PO token from WebView! (Length: {} chars)", token.len());
             if let Some(sender) = tx_clone.lock().unwrap().take() {
                 let _ = sender.send(token);
             }
@@ -123,17 +204,31 @@ async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, Str
 
     let webview = builder.build().map_err(|e| e.to_string())?;
 
-    // Increased timeout to 12s to account for potentially slow network connections hitting the iframe
-    match tokio::time::timeout(std::time::Duration::from_secs(12), rx).await {
+    // Increased timeout to 20s to account for potentially slow network connections hitting the iframe
+    match tokio::time::timeout(std::time::Duration::from_secs(20), rx).await {
         Ok(Ok(token)) => {
+            println!("[PO_TOKEN] Extraction successful!");
             let _ = webview.close();
             Ok(token)
         }
         _ => {
+            println!("[PO_TOKEN] Extraction timed out or failed to intercept token within 20s.");
             let _ = webview.close();
             Err("Timeout".into())
         }
     }
+}
+
+#[tauri::command]
+pub async fn test_fetch_po_token(
+    app: AppHandle,
+    video_id: Option<String>,
+) -> Result<String, String> {
+    let vid = video_id.unwrap_or_else(|| "dQw4w9WgXcQ".to_string());
+    println!("\n=======================================================");
+    println!("[PO_TOKEN COMMAND] Starting test fetch for video: {}", vid);
+    println!("=======================================================");
+    extract_po_token(&app, &vid).await
 }
 
 pub async fn get_or_extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, String> {
