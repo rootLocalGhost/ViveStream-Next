@@ -245,7 +245,8 @@ pub async fn extract_video_dominant_colors(
 
                 let sat_weight = 0.3 + hsv_saturation.powf(1.3) * 2.5 + chroma * 1.5;
                 let light_weight = (1.0 - (lightness - 0.45).abs() * 0.9).max(0.4);
-                let score = count.powf(1.25) * sat_weight * light_weight * glare_penalty * mud_penalty;
+                let score =
+                    count.powf(1.25) * sat_weight * light_weight * glare_penalty * mud_penalty;
                 (score, count, r, g, b)
             })
             .collect();
@@ -284,7 +285,8 @@ pub async fn extract_video_dominant_colors(
                 Some((score, r, g, b))
             })
             .collect();
-        palette_candidates.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+        palette_candidates
+            .sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
         for item in palette_candidates {
             let hex = format!("#{:02x}{:02x}{:02x}", item.1, item.2, item.3);
