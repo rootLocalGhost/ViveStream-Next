@@ -29,5 +29,12 @@ fn main() {
         }
     }
 
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(pos) = args.iter().position(|a| a == "--test-pot") {
+        let video_id = args.get(pos + 1).cloned();
+        vivestream_next_lib::run_pot_test(video_id);
+        return;
+    }
+
     vivestream_next_lib::run()
 }
