@@ -57,11 +57,16 @@ pub fn get_whisper_bin_path(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 pub fn get_whisper_models_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    // 1. Check if ViveStream/whisper/models exists
+    // 1. Primary path: %USERPROFILE%\ViveStream\AI\Whisper
     if let Ok(base_dir) = get_base_dir(app) {
-        let p = base_dir.join("whisper").join("models");
+        let p = base_dir.join("AI").join("Whisper");
         if p.exists() {
             return Ok(p);
+        }
+        // Backward-compatibility fallback: ViveStream/whisper/models
+        let legacy = base_dir.join("whisper").join("models");
+        if legacy.exists() {
+            return Ok(legacy);
         }
     }
 
@@ -80,7 +85,7 @@ pub fn get_whisper_models_dir(app: &AppHandle) -> Result<PathBuf, String> {
     }
 
     let base_dir = get_base_dir(app)?;
-    let models_dir = base_dir.join("whisper").join("models");
+    let models_dir = base_dir.join("AI").join("Whisper");
     fs::create_dir_all(&models_dir).ok();
     Ok(models_dir)
 }

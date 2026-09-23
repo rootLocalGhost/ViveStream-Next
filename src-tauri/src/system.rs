@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 pub fn get_base_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    let video_dir = app.path().video_dir().map_err(|e| e.to_string())?;
-    Ok(video_dir.join("ViveStream"))
+    let home_dir = app.path().home_dir().map_err(|e| e.to_string())?;
+    Ok(home_dir.join("ViveStream"))
 }
 
 pub fn get_bin_dir(app: &AppHandle) -> Result<PathBuf, String> {

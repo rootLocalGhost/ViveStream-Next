@@ -217,11 +217,20 @@ Direct payload for Tauri IPC:
 
 ### Directory Layout in Vivestream User's System
 ```
-%LOCALAPPDATA%\VivestreamRevived\whisper\
-├── vivestream-whisper.exe       # Downloaded on-demand (~7.8 MB)
-└── models\
-    ├── base.safetensors         # Downloaded on-demand (~140 MB)
-    └── small.safetensors        # Optional high-tier model (~922 MB)
+%USERPROFILE%\ViveStream\
+├── AI\
+│   └── Whisper\
+│       ├── base.safetensors         # Downloaded on-demand (~290 MB)
+│       ├── small.safetensors        # Optional high-tier model (~966 MB)
+│       └── tiny.safetensors         # Lightweight model (~151 MB)
+├── Videos\                          # Downloaded video files
+├── Thumbnails\                      # Cached cover artwork
+├── Descriptions\                    # Video info & metadata
+├── Avatars\                         # Channel avatars
+└── Lyrics\                          # Generated .lrc, .enhanced.lrc, .srt files
+
+%APPDATA%\com.localghost.vivestream-next\bin\
+└── vivestream-whisper.exe           # Standalone pure Rust binary (~7.8 MB)
 ```
 
 ### Step 1: Rust Backend Command (`src-tauri/src/whisper.rs`)

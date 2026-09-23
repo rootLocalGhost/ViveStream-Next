@@ -23,7 +23,7 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["$VIDEO/ViveStream/**"]
+        "scope": ["$HOME/ViveStream/**", "$VIDEO/ViveStream/**"]
       }
     }
   },
