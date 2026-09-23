@@ -79,7 +79,6 @@ export default function AI() {
   // Generated Results & Tab State
   const [result, setResult] = createSignal<LyricsResult | null>(null);
   const [activeTab, setActiveTab] = createSignal<"karaoke" | "lrc" | "elrc" | "srt" | "json">("karaoke");
-  const [currentTime, setCurrentTime] = createSignal<number>(0);
   const [copied, setCopied] = createSignal(false);
 
   const fetchStatus = async () => {
@@ -238,10 +237,18 @@ export default function AI() {
             </span>
             <span
               class={`ai-status-pill ${
-                status()?.binary_installed ? "ready" : "warning"
+                loadingStatus()
+                  ? "warning"
+                  : status()?.binary_installed
+                  ? "ready"
+                  : "warning"
               }`}
             >
-              {status()?.binary_installed ? "Engine Ready" : "Setup Required"}
+              {loadingStatus()
+                ? "Scanning..."
+                : status()?.binary_installed
+                ? "Engine Ready"
+                : "Setup Required"}
             </span>
           </div>
 
