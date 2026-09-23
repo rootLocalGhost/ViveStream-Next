@@ -20,6 +20,7 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 
 ### Download & Extraction Management
 
+- `get_or_extract_po_token(app: AppHandle, video_id: String)`: Extracts a Proof of Origin (PO) Token from YouTube by spinning up a hidden WebView, injecting an intercept script, and waiting for the token request.
 - `get_video_metadata(url: String, player_client: String)`: Extracts metadata (title, thumbnails, channel, duration) without downloading the media. Resolves PO Tokens natively if required.
 - `download_video(url: String, metadata: VideoEntry, quality: String, dl_type: String, cookies: String, speed_limit: String, concurrent_fragments: u8, auto_subs: bool, dl_subs: bool, sponsorblock: bool, live_from_start: bool, player_client: String)`: Initiates a concurrent download job. Progress is emitted asynchronously via Tauri events.
 
@@ -71,8 +72,7 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 The Rust backend uses `Emitter` to push real-time events to the frontend. SolidJS listens to these via `@tauri-apps/api/event` `listen()`.
 
 - `setup-progress`: Emitted during the initial download and setup of external dependencies (`yt-dlp`, `ffmpeg`). Payload is a `String` containing the setup status message.
-- `download-progress`: Emitted continuously during a download job. Payload includes `id`, `percentage`, `speed`, and `eta`.
-- `download-status`: Emitted when a download state changes (e.g., "Extracting", "Downloading", "Merging", "Completed", "Error").
+- `download-progress-{id}`: Emitted continuously during a download job. Payload includes `id`, `percentage`, `speed`, and `eta`. Dynamic `{id}` binds to the specific job identifier.
 - `media-play`: Emitted when the user presses the system-level Play button (via keyboard hardware or OS menu).
 - `media-pause`: Emitted when the user presses the system-level Pause button.
 - `media-next`: Emitted when the user presses the system-level Next button.
@@ -83,6 +83,8 @@ The Rust backend uses `Emitter` to push real-time events to the frontend. SolidJ
 ## 3. Streaming Interface (`warp` server)
 
 Because local video playback via file protocols (`file://` or `asset://`) inside Tauri's secure webview causes severe memory issues and breaks HTTP Range requests (seeking), a local server is employed.
+
+- `start_server(base_dir: PathBuf)`: Internal Rust async function that binds and starts the warp HTTP media server.
 
 - **Port**: `1422` (Hardcoded bound loopback address: `127.0.0.1:1422`)
 - **Protocol**: HTTP/1.1 (Supports `Range: bytes=X-Y` requests).
