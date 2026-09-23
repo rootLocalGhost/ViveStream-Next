@@ -4,6 +4,7 @@ mod media_controls;
 mod models;
 mod server;
 mod system;
+mod whisper;
 
 #[cfg(test)]
 mod tests; // Added tests module
@@ -14,6 +15,7 @@ use media_controls::*;
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, PlatformConfig};
 use std::sync::Mutex;
 use system::*;
+use whisper::*;
 use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager,
@@ -185,7 +187,12 @@ pub fn run() {
             get_clipboard_text,
             set_clipboard_text,
             extract_video_dominant_colors,
-            test_fetch_po_token
+            test_fetch_po_token,
+            check_whisper_status,
+            install_whisper_binary,
+            download_whisper_model,
+            generate_track_lyrics,
+            get_cached_lyrics
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

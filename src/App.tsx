@@ -38,6 +38,7 @@ const Favourites = lazy(() => import("./pages/Favourites"));
 const Playlists = lazy(() => import("./pages/Playlists"));
 const Artists = lazy(() => import("./pages/Artists"));
 const ArtistPage = lazy(() => import("./pages/ArtistPage"));
+const AI = lazy(() => import("./pages/AI"));
 
 const AppLogo = () => (
   <svg
@@ -371,6 +372,13 @@ const AppLayout: Component<{ children?: any }> = (props) => {
         ) {
           e.preventDefault();
           navigate("/settings");
+        } else if (
+          code === "Digit7" ||
+          key === "7" ||
+          key === "&"
+        ) {
+          e.preventDefault();
+          navigate("/ai");
         }
       }
     };
@@ -414,6 +422,12 @@ const AppLayout: Component<{ children?: any }> = (props) => {
             iconName="microphone-stage"
             animClass="anim-shake"
           />
+          <NavItem
+            href="/ai"
+            text="AI"
+            iconName="sparkle"
+            animClass="anim-pulse"
+          />
         </div>
         <div class="nav-links bottom-links">
           <NavItem
@@ -447,6 +461,7 @@ const App: Component = () => {
         <Route path="/artist/:name" component={ArtistPage} />
         <Route path="/favourites" component={Favourites} />
         <Route path="/player/:id" component={Player} />
+        <Route path="/ai" component={AI} />
       </Route>
     </Router>
   );
