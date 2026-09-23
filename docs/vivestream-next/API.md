@@ -34,7 +34,7 @@ These commands are exported from `src-tauri/src/lib.rs` and can be called from t
 - `toggle_favorite(id: String, is_favorite: bool)`: Flips the favorite status of a video.
 - `create_playlist(name: String)`: Instantiates a new playlist object in the database.
 - `get_playlists()`: Retrieves a list of all playlists.
-- `delete_playlist(id: String)`: Removes a playlist entirely (cascades to junction tables).
+- `delete_playlist(playlist_id: String)`: Removes a playlist entirely (cascades to junction tables).
 - `add_video_to_playlist(playlist_id: String, video_id: String)`: Maps a video to a playlist.
 - `remove_video_from_playlist(playlist_id: String, video_id: String)`: Deletes the mapping.
 - `get_playlist_videos(playlist_id: String)`: Retrieves ordered `VideoEntry` items for a specific playlist.
