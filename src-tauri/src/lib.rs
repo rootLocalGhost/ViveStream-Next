@@ -73,6 +73,9 @@ pub fn run() {
                 eprintln!("Database initialization error: {}", e);
             }
 
+            // Auto-migrate legacy data from %USERPROFILE%\Videos\ViveStream to %USERPROFILE%\ViveStream
+            crate::system::auto_migrate_legacy_data(&app_handle);
+
             // Asynchronously optimize thumbnails in background for smooth 60+ FPS performance
             optimize_all_thumbnails(&app_handle, None, false);
 

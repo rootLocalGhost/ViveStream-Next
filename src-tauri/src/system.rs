@@ -13,6 +13,106 @@ pub fn get_bin_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app_data.join("bin"))
 }
 
+/// Automatically migrates videos, thumbnails, avatars, descriptions, and AI models
+/// from the legacy directory (%USERPROFILE%\Videos\ViveStream) to the new base directory (%USERPROFILE%\ViveStream).
+pub fn auto_migrate_legacy_data(app: &AppHandle) {
+    let legacy_dir = match app.path().video_dir() {
+        Ok(v) => v.join("ViveStream"),
+        Err(_) => return,
+    };
+
+    let new_base_dir = match get_base_dir(app) {
+        Ok(b) => b,
+        Err(_) => return,
+    };
+
+    if !legacy_dir.exists() || legacy_dir == new_base_dir {
+        return;
+    }
+
+    // 1. Move standard media folders (Videos, Thumbnails, Descriptions, Avatars, Lyrics)
+    let folders = ["Videos", "Thumbnails", "Descriptions", "Avatars", "Lyrics"];
+    for folder in &folders {
+        let src_folder = legacy_dir.join(folder);
+        let dst_folder = new_base_dir.join(folder);
+        if src_folder.is_dir() {
+            let _ = fs::create_dir_all(&dst_folder);
+            if let Ok(entries) = fs::read_dir(&src_folder) {
+                for entry in entries.flatten() {
+                    let src_path = entry.path();
+                    if src_path.is_file() {
+                        let file_name = entry.file_name();
+                        let dst_path = dst_folder.join(file_name);
+                        if !dst_path.exists() {
+                            if fs::rename(&src_path, &dst_path).is_err() {
+                                if fs::copy(&src_path, &dst_path).is_ok() {
+                                    let _ = fs::remove_file(&src_path);
+                                }
+                            }
+                        } else {
+                            let _ = fs::remove_file(&src_path);
+                        }
+                    }
+                }
+            }
+            let _ = fs::remove_dir(&src_folder);
+        }
+    }
+
+    // 2. Move Whisper AI models from legacy paths to new_base_dir/AI/Whisper
+    let dst_ai_whisper = new_base_dir.join("AI").join("Whisper");
+    let legacy_ai_candidates = [
+        legacy_dir.join("whisper").join("models"),
+        legacy_dir.join("AI").join("Whisper"),
+        legacy_dir.join("whisper"),
+    ];
+
+    for candidate in &legacy_ai_candidates {
+        if candidate.is_dir() {
+            let _ = fs::create_dir_all(&dst_ai_whisper);
+            if let Ok(entries) = fs::read_dir(candidate) {
+                for entry in entries.flatten() {
+                    let src_path = entry.path();
+                    if src_path.is_file() {
+                        let file_name = entry.file_name();
+                        let dst_path = dst_ai_whisper.join(file_name);
+                        if !dst_path.exists() {
+                            if fs::rename(&src_path, &dst_path).is_err() {
+                                if fs::copy(&src_path, &dst_path).is_ok() {
+                                    let _ = fs::remove_file(&src_path);
+                                }
+                            }
+                        } else {
+                            let _ = fs::remove_file(&src_path);
+                        }
+                    }
+                }
+            }
+            let _ = fs::remove_dir_all(candidate);
+        }
+    }
+
+    let _ = fs::remove_dir(legacy_dir.join("whisper"));
+    let _ = fs::remove_dir(legacy_dir.join("AI"));
+
+    // 3. Update database stored path strings if any exist
+    if let Ok(conn) = get_db_connection(app) {
+        let legacy_str = legacy_dir.to_string_lossy().to_string();
+        let new_str = new_base_dir.to_string_lossy().to_string();
+        let _ = conn.execute(
+            "UPDATE Videos SET video_path = REPLACE(video_path, ?1, ?2), thumbnail_path = REPLACE(thumbnail_path, ?1, ?2)",
+            [&legacy_str, &new_str],
+        );
+        let _ = conn.execute(
+            "UPDATE Artists SET avatar_path = REPLACE(avatar_path, ?1, ?2)",
+            [&legacy_str, &new_str],
+        );
+    }
+
+    // 4. Clean up legacy ViveStream directory if now empty
+    let _ = fs::remove_dir(&legacy_dir);
+}
+
 #[tauri::command]
 pub async fn wipe_dependencies(app: AppHandle) -> Result<(), String> {
     let bin_dir = get_bin_dir(&app)?;
