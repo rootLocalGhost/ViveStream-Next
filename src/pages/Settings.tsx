@@ -55,10 +55,36 @@ import {
   toggleRandomizeOnLaunch,
   alwaysShowSortBar,
   toggleAlwaysShowSortBar,
+  closeGlobalMiniplayer,
 } from "../store";
 import BenchmarkModal from "../components/BenchmarkModal";
 import { APP_VERSION } from "../version";
 import "./Settings.css";
+
+export interface EncoderTestResult {
+  id: string;
+  name: string;
+  vendor: string;
+  supported: boolean;
+  speed_fps?: number;
+  note: string;
+}
+
+export interface HardwareAccelerationReport {
+  os: string;
+  ffmpeg_installed: boolean;
+  encoders: EncoderTestResult[];
+  recommended_encoder: string;
+  direct_copy_supported: boolean;
+  advice: string;
+}
+
+export interface PoTokenStatus {
+  active: boolean;
+  token: string;
+  age_seconds: number;
+  ttl_seconds: number;
+}
 
 export default function Settings() {
   const [loadingDep, setLoadingDep] = createSignal(false);
@@ -67,6 +93,12 @@ export default function Settings() {
   const [loadingUpdate, setLoadingUpdate] = createSignal(false);
   const [loadingReindex, setLoadingReindex] = createSignal(false);
   const [showBenchmark, setShowBenchmark] = createSignal(false);
+  const [loadingHwTest, setLoadingHwTest] = createSignal(false);
+  const [hwReport, setHwReport] =
+    createSignal<HardwareAccelerationReport | null>(null);
+  const [poStatus, setPoStatus] = createSignal<PoTokenStatus | null>(null);
+  const [manualPoToken, setManualPoToken] = createSignal("");
+  const [loadingPoToken, setLoadingPoToken] = createSignal(false);
   const [cookiesDropdownOpen, setCookiesDropdownOpen] = createSignal(false);
   const [clientDropdownOpen, setClientDropdownOpen] = createSignal(false);
 
@@ -90,7 +122,61 @@ export default function Settings() {
     "default",
   ];
 
+  const loadPoTokenStatus = async () => {
+    try {
+      const status = await invoke<PoTokenStatus>("get_po_token_status");
+      setPoStatus(status);
+    } catch (e) {
+      console.error("Failed to load PO token status:", e);
+    }
+  };
+
+  const handleSaveManualToken = async () => {
+    const t = manualPoToken().trim();
+    if (!t) return;
+    try {
+      await invoke("set_manual_po_token", { token: t });
+      addToast("PO Token saved and cached for 12 hours", "success");
+      setManualPoToken("");
+      loadPoTokenStatus();
+    } catch (err) {
+      addToast(`Failed to save PO token: ${err}`, "error");
+    }
+  };
+
+  const handleRefreshToken = async () => {
+    setLoadingPoToken(true);
+    try {
+      const token = await invoke<string>("refresh_po_token", {});
+      addToast(`PO Token successfully acquired (${token.length} chars)`, "success");
+      loadPoTokenStatus();
+    } catch (err) {
+      addToast(`PO Token extraction timed out or failed: ${err}`, "error");
+      loadPoTokenStatus();
+    } finally {
+      setLoadingPoToken(false);
+    }
+  };
+
+  const handleClearToken = async () => {
+    try {
+      await invoke("clear_po_token");
+      addToast("PO Token cleared from cache", "info");
+      loadPoTokenStatus();
+    } catch (err) {
+      addToast(`Failed to clear PO token: ${err}`, "error");
+    }
+  };
+
+  const formatPoTtl = (ttlSec: number) => {
+    const hours = Math.floor(ttlSec / 3600);
+    const mins = Math.floor((ttlSec % 3600) / 60);
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  };
+
   onMount(() => {
+    loadPoTokenStatus();
     const handleClickOutside = (e: MouseEvent) => {
       if (cookiesRef && !cookiesRef.contains(e.target as Node)) {
         setCookiesDropdownOpen(false);
@@ -186,6 +272,7 @@ export default function Settings() {
     if (step2) {
       setLoadingClean(true);
       try {
+        closeGlobalMiniplayer();
         await invoke("clean_database_and_media");
         addToast("Database and media have been successfully cleaned.", "info");
       } catch (e) {
@@ -212,6 +299,7 @@ export default function Settings() {
     if (step2) {
       setLoadingNuclear(true);
       try {
+        closeGlobalMiniplayer();
         await invoke("nuclear_wipe");
         addToast(
           "Nuclear wipe complete. All app data and videos have been destroyed. You can now safely uninstall the application from your OS.",
@@ -222,6 +310,24 @@ export default function Settings() {
       } finally {
         setLoadingNuclear(false);
       }
+    }
+  };
+
+  const handleRunHardwareTest = async () => {
+    setLoadingHwTest(true);
+    try {
+      const res = await invoke<HardwareAccelerationReport>(
+        "test_hardware_transcoding",
+      );
+      setHwReport(res);
+      addToast(
+        "Hardware transcoding diagnostics completed successfully.",
+        "info",
+      );
+    } catch (e) {
+      addToast(`Hardware probe failed: ${e}`, "error");
+    } finally {
+      setLoadingHwTest(false);
     }
   };
 
@@ -1499,6 +1605,104 @@ export default function Settings() {
             {loadingReindex() ? "Re-indexing..." : "Re-index Library"}
           </button>
         </div>
+
+        <div class="full-divider"></div>
+
+        <div class="po-token-management-block" id="setting-engine-po-token">
+          <div
+            class="flex-row-between"
+            style="align-items: flex-start; margin-bottom: 12px; gap: 16px;"
+          >
+            <div>
+              <div
+                style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"
+              >
+                <h3 class="settings-title">
+                  YouTube PO Token (Proof of Origin)
+                </h3>
+                <Show when={poStatus()?.active}>
+                  <span
+                    class="hw-badge hw-pass"
+                    style="font-size: 0.75rem; padding: 2px 8px;"
+                  >
+                    <i class="ph-bold ph-check-circle"></i> Cached & Active
+                    (Expires in {formatPoTtl(poStatus()!.ttl_seconds)})
+                  </span>
+                </Show>
+                <Show when={!poStatus()?.active}>
+                  <span
+                    class="hw-badge hw-neutral"
+                    style="font-size: 0.75rem; padding: 2px 8px;"
+                  >
+                    <i class="ph-bold ph-info"></i> Fallback Stream Mode (No
+                    Token)
+                  </span>
+                </Show>
+              </div>
+              <p class="settings-desc" style="margin-top: 4px;">
+                PO Tokens authenticate client requests with YouTube to unlock
+                1080p, 1440p, and 4K formats without 144p resolution caps or
+                format lockouts. Tokens are automatically saved to disk and
+                reused until expiration.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-shrink: 0;">
+              <button
+                onClick={handleRefreshToken}
+                disabled={loadingPoToken()}
+                class="command-btn secondary"
+                title="Attempt fast background extraction of a fresh PO token"
+              >
+                <i
+                  class={`ph-bold ${loadingPoToken() ? "ph-spinner spinIcon" : "ph-arrows-clockwise"}`}
+                ></i>
+                {loadingPoToken() ? "Extracting..." : "Refresh Token"}
+              </button>
+              <Show when={poStatus()?.active}>
+                <button
+                  onClick={handleClearToken}
+                  class="command-btn danger"
+                  title="Clear saved PO token from disk"
+                >
+                  <i class="ph-bold ph-trash"></i>
+                  Clear
+                </button>
+              </Show>
+            </div>
+          </div>
+
+          <div
+            style="display: flex; gap: 8px; align-items: center; background: var(--secondary-background); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);"
+          >
+            <i
+              class="ph ph-key"
+              style="color: var(--accent-color); font-size: 1.1rem;"
+            ></i>
+            <input
+              type="text"
+              class="settings-input"
+              style="flex: 1; background: transparent; border: none; outline: none; font-family: monospace; font-size: 0.85rem;"
+              placeholder={
+                poStatus()?.active
+                  ? `Active token: ${poStatus()!.token.slice(0, 16)}... (${poStatus()!.token.length} chars)`
+                  : "Paste manual PO Token (e.g. web.gvs / web.player token)..."
+              }
+              value={manualPoToken()}
+              onInput={(e) => setManualPoToken(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveManualToken();
+              }}
+            />
+            <button
+              onClick={handleSaveManualToken}
+              disabled={!manualPoToken().trim()}
+              class="command-btn primary"
+              style="padding: 6px 14px; font-size: 0.85rem;"
+            >
+              <i class="ph-bold ph-floppy-disk"></i> Save Token
+            </button>
+          </div>
+        </div>
       </div>
 
       <h2 class="page-title page-title-spaced" id="sec-diagnostics">
@@ -1521,6 +1725,101 @@ export default function Settings() {
             <i class="ph-fill ph-lightning"></i>
             Run Benchmark
           </button>
+        </div>
+
+        <div class="full-divider"></div>
+
+        {/* In-App Hardware Transcoding Probe & Testing */}
+        <div class="hw-test-section" id="setting-hw-transcoding-probe">
+          <div class="flex-row-between">
+            <div>
+              <h3 class="settings-title">
+                Hardware Transcoding Probe & Diagnostics
+              </h3>
+              <p class="settings-desc">
+                Probe host GPU encoders (Intel QuickSync, NVIDIA NVENC, AMD AMF, Linux VAAPI, Software CPU) by running real synthetic micro-benchmarks.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRunHardwareTest}
+              disabled={loadingHwTest()}
+              class="command-btn secondary"
+              style="min-width: 170px;"
+            >
+              <i
+                class={`ph-fill ${loadingHwTest() ? "ph-spinner spinIcon" : "ph-cpu"}`}
+              ></i>
+              {loadingHwTest() ? "Probing Hardware..." : "Test Transcoding"}
+            </button>
+          </div>
+
+          <div class="hw-advisory-box">
+            <i class="ph-fill ph-info hw-advisory-icon"></i>
+            <div class="hw-advisory-content">
+              <strong>8K & 4K Media Memory Protection:</strong>
+              <p>
+                Downloaded YouTube videos are already encoded with Google's multi-million dollar AV1 encoder. Re-encoding an 8K video in H.264 allocates up to 16 GB of RAM for uncompressed lookahead frame buffers. ViveStream now defaults to <strong>Direct Stream Copy (Lossless Fast Remux)</strong>, which preserves 100% original quality and containerizes the file in ~0.5s using negligible RAM.
+              </p>
+            </div>
+          </div>
+
+          <Show when={hwReport()}>
+            {(report) => (
+              <div class="hw-report-container">
+                <div class="hw-report-header">
+                  <div class="hw-report-metric">
+                    <span class="hw-metric-label">Operating System</span>
+                    <span class="hw-metric-val">{report().os.toUpperCase()}</span>
+                  </div>
+                  <div class="hw-report-metric">
+                    <span class="hw-metric-label">Direct Stream Copy</span>
+                    <span class="hw-metric-val success">
+                      <i class="ph-bold ph-check"></i> Active Default
+                    </span>
+                  </div>
+                  <div class="hw-report-metric">
+                    <span class="hw-metric-label">Recommended Fallback</span>
+                    <span class="hw-metric-val primary">
+                      {report().recommended_encoder}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="hw-encoders-grid">
+                  <For each={report().encoders}>
+                    {(enc) => (
+                      <div
+                        class={`hw-encoder-card ${enc.supported ? "supported" : "unsupported"}`}
+                      >
+                        <div class="hw-card-top">
+                          <span class="hw-vendor-tag">{enc.vendor}</span>
+                          <span
+                            class={`hw-status-pill ${enc.supported ? "pass" : "fail"}`}
+                          >
+                            <i
+                              class={`ph-bold ${enc.supported ? "ph-check-circle" : "ph-x-circle"}`}
+                            ></i>
+                            {enc.supported ? "Operational" : "Unavailable"}
+                          </span>
+                        </div>
+                        <h4 class="hw-encoder-name">{enc.name}</h4>
+                        <div class="hw-card-meta">
+                          <Show when={enc.speed_fps}>
+                            <span class="hw-speed-badge">
+                              <i class="ph-bold ph-gauge"></i> ~{enc.speed_fps}{" "}
+                              FPS
+                            </span>
+                          </Show>
+                          <span class="hw-card-note">{enc.note}</span>
+                        </div>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </div>
+            )}
+          </Show>
         </div>
       </div>
 
