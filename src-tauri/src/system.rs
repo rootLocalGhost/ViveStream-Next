@@ -113,53 +113,116 @@ pub fn auto_migrate_legacy_data(app: &AppHandle) {
     let _ = fs::remove_dir(&legacy_dir);
 }
 
+/// Reliably deletes a file with retries and clearing readonly flags on Windows
+pub fn safe_remove_file(path: &std::path::Path) -> bool {
+    if !path.exists() {
+        return true;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(meta) = fs::metadata(path) {
+            let mut perms = meta.permissions();
+            if perms.readonly() {
+                perms.set_readonly(false);
+                let _ = fs::set_permissions(path, perms);
+            }
+        }
+    }
+    for attempt in 0..5 {
+        if fs::remove_file(path).is_ok() {
+            return true;
+        }
+        if attempt < 4 {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+    }
+    false
+}
+
+/// Recursively empties all files and subdirectories from a directory.
+pub fn clean_directory_contents(dir: &std::path::Path) -> usize {
+    if !dir.exists() {
+        return 0;
+    }
+    let mut count = 0;
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() || path.is_symlink() {
+                if safe_remove_file(&path) {
+                    count += 1;
+                }
+            } else if path.is_dir() {
+                count += clean_directory_contents(&path);
+                let _ = fs::remove_dir(&path);
+            }
+        }
+    }
+    count
+}
+
 #[tauri::command]
 pub async fn wipe_dependencies(app: AppHandle) -> Result<(), String> {
-    let bin_dir = get_bin_dir(&app)?;
-
-    // Nuke the entire bin directory to cleanly remove Deno, plugins, and old executables
-    if bin_dir.exists() {
-        let _ = fs::remove_dir_all(&bin_dir);
-    }
-    Ok(())
+    tokio::task::spawn_blocking(move || {
+        let bin_dir = get_bin_dir(&app)?;
+        if bin_dir.exists() {
+            clean_directory_contents(&bin_dir);
+            let _ = fs::remove_dir_all(&bin_dir);
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
 pub async fn clean_database_and_media(app: AppHandle) -> Result<(), String> {
-    if let Ok(conn) = get_db_connection(&app) {
-        let _ = conn.execute_batch("DELETE FROM Playlist_Videos; DELETE FROM Playlists; DELETE FROM Videos; DELETE FROM Artists;");
-    }
+    tokio::task::spawn_blocking(move || {
+        if let Ok(conn) = get_db_connection(&app) {
+            let _ = conn.execute_batch(
+                "DELETE FROM Playlist_Videos; DELETE FROM Playlists; DELETE FROM Videos; DELETE FROM Artists; DELETE FROM DownloadHistory;",
+            );
+        }
 
-    let base_dir = get_base_dir(&app)?;
-    if base_dir.exists() {
-        let _ = fs::remove_dir_all(base_dir.join("Videos"));
-        let _ = fs::remove_dir_all(base_dir.join("Thumbnails"));
-        let _ = fs::remove_dir_all(base_dir.join("Descriptions"));
-        let _ = fs::remove_dir_all(base_dir.join("Avatars"));
-    }
-    Ok(())
+        let base_dir = get_base_dir(&app)?;
+        if base_dir.exists() {
+            let folders = ["Videos", "Thumbnails", "Descriptions", "Avatars", "Lyrics"];
+            for folder in &folders {
+                let target = base_dir.join(folder);
+                clean_directory_contents(&target);
+                let _ = fs::create_dir_all(&target);
+            }
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
 pub async fn nuclear_wipe(app: AppHandle) -> Result<(), String> {
-    let bin_dir = get_bin_dir(&app)?;
+    tokio::task::spawn_blocking(move || {
+        let bin_dir = get_bin_dir(&app)?;
+        if bin_dir.exists() {
+            clean_directory_contents(&bin_dir);
+            let _ = fs::remove_dir_all(&bin_dir);
+        }
 
-    if bin_dir.exists() {
-        let _ = fs::remove_dir_all(&bin_dir);
-    }
+        if let Ok(conn) = get_db_connection(&app) {
+            let _ = conn.execute_batch(
+                "DELETE FROM Playlist_Videos; DELETE FROM Playlists; DELETE FROM Videos; DELETE FROM Artists; DELETE FROM DownloadHistory;",
+            );
+        }
 
-    if let Ok(conn) = get_db_connection(&app) {
-        let _ = conn.execute_batch("DELETE FROM Playlist_Videos; DELETE FROM Playlists; DELETE FROM Videos; DELETE FROM Artists;");
-    }
-
-    let base_dir = get_base_dir(&app)?;
-    if base_dir.exists() {
-        let _ = fs::remove_dir_all(base_dir.join("Videos"));
-        let _ = fs::remove_dir_all(base_dir.join("Thumbnails"));
-        let _ = fs::remove_dir_all(base_dir.join("Descriptions"));
-        let _ = fs::remove_dir_all(base_dir.join("Avatars"));
-    }
-    Ok(())
+        let base_dir = get_base_dir(&app)?;
+        if base_dir.exists() {
+            clean_directory_contents(&base_dir);
+            let _ = fs::remove_dir_all(&base_dir);
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -417,6 +480,151 @@ pub async fn extract_video_dominant_colors(
         }
 
         Ok(PaletteResult { dominant, palette })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct EncoderTestResult {
+    pub id: String,
+    pub name: String,
+    pub vendor: String,
+    pub supported: bool,
+    pub speed_fps: Option<f64>,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct HardwareAccelerationReport {
+    pub os: String,
+    pub ffmpeg_installed: bool,
+    pub encoders: Vec<EncoderTestResult>,
+    pub recommended_encoder: String,
+    pub direct_copy_supported: bool,
+    pub advice: String,
+}
+
+#[tauri::command]
+pub async fn test_hardware_transcoding(app: AppHandle) -> Result<HardwareAccelerationReport, String> {
+    tokio::task::spawn_blocking(move || {
+        let bin_dir = get_bin_dir(&app)?;
+        let (_, ffmpeg_path, _) = crate::downloader::get_binary_paths(&bin_dir);
+
+        if !ffmpeg_path.exists() {
+            return Ok(HardwareAccelerationReport {
+                os: std::env::consts::OS.to_string(),
+                ffmpeg_installed: false,
+                encoders: vec![],
+                recommended_encoder: "Direct Stream Copy (Fast Remux)".to_string(),
+                direct_copy_supported: false,
+                advice: "FFmpeg binary is missing. Please download it from Setup Wizard or Settings.".to_string(),
+            });
+        }
+
+        let candidates = if cfg!(target_os = "windows") {
+            vec![
+                ("h264_qsv", "Intel QuickSync (QSV H.264)", "Intel"),
+                ("hevc_qsv", "Intel QuickSync (QSV HEVC/H.265)", "Intel"),
+                ("h264_nvenc", "NVIDIA NVENC (H.264)", "NVIDIA"),
+                ("hevc_nvenc", "NVIDIA NVENC (HEVC/H.265)", "NVIDIA"),
+                ("h264_amf", "AMD AMF (H.264)", "AMD"),
+                ("hevc_amf", "AMD AMF (HEVC/H.265)", "AMD"),
+                ("libx264", "Software CPU (libx264)", "CPU"),
+            ]
+        } else {
+            vec![
+                ("h264_vaapi", "Linux VAAPI (H.264)", "VAAPI"),
+                ("h264_qsv", "Intel QuickSync (QSV H.264)", "Intel"),
+                ("h264_nvenc", "NVIDIA NVENC (H.264)", "NVIDIA"),
+                ("hevc_nvenc", "NVIDIA NVENC (HEVC/H.265)", "NVIDIA"),
+                ("libx264", "Software CPU (libx264)", "CPU"),
+            ]
+        };
+
+        let mut encoder_results = Vec::new();
+        let mut best_hardware = None;
+
+        for (id, name, vendor) in candidates {
+            let mut cmd = std::process::Command::new(&ffmpeg_path);
+            #[cfg(target_os = "windows")]
+            {
+                #[allow(unused_imports)]
+                use std::os::windows::process::CommandExt;
+                cmd.creation_flags(0x08000000);
+            }
+
+            cmd.args([
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                "testsrc=duration=0.5:size=640x360:rate=30",
+                "-c:v",
+                id,
+                "-f",
+                "null",
+                "-",
+            ]);
+
+            let start = std::time::Instant::now();
+            let output = cmd.output();
+            let elapsed = start.elapsed().as_secs_f64();
+
+            match output {
+                Ok(out) if out.status.success() => {
+                    let fps = if elapsed > 0.0 { (15.0 / elapsed).round() } else { 0.0 };
+                    encoder_results.push(EncoderTestResult {
+                        id: id.to_string(),
+                        name: name.to_string(),
+                        vendor: vendor.to_string(),
+                        supported: true,
+                        speed_fps: Some(fps),
+                        note: format!("Operational (~{:.0} FPS probe)", fps),
+                    });
+                    if vendor != "CPU" && best_hardware.is_none() {
+                        best_hardware = Some(name.to_string());
+                    }
+                }
+                Ok(out) => {
+                    let err = String::from_utf8_lossy(&out.stderr);
+                    let last_err = err.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("Unsupported");
+                    encoder_results.push(EncoderTestResult {
+                        id: id.to_string(),
+                        name: name.to_string(),
+                        vendor: vendor.to_string(),
+                        supported: false,
+                        speed_fps: None,
+                        note: if last_err.len() > 60 { format!("{}...", &last_err[..60]) } else { last_err.to_string() },
+                    });
+                }
+                Err(e) => {
+                    encoder_results.push(EncoderTestResult {
+                        id: id.to_string(),
+                        name: name.to_string(),
+                        vendor: vendor.to_string(),
+                        supported: false,
+                        speed_fps: None,
+                        note: e.to_string(),
+                    });
+                }
+            }
+        }
+
+        let recommended = if let Some(hw) = best_hardware {
+            format!("Direct Stream Copy (Lossless) / {} fallback", hw)
+        } else {
+            "Direct Stream Copy (Lossless) / Software CPU fallback".to_string()
+        };
+
+        Ok(HardwareAccelerationReport {
+            os: std::env::consts::OS.to_string(),
+            ffmpeg_installed: true,
+            encoders: encoder_results,
+            recommended_encoder: recommended,
+            direct_copy_supported: true,
+            advice: "Direct Stream Copy is active by default. It moves faststart atom in ~0.5s without re-encoding, consuming almost zero RAM even on 8K video.".to_string(),
+        })
     })
     .await
     .map_err(|e| e.to_string())?
