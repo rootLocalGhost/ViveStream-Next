@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, fireEvent } from "@solidjs/testing-library";
 import SortBar from "../components/SortBar";
 import { SortOption } from "../utils/sortUtils";
+import { setAlwaysShowSortBar, setIsSortOpen } from "../store";
 
 describe("SortBar Component", () => {
   const options: SortOption[] = [
@@ -10,6 +11,11 @@ describe("SortBar Component", () => {
     { key: "channel", label: "Channel", icon: "ph-user" },
     { key: "random", label: "Random Shuffle", icon: "ph-shuffle" },
   ];
+
+  beforeEach(() => {
+    setAlwaysShowSortBar(true);
+    setIsSortOpen(false);
+  });
 
   it("renders correctly with current sort label", () => {
     const { getByText } = render(() => (
