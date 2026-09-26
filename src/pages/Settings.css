@@ -1688,3 +1688,189 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Hardware Transcoding Diagnostics & Probe */
+.hw-test-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hw-advisory-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--card-background);
+  border: 1.5px solid var(--border-color);
+  border-left: 5px solid var(--primary-accent);
+  border-radius: var(--neo-radius-sm);
+  padding: 14px 16px;
+  box-shadow: 2px 2px 0px var(--border-color);
+}
+
+.hw-advisory-icon {
+  font-size: 22px;
+  color: var(--primary-accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.hw-advisory-content strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--primary-text);
+  margin-bottom: 4px;
+}
+
+.hw-advisory-content p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--secondary-text);
+}
+
+.hw-report-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.hw-report-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.hw-report-metric {
+  background: var(--card-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  padding: 10px 14px;
+  box-shadow: 2px 2px 0px var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hw-metric-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--secondary-text);
+  font-weight: 700;
+}
+
+.hw-metric-val {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-text);
+}
+
+.hw-metric-val.success {
+  color: #10b981;
+}
+
+.hw-metric-val.primary {
+  color: var(--primary-accent);
+}
+
+.hw-encoders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.hw-encoder-card {
+  background: var(--card-background);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--neo-radius-sm);
+  padding: 12px 14px;
+  box-shadow: 2px 2px 0px var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.12s ease;
+}
+
+.hw-encoder-card:hover {
+  transform: translateY(-2px);
+}
+
+.hw-encoder-card.supported {
+  border-left: 4px solid #10b981;
+}
+
+.hw-encoder-card.unsupported {
+  border-left: 4px solid var(--border-color);
+  opacity: 0.75;
+}
+
+.hw-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hw-vendor-tag {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--secondary-background);
+  border: 1px solid var(--border-color);
+  color: var(--primary-text);
+}
+
+.hw-status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hw-status-pill.pass {
+  color: #10b981;
+}
+
+.hw-status-pill.fail {
+  color: var(--secondary-text);
+}
+
+.hw-encoder-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-text);
+}
+
+.hw-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.hw-speed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #10b98122;
+  color: #10b981;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #10b98155;
+}
+
+.hw-card-note {
+  color: var(--secondary-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
