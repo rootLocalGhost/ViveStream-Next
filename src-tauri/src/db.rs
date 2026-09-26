@@ -562,23 +562,41 @@ pub async fn delete_video(app: AppHandle, video_id: String) -> Result<(), String
         tx.execute("DELETE FROM Artists WHERE name NOT IN (SELECT DISTINCT channel_name FROM Videos WHERE channel_name IS NOT NULL)", []).map_err(|e| e.to_string())?;
         tx.commit().map_err(|e| e.to_string())?;
 
-        let vid_file_mp4 = base_dir.join("Videos").join(format!("{}.mp4", video_id));
-        let vid_file_m4a = base_dir.join("Videos").join(format!("{}.m4a", video_id));
-        let vid_file_webm = base_dir.join("Videos").join(format!("{}.webm", video_id));
-        let vid_file_mkv = base_dir.join("Videos").join(format!("{}.mkv", video_id));
-        let thumb_file = base_dir.join("Thumbnails").join(format!("{}.jpg", video_id));
-        let lq_thumb_file = base_dir.join("Thumbnails").join(format!("{}_lq.jpg", video_id));
-        let desc_file = base_dir.join("Descriptions").join(format!("{}.txt", video_id));
-        let sub_file = base_dir.join("Videos").join(format!("{}.vtt", video_id));
+        let vid_dir = base_dir.join("Videos");
+        let thumb_dir = base_dir.join("Thumbnails");
+        let desc_dir = base_dir.join("Descriptions");
+        let lyrics_dir = base_dir.join("Lyrics");
 
-        let _ = std::fs::remove_file(vid_file_mp4);
-        let _ = std::fs::remove_file(vid_file_m4a);
-        let _ = std::fs::remove_file(vid_file_webm);
-        let _ = std::fs::remove_file(vid_file_mkv);
-        let _ = std::fs::remove_file(thumb_file);
-        let _ = std::fs::remove_file(lq_thumb_file);
-        let _ = std::fs::remove_file(desc_file);
-        let _ = std::fs::remove_file(sub_file);
+        // Media files
+        let exts = ["mp4", "m4a", "webm", "mkv", "vtt"];
+        for ext in &exts {
+            crate::system::safe_remove_file(&vid_dir.join(format!("{}.{}", video_id, ext)));
+            crate::system::safe_remove_file(&vid_dir.join(format!("raw_{}.{}", video_id, ext)));
+        }
+
+        // Clean any partial or remaining files matching video_id in Videos
+        if let Ok(entries) = std::fs::read_dir(&vid_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.contains(&video_id) {
+                    crate::system::safe_remove_file(&entry.path());
+                }
+            }
+        }
+
+        // Thumbnails
+        crate::system::safe_remove_file(&thumb_dir.join(format!("{}.jpg", video_id)));
+        crate::system::safe_remove_file(&thumb_dir.join(format!("{}_lq.jpg", video_id)));
+        crate::system::safe_remove_file(&thumb_dir.join(format!("raw_{}.jpg", video_id)));
+
+        // Description
+        crate::system::safe_remove_file(&desc_dir.join(format!("{}.txt", video_id)));
+
+        // Lyrics
+        let lyric_exts = ["lrc", "enhanced.lrc", "srt", "vtt", "json"];
+        for ext in &lyric_exts {
+            crate::system::safe_remove_file(&lyrics_dir.join(format!("{}.{}", video_id, ext)));
+        }
 
         Ok(())
     })
