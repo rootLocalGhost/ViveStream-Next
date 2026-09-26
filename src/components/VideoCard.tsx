@@ -7,6 +7,8 @@ import {
   favoritesSet,
   toggleFavoriteInCache,
   getThumbnailUrl,
+  activeVideo,
+  closeGlobalMiniplayer,
 } from "../store";
 import {
   isImageDecoded,
@@ -108,6 +110,9 @@ export default function VideoCard(props: VideoCardProps) {
 
     setIsDeleting(true);
     try {
+      if (activeVideo()?.id === props.video.id) {
+        closeGlobalMiniplayer();
+      }
       await invoke("delete_video", { videoId: props.video.id });
       addToast("Video deleted permanently", "info");
       props.onDelete?.(props.video);
