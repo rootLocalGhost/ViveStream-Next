@@ -12,6 +12,7 @@ export interface SortBarProps {
   onReshuffle?: () => void;
   itemCount?: number;
   itemLabel?: string;
+  isVisible?: boolean;
 }
 
 export default function SortBar(props: SortBarProps) {
@@ -24,7 +25,10 @@ export default function SortBar(props: SortBarProps) {
 
   const isRandom = () => props.currentSort === "random";
 
-  const isVisible = () => alwaysShowSortBar() || isSortOpen();
+  const isVisible = () =>
+    props.isVisible !== undefined
+      ? props.isVisible
+      : alwaysShowSortBar() || isSortOpen();
 
   const handleOutsideClick = (e: MouseEvent) => {
     if (dropdownRef && !dropdownRef.contains(e.target as Node)) {
