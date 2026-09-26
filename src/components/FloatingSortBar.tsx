@@ -11,6 +11,7 @@ import {
   alwaysShowSortBar,
   isSortOpen,
   setIsSortOpen,
+  forceSetup,
   homeSortBy,
   setHomeSortBy,
   homeSortDirection,
@@ -45,7 +46,7 @@ import {
   historySortDirection,
   setHistorySortDirection,
 } from "../store";
-import { SortDirection, SortOption } from "../utils/sortUtils";
+import { SortOption } from "../utils/sortUtils";
 import "./FloatingSortBar.css";
 
 export default function FloatingSortBar() {
@@ -217,6 +218,7 @@ export default function FloatingSortBar() {
   });
 
   const shouldRender = () => {
+    if (forceSetup()) return false;
     return activeConfig() !== null && (alwaysShowSortBar() || isSortOpen());
   };
 
