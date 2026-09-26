@@ -12,6 +12,7 @@ import {
   setHomeSortBy,
   homeSortDirection,
   setHomeSortDirection,
+  setForceSetup,
 } from "../store";
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -98,5 +99,23 @@ describe("FloatingSortBar Component and Integration", () => {
     fireEvent.click(dirBtn);
 
     expect(homeSortDirection()).toBe("asc");
+  });
+
+  it("does not render FloatingSortBar when alwaysShowSortBar is false and isSortOpen is false", () => {
+    setAlwaysShowSortBar(false);
+    setIsSortOpen(false);
+    render(() => <FloatingSortBar />);
+
+    expect(screen.queryByTitle("Change sorting criterion (Ctrl+S)")).not.toBeInTheDocument();
+  });
+
+  it("does not render FloatingSortBar when forceSetup is true", () => {
+    setAlwaysShowSortBar(true);
+    setIsSortOpen(true);
+    setForceSetup(true);
+    render(() => <FloatingSortBar />);
+
+    expect(screen.queryByTitle("Change sorting criterion (Ctrl+S)")).not.toBeInTheDocument();
+    setForceSetup(false);
   });
 });
