@@ -153,11 +153,6 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
       />
       <FPSCounter />
       <ImmersiveTitleBar />
-      <div class="top-floating-header">
-        <GlobalSearch />
-        <FloatingSortBar />
-      </div>
-      <Miniplayer />
       <Show
         when={needsSetup() !== null}
         fallback={
@@ -177,6 +172,11 @@ const AppLifecycle: Component<{ children?: any }> = (props) => {
             />
           }
         >
+          <div class="top-floating-header">
+            <GlobalSearch />
+            <FloatingSortBar />
+          </div>
+          <Miniplayer />
           {props.children}
         </Show>
       </Show>
