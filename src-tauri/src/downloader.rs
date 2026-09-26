@@ -9,7 +9,7 @@ use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Instant;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf, PathBuf) {
     #[cfg(target_os = "windows")]
@@ -26,12 +26,98 @@ pub fn get_binary_paths(bin_dir: &Path) -> (PathBuf, PathBuf, PathBuf) {
     );
 }
 
-struct CachedPoToken {
-    token: String,
-    created_at: Instant,
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct StoredPoToken {
+    pub token: String,
+    pub timestamp: u64,
 }
 
-static PO_TOKEN_CACHE: std::sync::Mutex<Option<CachedPoToken>> = std::sync::Mutex::new(None);
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct PoTokenStatus {
+    pub active: bool,
+    pub token: String,
+    pub age_seconds: u64,
+    pub ttl_seconds: u64,
+}
+
+struct CachedPoTokenState {
+    token: Option<String>,
+    cached_at: Option<Instant>,
+    last_failure: Option<Instant>,
+}
+
+static PO_TOKEN_CACHE: std::sync::Mutex<CachedPoTokenState> = std::sync::Mutex::new(CachedPoTokenState {
+    token: None,
+    cached_at: None,
+    last_failure: None,
+});
+
+pub fn get_po_token_file_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let config_dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    let _ = std::fs::create_dir_all(&config_dir);
+    Ok(config_dir.join("po_token.json"))
+}
+
+pub fn load_saved_po_token(app: &AppHandle) -> Option<String> {
+    let file = get_po_token_file_path(app).ok()?;
+    if !file.exists() {
+        return None;
+    }
+    let data = std::fs::read_to_string(file).ok()?;
+    let stored: StoredPoToken = serde_json::from_str(&data).ok()?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    // Valid for 12 hours (43,200 seconds)
+    if now.saturating_sub(stored.timestamp) < 43200 && !stored.token.trim().is_empty() {
+        Some(stored.token.trim().to_string())
+    } else {
+        None
+    }
+}
+
+pub fn save_po_token_to_disk(app: &AppHandle, token: &str) {
+    let token = token.trim();
+    if token.is_empty() {
+        return;
+    }
+    if let Ok(file) = get_po_token_file_path(app) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let stored = StoredPoToken {
+            token: token.to_string(),
+            timestamp: now,
+        };
+        if let Ok(json) = serde_json::to_string_pretty(&stored) {
+            let _ = std::fs::write(file, json);
+        }
+    }
+}
+
+pub fn get_cached_po_token_fast(app: &AppHandle) -> Option<String> {
+    if let Ok(guard) = PO_TOKEN_CACHE.lock() {
+        if let Some(ref t) = guard.token {
+            if let Some(created) = guard.cached_at {
+                if created.elapsed() < std::time::Duration::from_secs(43200) && !t.is_empty() {
+                    return Some(t.clone());
+                }
+            }
+        }
+    }
+
+    if let Some(token) = load_saved_po_token(app) {
+        if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
+            guard.token = Some(token.clone());
+            guard.cached_at = Some(Instant::now());
+        }
+        return Some(token);
+    }
+
+    None
+}
 
 pub fn extract_youtube_id(url: &str) -> String {
     let trimmed = url.trim();
@@ -115,7 +201,7 @@ pub async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String,
                     const str = typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData);
                     const match = str.match(/"po_?token"\s*:\s*"([^"]+)"/i);
                     if (match && match[1]) {
-                        window.location.replace("https://vstoken.local/" + match[1]);
+                        sendToken(match[1]);
                         return true;
                     }
                     const body = typeof bodyData === 'string' ? JSON.parse(bodyData) : bodyData;
@@ -123,11 +209,26 @@ pub async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String,
                         || body?.serviceIntegrityDimensions?.poToken 
                         || body?.attestationRequest?.poToken;
                     if (token) {
-                        window.location.replace("https://vstoken.local/" + token);
+                        sendToken(token);
                         return true;
                     }
                 } catch(e) {}
                 return false;
+            }
+
+            function sendToken(token) {
+                if (!token || typeof token !== 'string') return;
+                const clean = token.trim();
+                if (clean.length < 10) return;
+                try {
+                    window.location.hash = "vstoken=" + encodeURIComponent(clean);
+                } catch(e) {}
+                try {
+                    window.location.replace("https://www.youtube.com/robots.txt?vstoken=" + encodeURIComponent(clean));
+                } catch(e) {}
+                try {
+                    window.location.replace("https://vstoken.local/" + clean);
+                } catch(e) {}
             }
 
             const origFetch = window.fetch;
@@ -163,6 +264,23 @@ pub async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String,
                 };
             }
 
+            function checkYtcfg() {
+                try {
+                    if (window.ytcfg) {
+                        const tok = (typeof window.ytcfg.get === 'function' ? window.ytcfg.get("PO_TOKEN") : null)
+                            || window.ytcfg.data_?.PO_TOKEN
+                            || window.ytcfg.data_?.INNERTUBE_CONTEXT?.serviceIntegrityDimensions?.poToken
+                            || window.ytcfg.data_?.EXPERIMENT_FLAGS?.web_po_token;
+                        if (tok && typeof tok === 'string' && tok.length > 10) {
+                            sendToken(tok);
+                            return true;
+                        }
+                    }
+                } catch(e) {}
+                return false;
+            }
+            setInterval(checkYtcfg, 250);
+
             function attemptPlay() {
                 try {
                     const playBtn = document.querySelector('.ytp-large-play-button') || document.querySelector('.ytp-play-button');
@@ -181,7 +299,7 @@ pub async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String,
                     }
                 } catch(e) {}
             }
-            setInterval(attemptPlay, 500);
+            setInterval(attemptPlay, 400);
         })();
     "#,
     )
@@ -199,20 +317,31 @@ pub async fn extract_po_token(app: &AppHandle, video_id: &str) -> Result<String,
             }
             return false; // Cancel navigation
         }
+        if url.path() == "/robots.txt" {
+            for (k, v) in url.query_pairs() {
+                if k == "vstoken" && !v.is_empty() {
+                    println!("[PO_TOKEN] Intercepted PO token from robots.txt navigation! (Length: {} chars)", v.len());
+                    if let Some(sender) = tx_clone.lock().unwrap().take() {
+                        let _ = sender.send(v.into_owned());
+                    }
+                    return false;
+                }
+            }
+        }
         true
     });
 
     let webview = builder.build().map_err(|e| e.to_string())?;
 
-    // Increased timeout to 20s to account for potentially slow network connections hitting the iframe
-    match tokio::time::timeout(std::time::Duration::from_secs(20), rx).await {
+    // Fast timeout of 4s to never cause annoying user delay
+    match tokio::time::timeout(std::time::Duration::from_secs(4), rx).await {
         Ok(Ok(token)) => {
             println!("[PO_TOKEN] Extraction successful!");
             let _ = webview.close();
             Ok(token)
         }
         _ => {
-            println!("[PO_TOKEN] Extraction timed out or failed to intercept token within 20s.");
+            println!("[PO_TOKEN] Extraction timed out or failed to intercept token within 4s.");
             let _ = webview.close();
             Err("Timeout".into())
         }
@@ -231,39 +360,134 @@ pub async fn test_fetch_po_token(
     extract_po_token(&app, &vid).await
 }
 
+#[tauri::command]
+pub async fn get_po_token_status(app: AppHandle) -> Result<PoTokenStatus, String> {
+    if let Some(token) = get_cached_po_token_fast(&app) {
+        let age_seconds = if let Ok(file) = get_po_token_file_path(&app) {
+            if let Ok(data) = std::fs::read_to_string(file) {
+                if let Ok(stored) = serde_json::from_str::<StoredPoToken>(&data) {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs();
+                    now.saturating_sub(stored.timestamp)
+                } else {
+                    0
+                }
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+
+        return Ok(PoTokenStatus {
+            active: true,
+            token,
+            age_seconds,
+            ttl_seconds: 43200u64.saturating_sub(age_seconds),
+        });
+    }
+
+    Ok(PoTokenStatus {
+        active: false,
+        token: String::new(),
+        age_seconds: 0,
+        ttl_seconds: 0,
+    })
+}
+
+#[tauri::command]
+pub async fn set_manual_po_token(app: AppHandle, token: String) -> Result<(), String> {
+    let clean = token.trim();
+    if clean.is_empty() {
+        return Err("PO Token cannot be empty.".into());
+    }
+    save_po_token_to_disk(&app, clean);
+    if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
+        guard.token = Some(clean.to_string());
+        guard.cached_at = Some(Instant::now());
+        guard.last_failure = None;
+    }
+    println!("[PO_TOKEN] Manually saved PO Token (length: {})", clean.len());
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn clear_po_token(app: AppHandle) -> Result<(), String> {
+    if let Ok(file) = get_po_token_file_path(&app) {
+        let _ = std::fs::remove_file(file);
+    }
+    if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
+        guard.token = None;
+        guard.cached_at = None;
+        guard.last_failure = None;
+    }
+    println!("[PO_TOKEN] Cleared cached PO Token.");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn refresh_po_token(app: AppHandle, video_id: Option<String>) -> Result<String, String> {
+    let vid = video_id.unwrap_or_else(|| "bVYw5xR8xFg".to_string());
+    if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
+        guard.last_failure = None;
+    }
+    let token = extract_po_token(&app, &vid).await?;
+    let clean = token.trim().to_string();
+    if !clean.is_empty() {
+        save_po_token_to_disk(&app, &clean);
+        if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
+            guard.token = Some(clean.clone());
+            guard.cached_at = Some(Instant::now());
+            guard.last_failure = None;
+        }
+    }
+    Ok(clean)
+}
+
 pub async fn get_or_extract_po_token(app: &AppHandle, video_id: &str) -> Result<String, String> {
+    // 1. Instant check: In-memory or saved on disk
+    if let Some(token) = get_cached_po_token_fast(app) {
+        return Ok(token);
+    }
+
+    // 2. Check recent failure: don't freeze or spam if YouTube is blocking extraction
     {
         if let Ok(guard) = PO_TOKEN_CACHE.lock() {
-            if let Some(ref cached) = *guard {
-                if cached.created_at.elapsed() < std::time::Duration::from_secs(3600)
-                    && !cached.token.is_empty()
-                {
-                    return Ok(cached.token.clone());
+            if let Some(failed_at) = guard.last_failure {
+                if failed_at.elapsed() < std::time::Duration::from_secs(600) {
+                    println!("[PO_TOKEN] Extraction temporarily bypassed (recent failure cached within 10m).");
+                    return Err("Recent failure cached".into());
                 }
             }
         }
     }
 
+    // 3. Fast extraction with 4s timeout
+    println!("[PO_TOKEN] No cached token found. Attempting fast background extraction (max 4s)...");
     match extract_po_token(app, video_id).await {
-        Ok(token) if !token.is_empty() => {
+        Ok(token) if !token.trim().is_empty() => {
+            let clean = token.trim().to_string();
+            save_po_token_to_disk(app, &clean);
             if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
-                *guard = Some(CachedPoToken {
-                    token: token.clone(),
-                    created_at: Instant::now(),
-                });
+                guard.token = Some(clean.clone());
+                guard.cached_at = Some(Instant::now());
+                guard.last_failure = None;
             }
-            Ok(token)
+            Ok(clean)
         }
-        Ok(token) => Ok(token),
         Err(e) => {
-            if let Ok(guard) = PO_TOKEN_CACHE.lock() {
-                if let Some(ref cached) = *guard {
-                    if !cached.token.is_empty() {
-                        return Ok(cached.token.clone());
-                    }
-                }
+            if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
+                guard.last_failure = Some(Instant::now());
             }
             Err(e)
+        }
+        _ => {
+            if let Ok(mut guard) = PO_TOKEN_CACHE.lock() {
+                guard.last_failure = Some(Instant::now());
+            }
+            Err("Empty token".into())
         }
     }
 }
@@ -538,12 +762,8 @@ pub async fn get_video_metadata(
     let vid_dir = base_dir.join("Videos");
     let thumb_dir = base_dir.join("Thumbnails");
 
-    let temp_id = extract_youtube_id(&url);
-
-    let po_token = match get_or_extract_po_token(&app, &temp_id).await {
-        Ok(t) => t,
-        Err(_) => String::new(),
-    };
+    // Fast check for cached PO token; never blocks metadata fetching with a webview
+    let po_token = get_cached_po_token_fast(&app).unwrap_or_default();
 
     let mut client_args = format!(
         "youtube:player_client={};formats=missing_pot",
@@ -972,83 +1192,162 @@ async fn download_video_inner(
         }
         transcode_success = true;
     } else {
-        let _ = app.emit(&progress_event, "Step 2: Starting FFmpeg transcoder...");
-        let encoders = if cfg!(target_os = "windows") {
-            vec![
-                (
-                    "Intel QSV (Windows native - ARC Optimised)",
-                    vec!["-c:v", "h264_qsv", "-preset", "fast", "-b:v", "15M"],
-                ),
-                (
-                    "NVIDIA NVENC",
-                    vec!["-c:v", "h264_nvenc", "-preset", "p4", "-b:v", "15M"],
-                ),
-                (
-                    "CPU (libx264)",
-                    vec!["-c:v", "libx264", "-preset", "veryfast", "-crf", "23"],
-                ),
-            ]
-        } else {
-            vec![
-                (
-                    "VAAPI (Linux/Intel/AMD)",
-                    vec![
-                        "-vaapi_device",
-                        "/dev/dri/renderD128",
-                        "-vf",
-                        "format=nv12,hwupload",
-                        "-c:v",
-                        "h264_vaapi",
-                        "-b:v",
-                        "15M",
-                    ],
-                ),
-                (
-                    "Intel QSV (Linux fallback)",
-                    vec!["-c:v", "h264_qsv", "-preset", "fast", "-b:v", "15M"],
-                ),
-                (
-                    "NVIDIA NVENC",
-                    vec!["-c:v", "h264_nvenc", "-preset", "p4", "-b:v", "15M"],
-                ),
-                (
-                    "CPU (libx264)",
-                    vec!["-c:v", "libx264", "-preset", "veryfast", "-crf", "23"],
-                ),
-            ]
-        };
+        let _ = app.emit(&progress_event, "Step 2: Processing Video (Stream Optimization)...");
 
-        for (name, args) in encoders {
-            let _ = app.emit(&progress_event, format!("Attempting encoder: {}", name));
-            let mut cmd = Command::new(&ffmpeg_path);
+        // Tier 1: Fast direct stream copy (Lossless, instant, original bitrate, zero quality loss)
+        let mut copy_cmd = Command::new(&ffmpeg_path);
+        #[cfg(target_os = "windows")]
+        copy_cmd.creation_flags(0x08000000);
+
+        let copy_result = copy_cmd
+            .args(["-y", "-i", temp_path.to_str().unwrap()])
+            .args(["-c", "copy", "-movflags", "+faststart", final_path.to_str().unwrap()])
+            .output();
+
+        if let Ok(output) = copy_result {
+            if output.status.success() {
+                let _ = app.emit(
+                    &progress_event,
+                    "Success! Transcoded via: Direct Stream Copy (Original Quality, Fast Remux)",
+                );
+                transcode_success = true;
+            } else {
+                let _ = app.emit(
+                    &progress_event,
+                    "Direct copy incompatible with container audio, trying AAC remux...",
+                );
+            }
+        }
+
+        // Tier 2: Stream copy video, convert audio to AAC (Instant video, maximum audio compatibility)
+        if !transcode_success {
+            let mut aac_cmd = Command::new(&ffmpeg_path);
             #[cfg(target_os = "windows")]
-            cmd.creation_flags(0x08000000);
+            aac_cmd.creation_flags(0x08000000);
 
-            let output = cmd
+            let aac_result = aac_cmd
                 .args(["-y", "-i", temp_path.to_str().unwrap()])
-                .args(&args)
                 .args([
+                    "-c:v",
+                    "copy",
                     "-c:a",
                     "aac",
                     "-movflags",
                     "+faststart",
                     final_path.to_str().unwrap(),
                 ])
-                .output()
-                .map_err(|e| e.to_string())?;
+                .output();
 
-            if output.status.success() {
-                let _ = app.emit(
-                    &progress_event,
-                    format!("Success! Transcoded via: {}", name),
-                );
+            if let Ok(output) = aac_result {
+                if output.status.success() {
+                    let _ = app.emit(
+                        &progress_event,
+                        "Success! Transcoded via: Video Stream Copy + AAC Audio Remux",
+                    );
+                    transcode_success = true;
+                } else {
+                    let _ = app.emit(
+                        &progress_event,
+                        "Stream copy failed, falling back to full hardware/software transcoding...",
+                    );
+                }
+            }
+        }
+
+        // Safeguard for 4K / 8K (Ultra HD):
+        // Re-encoding 4K/8K video in CPU or software allocates 16+ GB of RAM for uncompressed frame buffers.
+        // For Ultra HD, always bypass full re-encoding to protect system memory and preserve pristine original quality.
+        let is_ultra_hd = quality == "4K" || quality == "Best";
+        if is_ultra_hd && !transcode_success {
+            let _ = app.emit(
+                &progress_event,
+                "Ultra HD (4K/8K) stream: Enforcing lossless stream passthrough to protect system memory (16GB RAM safeguard).",
+            );
+            if fs::rename(&temp_path, &final_path).is_ok() || final_path.exists() {
+                let _ = app.emit(&progress_event, "Success! Transcoded via: Direct Stream Passthrough (Original 8K/4K Quality)");
                 transcode_success = true;
-                break;
+            }
+        }
+
+        // Tier 3: Full hardware/software re-encode fallback (only if stream copy fails on 1080p or below)
+        if !transcode_success {
+            let encoders = if cfg!(target_os = "windows") {
+                vec![
+                    (
+                        "Intel QSV (Windows native - ARC Optimised)",
+                        vec!["-c:v", "h264_qsv", "-preset", "fast", "-global_quality", "23"],
+                    ),
+                    (
+                        "NVIDIA NVENC",
+                        vec!["-c:v", "h264_nvenc", "-preset", "p4", "-cq", "23"],
+                    ),
+                    (
+                        "CPU (libx264)",
+                        vec!["-c:v", "libx264", "-preset", "veryfast", "-crf", "23"],
+                    ),
+                ]
             } else {
-                let _ = app.emit(
-                    &progress_event,
-                    format!("Encoder {} failed, dropping to next fallback...", name),
-                );
+                vec![
+                    (
+                        "VAAPI (Linux/Intel/AMD)",
+                        vec![
+                            "-vaapi_device",
+                            "/dev/dri/renderD128",
+                            "-vf",
+                            "format=nv12,hwupload",
+                            "-c:v",
+                            "h264_vaapi",
+                            "-qp",
+                            "23",
+                        ],
+                    ),
+                    (
+                        "Intel QSV (Linux fallback)",
+                        vec!["-c:v", "h264_qsv", "-preset", "fast", "-global_quality", "23"],
+                    ),
+                    (
+                        "NVIDIA NVENC",
+                        vec!["-c:v", "h264_nvenc", "-preset", "p4", "-cq", "23"],
+                    ),
+                    (
+                        "CPU (libx264)",
+                        vec!["-c:v", "libx264", "-preset", "veryfast", "-crf", "23"],
+                    ),
+                ]
+            };
+
+            for (name, args) in encoders {
+                let _ = app.emit(&progress_event, format!("Attempting encoder: {}", name));
+                let mut cmd = Command::new(&ffmpeg_path);
+                #[cfg(target_os = "windows")]
+                cmd.creation_flags(0x08000000);
+
+                let output = cmd
+                    .args(["-y", "-i", temp_path.to_str().unwrap()])
+                    .args(&args)
+                    .args([
+                        "-c:a",
+                        "aac",
+                        "-movflags",
+                        "+faststart",
+                        final_path.to_str().unwrap(),
+                    ])
+                    .output()
+                    .map_err(|e| e.to_string())?;
+
+                if output.status.success() {
+                    let _ = app.emit(
+                        &progress_event,
+                        format!("Success! Transcoded via: {}", name),
+                    );
+                    transcode_success = true;
+                    break;
+                } else {
+                    let _ = app.emit(
+                        &progress_event,
+                        format!("Encoder {} failed, dropping to next fallback...", name),
+                    );
+                }
             }
         }
         let _ = fs::remove_file(&temp_path);
@@ -1096,11 +1395,7 @@ pub async fn reindex_library(app: AppHandle, player_client: String) -> Result<St
         return Ok("No video directory found. Database matches clean state.".into());
     }
 
-    // AWAIT BEFORE DB CONNECTION TO PREVENT THREAD PANICS
-    let po_token = match get_or_extract_po_token(&app, "bVYw5xR8xFg").await {
-        Ok(t) => t,
-        Err(_) => String::new(),
-    };
+    let po_token = get_cached_po_token_fast(&app).unwrap_or_default();
 
     let mut physical_ids = std::collections::HashSet::new();
 
