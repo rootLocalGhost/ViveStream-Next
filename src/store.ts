@@ -279,7 +279,7 @@ export const {
     getBool("alwaysShowSearchBar", false),
   );
   const [alwaysShowSortBar, setAlwaysShowSortBar] = createSignal(
-    getBool("alwaysShowSortBar", true),
+    getBool("alwaysShowSortBar", false),
   );
   const [showFpsCounter, setShowFpsCounter] = createSignal(
     getBool("showFpsCounter", false),
