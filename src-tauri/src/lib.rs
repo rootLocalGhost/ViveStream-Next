@@ -191,11 +191,16 @@ pub fn run() {
             set_clipboard_text,
             extract_video_dominant_colors,
             test_fetch_po_token,
+            get_po_token_status,
+            set_manual_po_token,
+            clear_po_token,
+            refresh_po_token,
             check_whisper_status,
             install_whisper_binary,
             download_whisper_model,
             generate_track_lyrics,
-            get_cached_lyrics
+            get_cached_lyrics,
+            test_hardware_transcoding
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -237,6 +242,7 @@ pub fn run_pot_test(video_id: Option<String>) {
                         println!("  Token length: {} chars", token.len());
                         println!("  Token value: {}", token);
                         println!("============================================================\n");
+                        crate::downloader::save_po_token_to_disk(&handle, &token);
                         std::process::exit(0);
                     }
                     Err(e) => {
